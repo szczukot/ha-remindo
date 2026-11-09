@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -74,16 +74,14 @@ class ZadaniaCard extends HTMLElement {
   }
 
   _row(t, kind) {
+    // Najważniejsze: kiedy. Reszta drobnym drukiem.
+    let when = "";
+    if (kind === "now") when = t.next_reminder ? `teraz · znowu ${fmtTime(t.next_reminder).replace("dziś ", "")}` : "teraz";
+    else if (kind === "planned") when = (t.snoozes && t.last_reminded ? "odłożone do " : "") + fmtTime(t.next_reminder || t.start);
+    else if (kind === "done") when = `zrobione ${ago(t.closed)}`;
     const meta = [];
-    if (kind === "now") {
-      meta.push(`przypomina od ${ago(t.last_reminded)}`);
-      if (t.next_reminder) meta.push(`następne ${fmtTime(t.next_reminder)}`);
-    } else if (kind === "planned") {
-      meta.push(t.snoozes && t.last_reminded ? `odłożone do ${fmtTime(t.next_reminder)}` : fmtTime(t.next_reminder || t.start));
-      if (t.interval) meta.push(`przypomina co ${t.interval} min`);
-    } else if (kind === "done") {
-      meta.push(`zrobione ${ago(t.closed)}`);
-    }
+    if (kind === "now") meta.push(`przypomina od ${ago(t.last_reminded)}`);
+    if (t.interval && kind !== "done" && kind !== "notes") meta.push(`co ${t.interval} min`);
     if (t.repeat_label) meta.push(`🔁 ${t.repeat_label}`);
     if (t.snoozes) meta.push(`odłożone ${t.snoozes}×`);
     if (kind !== "done" && kind !== "notes") {
@@ -101,6 +99,7 @@ class ZadaniaCard extends HTMLElement {
       </div>`;
     return `<div class="task ${kind}">
       <div class="txt"><div class="sum">${esc(t.summary)}</div>
+        ${when ? `<div class="when">${esc(when)}</div>` : ""}
         ${t.description ? `<div class="desc">${esc(t.description)}</div>` : ""}
         <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}</div>`;
   }
@@ -246,9 +245,12 @@ ZadaniaCard.styles = `
   .task.now { border-left-color: var(--warning-color, #ff9800); background: color-mix(in srgb, var(--warning-color, #ff9800) 8%, transparent); }
   .task.done .sum { text-decoration: line-through; opacity:.6; }
   .txt { flex:1 1 220px; min-width:0; }
-  .sum { font-size:16px; }
+  .sum { font-size:18px; font-weight:500; line-height:1.25; }
+  .when { font-size:15px; font-weight:600; color: var(--primary-color); margin-top:2px; }
+  .task.now .when { color: var(--warning-color, #ff9800); }
+  .task.done .when { font-weight:400; color: var(--secondary-text-color); }
   .desc { font-size:13px; color: var(--secondary-text-color); white-space: pre-line; }
-  .meta { font-size:12px; color: var(--secondary-text-color); margin-top:2px; }
+  .meta { font-size:11px; color: var(--secondary-text-color); opacity:.75; margin-top:3px; }
   .btns { display:flex; gap:6px; flex-wrap:wrap; }
   button { font: inherit; font-size:14px; border:1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color);
            border-radius:8px; padding:8px 12px; cursor:pointer; min-height:40px; }
