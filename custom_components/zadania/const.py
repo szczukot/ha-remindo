@@ -51,6 +51,8 @@ ATTR_UNTIL = "until"
 ATTR_TTS_MESSAGE = "tts_message"
 ATTR_PHONES = "phones"
 ATTR_SPEAKERS = "speakers"
+ATTR_MAX_REMINDERS = "max_reminders"
+ATTR_REMIND_UNTIL = "remind_until"
 
 REPEAT_NONE = "none"
 REPEAT_OPTIONS = [REPEAT_NONE, "hourly", "daily", "weekly", "monthly", "yearly"]

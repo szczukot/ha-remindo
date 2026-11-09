@@ -20,6 +20,7 @@ from homeassistant.core import (
 )
 from homeassistant.exceptions import ServiceValidationError
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
@@ -27,9 +28,11 @@ from .const import (
     ATTR_DESCRIPTION,
     ATTR_INTERVAL,
     ATTR_KEY,
+    ATTR_MAX_REMINDERS,
     ATTR_MINUTES,
     ATTR_PHONES,
     ATTR_PUSH,
+    ATTR_REMIND_UNTIL,
     ATTR_REPEAT,
     ATTR_REPEAT_EVERY,
     ATTR_SPEAKERS,
@@ -41,6 +44,7 @@ from .const import (
     ATTR_UNTIL,
     CARD_URL,
     DOMAIN,
+    SIGNAL_UPDATED,
     REPEAT_NONE,
     REPEAT_OPTIONS,
 )
@@ -67,6 +71,8 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PUSH, default=True): cv.boolean,
         vol.Optional(ATTR_PHONES): vol.Any(None, cv.ensure_list_csv),
         vol.Optional(ATTR_SPEAKERS): vol.Any(None, cv.entity_ids),
+        vol.Optional(ATTR_MAX_REMINDERS): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=1000))),
+        vol.Optional(ATTR_REMIND_UNTIL): vol.Any(None, _WHEN),
     }
 )
 TARGET = {vol.Optional(ATTR_UID): cv.string, vol.Optional(ATTR_KEY): cv.string}
@@ -100,6 +106,7 @@ RULE_SCHEMA = vol.Schema(
         vol.Optional(ATTR_PHONES): vol.Any(None, cv.ensure_list_csv),
         vol.Optional(ATTR_SPEAKERS): vol.Any(None, cv.entity_ids),
         vol.Optional(ATTR_TTS_MESSAGE): vol.Any(None, cv.string),
+        vol.Optional(ATTR_MAX_REMINDERS): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=1000))),
     }
 )
 RULE_DELETE_SCHEMA = vol.Schema({vol.Required("id"): cv.string})
@@ -118,6 +125,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 def _manager(hass: HomeAssistant) -> TaskManager:
+    if (manager := hass.data.get(DOMAIN)) is not None:
+        return manager
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     if not entries:
         raise ServiceValidationError("Integracja Zadania nie jest załadowana")
@@ -137,6 +146,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> b
     manager = TaskManager(hass, dict(entry.options or entry.data))
     await manager.async_load()
     entry.runtime_data = manager
+    hass.data[DOMAIN] = manager
 
     entry.async_on_unload(
         hass.bus.async_listen("mobile_app_notification_action", manager.async_handle_phone_action)
@@ -144,6 +154,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> b
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     _register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # karty otwarte przed przeładowaniem dostaną świeże dane
+    async_dispatcher_send(hass, SIGNAL_UPDATED)
     return True
 
 
@@ -154,6 +166,7 @@ async def _async_reload(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> None:
 async def async_unload_entry(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> bool:
     ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if ok:
+        hass.data.pop(DOMAIN, None)
         await entry.runtime_data.async_unload()
     return ok
 
@@ -179,6 +192,8 @@ def _register_services(hass: HomeAssistant) -> None:
                 tts_message=data.get(ATTR_TTS_MESSAGE),
                 phones=data.get(ATTR_PHONES),
                 speakers=data.get(ATTR_SPEAKERS),
+                max_reminders=data.get(ATTR_MAX_REMINDERS),
+                remind_until=data.get(ATTR_REMIND_UNTIL),
                 source="service",
                 context=call.context,
             )
@@ -236,13 +251,18 @@ def _register_services(hass: HomeAssistant) -> None:
 async def ws_subscribe(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Strumień zadań dla karty (pełna lista po każdej zmianie)."""
-    manager = _manager(hass)
+    """Strumień zadań dla karty (pełna lista po każdej zmianie).
+
+    Słucha sygnału, a nie konkretnego menedżera, więc przeżywa przeładowanie
+    integracji (np. po zmianie ustawień).
+    """
 
     def payload() -> dict[str, Any]:
+        manager = _manager(hass)
         return {
             "tasks": [manager.serialize(t) for t in manager.tasks.values()],
             "rules": manager.rules.dump(),
+            "dismissed": [h for h in manager.history if h.get("result") == "dismissed"][-20:],
             "options": {
                 "phone_snooze": manager.options.get("phone_snooze"),
                 "default_interval": manager.options.get("default_interval"),
@@ -253,8 +273,12 @@ async def ws_subscribe(
 
     @callback
     def forward() -> None:
-        connection.send_message(websocket_api.event_message(msg["id"], payload()))
+        try:
+            data = payload()
+        except ServiceValidationError:
+            return  # integracja w trakcie przeładowania
+        connection.send_message(websocket_api.event_message(msg["id"], data))
 
-    connection.subscriptions[msg["id"]] = manager.async_add_listener(forward)
+    connection.subscriptions[msg["id"]] = async_dispatcher_connect(hass, SIGNAL_UPDATED, forward)
     connection.send_result(msg["id"])
     forward()

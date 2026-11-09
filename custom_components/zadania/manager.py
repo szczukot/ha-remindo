@@ -134,6 +134,8 @@ class Task:
     tts_message: str | None = None
     phones: list[str] | None = None  # None = wszystkie z ustawień
     speakers: list[str] | None = None  # None = wszystkie z ustawień
+    max_reminders: int | None = None  # maks. liczba przypomnień (None = bez limitu)
+    remind_until: str | None = None  # nie przypominaj po tym terminie (ISO)
     status: str = STATUS_OPEN
     active: bool = False  # czy już przypomniało (zadanie „na teraz”)
     reminders: int = 0
@@ -285,6 +287,8 @@ class TaskManager:
         tts_message: str | None = None,
         phones: list[str] | None = None,
         speakers: list[str] | None = None,
+        max_reminders: int | None = None,
+        remind_until: Any = None,
         source: str = "service",
         context: Context | None = None,
     ) -> Task:
@@ -311,6 +315,8 @@ class TaskManager:
             tts_message=tts_message,
             phones=self._norm(phones, "notify."),
             speakers=self._norm(speakers, "media_player."),
+            max_reminders=int(max_reminders) if max_reminders else None,
+            remind_until=_iso(self._resolve_start(remind_until)) if remind_until else None,
         )
         if task.repeat != REPEAT_NONE and start_dt is None:
             raise ValueError("Zadanie cykliczne musi mieć start")
@@ -436,7 +442,12 @@ class TaskManager:
         task.active = True
         task.reminders += 1
         task.last_reminded = now.isoformat()
-        task.next_reminder = _iso(now + timedelta(minutes=task.interval)) if task.interval > 0 else None
+        nxt = now + timedelta(minutes=task.interval) if task.interval > 0 else None
+        if nxt and task.max_reminders and task.reminders >= task.max_reminders:
+            nxt = None  # wykorzystano limit przypomnień
+        if nxt and task.remind_until and nxt > _dt(task.remind_until):  # type: ignore[operator]
+            nxt = None  # minął termin przypominania
+        task.next_reminder = _iso(nxt)
         self._schedule(task)
         self._fire(EVENT_REMINDED, task, "schedule", None, count=task.reminders)
         self._save()

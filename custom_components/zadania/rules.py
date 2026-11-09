@@ -48,6 +48,7 @@ class Rule:
     phones: list[str] | None = None
     speakers: list[str] | None = None
     tts_message: str | None = None
+    max_reminders: int | None = None
     # tylko dla kalendarza
     days_before: int = 1
     at_time: str = "18:00"
@@ -203,6 +204,7 @@ class RuleEngine:
             phones=rule.phones,
             speakers=rule.speakers,
             tts_message=rule.tts_message,
+            max_reminders=rule.max_reminders,
             source="rule",
         )
 
@@ -235,7 +237,8 @@ class RuleEngine:
         message = (rule.tts_message or summary).replace("{wydarzenie}", what)
         await self.manager.async_add(
             summary, description=rule.description, start="now", interval=rule.interval,
-            key=rule.key, phones=rule.phones, speakers=rule.speakers, tts_message=message, source="rule",
+            key=rule.key, phones=rule.phones, speakers=rule.speakers, tts_message=message,
+            max_reminders=rule.max_reminders, source="rule",
         )
         if rule.auto_close:
             # zamknij po dniu wydarzenia, jeśli nikt nie odhaczył

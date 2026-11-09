@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.4.0";
+const VERSION = "0.5.0";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -51,7 +51,7 @@ class ZadaniaCard extends HTMLElement {
   _subscribe() {
     if (!this._hass || this._unsub) return;
     this._unsub = this._hass.connection
-      .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._rules = msg.rules || []; this._opts = msg.options || {}; this._error = null; this._render(); },
+      .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._rules = msg.rules || []; this._dismissed = msg.dismissed || []; this._opts = msg.options || {}; this._error = null; this._render(); },
         { type: "zadania/subscribe" })
       .catch((err) => { this._error = err.message || String(err); this._unsub = null; this._render(); setTimeout(() => this._subscribe(), 15000); });
   }
@@ -78,7 +78,8 @@ class ZadaniaCard extends HTMLElement {
   _row(t, kind) {
     // Najważniejsze: kiedy. Reszta drobnym drukiem.
     let when = "";
-    if (kind === "now") when = t.next_reminder ? `teraz · znowu ${fmtTime(t.next_reminder).replace("dziś ", "")}` : "teraz";
+    if (kind === "now") when = t.next_reminder ? `teraz · znowu ${fmtTime(t.next_reminder).replace("dziś ", "")}` : (t.interval ? "teraz · już nie przypomina" : "teraz");
+    else if (kind === "dismissed") when = `odrzucone ${ago(t.at)}`;
     else if (kind === "planned") when = (t.snoozes && t.last_reminded ? "odłożone do " : "") + fmtTime(t.next_reminder || t.start);
     else if (kind === "done") when = `zrobione ${ago(t.closed)}`;
     const meta = [];
@@ -86,11 +87,13 @@ class ZadaniaCard extends HTMLElement {
     if (t.interval && kind !== "done" && kind !== "notes") meta.push(`co ${t.interval} min`);
     if (t.repeat_label) meta.push(`🔁 ${t.repeat_label}`);
     if (t.snoozes) meta.push(`odłożone ${t.snoozes}×`);
+    if (t.max_reminders && kind !== "done") meta.push(`maks. ${t.max_reminders}× (było ${t.reminders || 0})`);
+    if (t.remind_until && kind !== "done") meta.push(`przypomina do ${fmtTime(t.remind_until)}`);
     if (kind !== "done" && kind !== "notes") {
       const where = [...(t.phone_labels || []).map((n) => `📱 ${n}`), ...(t.speaker_labels || []).map((n) => `🔊 ${n}`)];
       meta.push(where.length ? where.join(", ") : "bez powiadomień");
     }
-    const btns = kind === "done" ? "" : `
+    const btns = kind === "done" || kind === "dismissed" ? "" : `
       <div class="btns">
         <button class="ok" data-a="done" data-uid="${t.uid}" title="Zrobione">✓</button>
         ${kind !== "notes" ? `
@@ -108,7 +111,9 @@ class ZadaniaCard extends HTMLElement {
 
   _section(title, list, kind) {
     if (!list.length) return "";
-    return `<div class="sec"><div class="sec-title">${title} <span>${list.length}</span></div>${list.map((t) => this._row(t, kind)).join("")}</div>`;
+    this._collapsed = this._collapsed || { done: true, dismissed: true };
+    const closed = !!this._collapsed[kind];
+    return `<div class="sec"><div class="sec-title" data-a="sec" data-k="${kind}">${closed ? "▸" : "▾"} ${title} <span>${list.length}</span></div>${closed ? "" : list.map((t) => this._row(t, kind)).join("")}</div>`;
   }
 
   _form() {
@@ -130,6 +135,11 @@ class ZadaniaCard extends HTMLElement {
           <select id="f-int-u"><option value="1"${di % 60 === 0 ? "" : " selected"}>minut</option><option value="60"${di % 60 === 0 ? " selected" : ""}>godzin</option></select></span>
         <span class="hint" id="f-rem-h">dopóki nie odhaczę</span>
         <span class="hint" id="f-note-h" style="display:none">bez przypomnień — zwykła notatka na liście</span>
+      </div>
+      <div class="frow" id="f-lim-row"><span class="chk"></span>
+        <span class="grp">przestań przypominać: <select id="f-lim"><option value="">nigdy (aż odhaczę)</option><option value="count">po … razach</option><option value="until">o konkretnej porze</option></select>
+          <input id="f-lim-n" type="number" min="1" value="3" style="display:none" />
+          <input id="f-lim-dt" type="datetime-local" style="display:none" /></span>
       </div>
       <div class="frow">
         <label class="chk"><input type="checkbox" id="f-rep-on" /> Powtarzaj</label>
@@ -163,6 +173,8 @@ class ZadaniaCard extends HTMLElement {
     const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
     const interval = $("f-rem").checked ? Math.max(1, Number($("f-int").value || 1)) * Number($("f-int-u").value) : 0;
     const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk") };
+    if (interval && $("f-lim").value === "count") data.max_reminders = Math.max(1, Number($("f-lim-n").value || 1));
+    if (interval && $("f-lim").value === "until" && $("f-lim-dt").value) data.remind_until = `${$("f-lim-dt").value}:00`;
     const rep = $("f-rep-on").checked ? $("f-rep").value : "none";
     if (rep !== "none") {
       if (start === null) { this._error = "Zadanie cykliczne musi mieć termin"; this._render(); return; }
@@ -173,7 +185,7 @@ class ZadaniaCard extends HTMLElement {
   }
 
   _onClick(ev) {
-    const b = ev.target.closest("button");
+    const b = ev.target.closest("button, .sec-title");
     if (!b) return;
     const uid = b.dataset.uid;
     switch (b.dataset.a) {
@@ -185,6 +197,7 @@ class ZadaniaCard extends HTMLElement {
       case "cancel": this._formOpen = false; this._forceRender = true; return this._render();
       case "save": return this._save();
       case "err": this._error = null; this._forceRender = true; return this._render();
+      case "sec": this._collapsed[b.dataset.k] = !this._collapsed[b.dataset.k]; this._forceRender = true; return this._render();
       case "tab": this._tab = b.dataset.tab; this._formOpen = this._ruleFormOpen = false; this._forceRender = true; return this._render();
       case "r-new": this._editRule = null; this._ruleFormOpen = true; this._forceRender = true; this._render(); return this.shadowRoot.getElementById("r-sum")?.focus();
       case "r-edit": this._editRule = (this._rules || []).find((r) => r.id === b.dataset.id); this._ruleFormOpen = true; this._forceRender = true; return this._render();
@@ -217,7 +230,9 @@ class ZadaniaCard extends HTMLElement {
     on("f-rep-on", "f-rep-g", "f-rep-h");
     $("f-note-h").style.display = $("f-rem").checked ? "none" : "";
     $("f-rem-h").style.display = $("f-rem").checked ? "" : "none";
-    for (const id of ["f-where", "f-where-h"]) $(id).style.display = $("f-rem").checked ? "" : "none";
+    for (const id of ["f-where", "f-where-h", "f-lim-row"]) $(id).style.display = $("f-rem").checked ? "" : "none";
+    $("f-lim-n").style.display = $("f-lim").value === "count" ? "" : "none";
+    $("f-lim-dt").style.display = $("f-lim").value === "until" ? "" : "none";
   }
 
 
@@ -243,7 +258,7 @@ class ZadaniaCard extends HTMLElement {
     const rows = rules.map((r) => {
       const where = [...(r.phones ?? (this._opts?.phones || []).map((p) => p.id)).map((p) => `📱 ${(this._opts?.phones || []).find((x) => x.id === p)?.name || p}`),
         ...(r.speakers ?? (this._opts?.speakers || []).map((s) => s.id)).map((s) => `🔊 ${this._entityName(s)}`)];
-      const meta = [r.interval === 0 ? "przypomina raz" : `co ${r.interval ?? this._opts?.default_interval ?? 30} min`,
+      const meta = [r.interval === 0 ? "przypomina raz" : `co ${r.interval ?? this._opts?.default_interval ?? 30} min` + (r.max_reminders ? `, maks. ${r.max_reminders}×` : ""),
         r.auto_close ? "zamyka się samo" : "", where.length ? where.join(", ") : "bez powiadomień"].filter(Boolean);
       return `<div class="task rule ${r.enabled ? "" : "disabled"}">
         <div class="txt"><div class="sum">${esc(r.summary)}</div>
@@ -296,7 +311,8 @@ class ZadaniaCard extends HTMLElement {
         <label class="chk"><input type="checkbox" id="r-rep" ${r.interval === 0 ? "" : "checked"} /> Ponawiaj</label>
         <span class="grp" id="r-rep-g">co <input id="r-int" type="number" min="1" value="${di % 60 === 0 ? di / 60 : di}" />
           <select id="r-int-u"><option value="1"${di % 60 === 0 ? "" : " selected"}>minut</option><option value="60"${di % 60 === 0 ? " selected" : ""}>godzin</option></select></span>
-        <span class="hint">dopóki nie odhaczę (bez ponawiania = przypomni raz)</span>
+        <span class="grp" id="r-max-g">maks. <input id="r-max" type="number" min="1" placeholder="∞" value="${r.max_reminders || ""}" /> razy</span>
+        <span class="hint">(puste = aż odhaczę; bez ponawiania = przypomni raz)</span>
       </div>
       <div class="frow where">
         <span>Gdzie przypominać:</span>
@@ -348,7 +364,7 @@ class ZadaniaCard extends HTMLElement {
     const data = { summary, entity_id, mode: $("r-mode").value, value, for_minutes: Number($("r-for").value || 0),
       auto_close: $("r-close").checked, enabled: this._editRule?.enabled ?? true,
       interval: $("r-rep").checked ? Math.max(1, Number($("r-int").value || 1)) * Number($("r-int-u").value) : 0,
-      phones: pick(".r-phone"), speakers: pick(".r-spk") };
+      phones: pick(".r-phone"), speakers: pick(".r-spk"), max_reminders: Number($("r-max").value) || null };
     if (cal) Object.assign(data, { days_before: Number($("r-days").value || 0), at_time: $("r-at").value || "18:00", contains: $("r-contains").value.trim() || null, for_minutes: 0 });
     if (this._editRule?.id) data.id = this._editRule.id;
     this._ruleFormOpen = false; this._editRule = null; this._forceRender = true;
@@ -373,7 +389,8 @@ class ZadaniaCard extends HTMLElement {
         ${this._section("Zaplanowane", g.planned, "planned")}
         ${this._section("Notatki", g.notes, "notes")}
         ${empty ? `<div class="empty">Nic do zrobienia 🎉</div>` : ""}
-        ${this._config.show_done ? this._section("Ostatnio zrobione", g.done, "done") : ""}
+        ${this._config.show_done ? this._section("Zrobione", g.done, "done") : ""}
+        ${this._config.show_done ? this._section("Odrzucone", [...(this._dismissed || [])].reverse().slice(0, 10), "dismissed") : ""}
         ${this._form()}`}
       </ha-card>`;
     this.shadowRoot.querySelector("ha-card").onclick = (e) => this._onClick(e);
@@ -390,7 +407,9 @@ ZadaniaCard.styles = `
   .head { display:flex; align-items:center; gap:8px; font-size:20px; font-weight:500; margin-bottom:8px; }
   .badge { background: var(--error-color, #db4437); color:#fff; border-radius:12px; padding:0 9px; font-size:14px; line-height:22px; }
   .sec { margin-top: 10px; }
-  .sec-title { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color: var(--secondary-text-color); margin-bottom:4px; }
+  .sec-title { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color: var(--secondary-text-color); margin-bottom:4px; cursor:pointer; user-select:none; padding:4px 0; }
+  .task.dismissed .sum { text-decoration: line-through; opacity:.6; }
+  .task.dismissed .when { font-weight:400; color: var(--secondary-text-color); }
   .sec-title span { opacity:.7; }
   .task { display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:10px; border-left:4px solid transparent; flex-wrap:wrap; }
   .task + .task { border-top: 1px solid var(--divider-color); }

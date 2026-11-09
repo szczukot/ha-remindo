@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 
 from freezegun.api import FrozenDateTimeFactory
@@ -273,3 +274,41 @@ async def test_calendar_rule(hass: HomeAssistant, freezer: FrozenDateTimeFactory
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert manager.open_tasks() == []
+
+
+async def test_ws_survives_reload(hass: HomeAssistant, hass_ws_client) -> None:
+    entry, calls = await _setup(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "zadania/subscribe"})
+    assert (await asyncio.wait_for(client.receive_json(), 2))["success"]
+    assert (await asyncio.wait_for(client.receive_json(), 2))["event"]["tasks"] == []
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    await asyncio.wait_for(client.receive_json(), 2)  # odświeżenie po przeładowaniu
+    res = await hass.services.async_call(DOMAIN, "add", {"summary": "Po reloadzie", "start": None}, blocking=True, return_response=True)
+    msg = await asyncio.wait_for(client.receive_json(), 2)
+    assert [t["summary"] for t in msg["event"]["tasks"]] == ["Po reloadzie"]
+    await hass.services.async_call(DOMAIN, "dismiss", {"uid": res["uid"]}, blocking=True)
+    msg = await asyncio.wait_for(client.receive_json(), 2)
+    assert msg["event"]["tasks"] == []
+
+
+async def test_reminder_limits(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    res = await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Max 2", "interval": 5, "max_reminders": 2, "speakers": []},
+        blocking=True, return_response=True,
+    )
+    res2 = await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Do 15:12", "interval": 5, "remind_until": "2026-11-09T15:12:00", "speakers": []},
+        blocking=True, return_response=True,
+    )
+    for _ in range(5):
+        freezer.tick(timedelta(minutes=5, seconds=1))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+    t1 = entry.runtime_data.tasks[res["uid"]]
+    t2 = entry.runtime_data.tasks[res2["uid"]]
+    assert t1.reminders == 2 and t1.next_reminder is None and t1.active
+    assert t2.reminders == 2 and t2.next_reminder is None
