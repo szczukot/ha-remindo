@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -30,6 +30,8 @@ class ZadaniaCard extends HTMLElement {
     this._config = { title: "Zadania", show_done: true, show_form: true, ...config };
     this._tasks = [];
     this._formOpen = false;
+    this._tab = "tasks";
+    this._rules = [];
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     this._render();
   }
@@ -49,7 +51,7 @@ class ZadaniaCard extends HTMLElement {
   _subscribe() {
     if (!this._hass || this._unsub) return;
     this._unsub = this._hass.connection
-      .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._opts = msg.options || {}; this._error = null; this._render(); },
+      .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._rules = msg.rules || []; this._opts = msg.options || {}; this._error = null; this._render(); },
         { type: "zadania/subscribe" })
       .catch((err) => { this._error = err.message || String(err); this._unsub = null; this._render(); setTimeout(() => this._subscribe(), 15000); });
   }
@@ -183,6 +185,13 @@ class ZadaniaCard extends HTMLElement {
       case "cancel": this._formOpen = false; this._forceRender = true; return this._render();
       case "save": return this._save();
       case "err": this._error = null; this._forceRender = true; return this._render();
+      case "tab": this._tab = b.dataset.tab; this._formOpen = this._ruleFormOpen = false; this._forceRender = true; return this._render();
+      case "r-new": this._editRule = null; this._ruleFormOpen = true; this._forceRender = true; this._render(); return this.shadowRoot.getElementById("r-sum")?.focus();
+      case "r-edit": this._editRule = (this._rules || []).find((r) => r.id === b.dataset.id); this._ruleFormOpen = true; this._forceRender = true; return this._render();
+      case "r-cancel": this._ruleFormOpen = false; this._editRule = null; this._forceRender = true; return this._render();
+      case "r-save": return this._saveRule();
+      case "r-toggle": { const r = (this._rules || []).find((x) => x.id === b.dataset.id); return r && this._call("rule_save", { ...r, enabled: !r.enabled }); }
+      case "r-del": { const r = (this._rules || []).find((x) => x.id === b.dataset.id); if (r && confirm(`Usunąć regułę „${r.summary}”?`)) this._call("rule_delete", { id: r.id }); return; }
     }
   }
 
@@ -190,6 +199,7 @@ class ZadaniaCard extends HTMLElement {
     const $ = (id) => this.shadowRoot.getElementById(id);
     if (ev.target.id === "f-when") $("f-dt").style.display = ev.target.value === "custom" ? "" : "none";
     this._unit();
+    this._ruleUpdate();
   }
 
   _unit() {
@@ -210,29 +220,168 @@ class ZadaniaCard extends HTMLElement {
     for (const id of ["f-where", "f-where-h"]) $(id).style.display = $("f-rem").checked ? "" : "none";
   }
 
+
+  // ------------------------------------------------------------- reguły
+  _entityName(id) { return this._hass?.states[id]?.attributes?.friendly_name || id; }
+  _stateLabel(id, value) {
+    const st = this._hass?.states[id];
+    try { if (st && this._hass.formatEntityState) return this._hass.formatEntityState(st, value); } catch (e) { /* stara wersja HA */ }
+    return value;
+  }
+  _ruleText(r) {
+    const name = this._entityName(r.entity_id);
+    if (r.mode === "calendar") {
+      const d = Number(r.days_before ?? 1);
+      return `${d === 0 ? "W dniu" : d === 1 ? "Dzień przed" : `${d} dni przed`} wydarzeniem w ${name}${r.contains ? ` („${r.contains}”)` : ""}, o ${r.at_time || "18:00"}`;
+    }
+    const cond = r.mode === "above" ? `powyżej ${r.value}` : r.mode === "below" ? `poniżej ${r.value}` : `= ${this._stateLabel(r.entity_id, r.value)}`;
+    return `Gdy ${name} ${cond}` + (r.for_minutes ? ` przez ${r.for_minutes} min` : "");
+  }
+
+  _rulesView() {
+    const rules = [...(this._rules || [])].sort((a, b) => a.summary.localeCompare(b.summary));
+    const rows = rules.map((r) => {
+      const where = [...(r.phones ?? (this._opts?.phones || []).map((p) => p.id)).map((p) => `📱 ${(this._opts?.phones || []).find((x) => x.id === p)?.name || p}`),
+        ...(r.speakers ?? (this._opts?.speakers || []).map((s) => s.id)).map((s) => `🔊 ${this._entityName(s)}`)];
+      const meta = [r.interval === 0 ? "przypomina raz" : `co ${r.interval ?? this._opts?.default_interval ?? 30} min`,
+        r.auto_close ? "zamyka się samo" : "", where.length ? where.join(", ") : "bez powiadomień"].filter(Boolean);
+      return `<div class="task rule ${r.enabled ? "" : "disabled"}">
+        <div class="txt"><div class="sum">${esc(r.summary)}</div>
+          <div class="when">${esc(this._ruleText(r))}</div>
+          <div class="meta">${esc(meta.join(" · "))}</div></div>
+        <div class="btns">
+          <button data-a="r-toggle" data-id="${r.id}">${r.enabled ? "Wyłącz" : "Włącz"}</button>
+          <button data-a="r-edit" data-id="${r.id}">Edytuj</button>
+          <button class="no" data-a="r-del" data-id="${r.id}" title="Usuń">✕</button>
+        </div></div>`;
+    }).join("");
+    return `<div class="sec">${rows || `<div class="empty">Brak reguł. Dodaj pierwszą, np. „gdy zmywarka skończy → wypakuj zmywarkę”.</div>`}</div>
+      ${this._ruleFormOpen ? this._ruleForm() : `<button class="add-btn" data-a="r-new">＋ Dodaj regułę</button>`}`;
+  }
+
+  _ruleForm() {
+    const r = this._editRule || {};
+    const di = Number(r.interval ?? this._opts?.default_interval ?? 30) || 30;
+    const ents = Object.values(this._hass?.states || {})
+      .filter((st) => !/^(automation|script|scene|zone|person|update|button|event|tts|conversation|stt|wake_word|sun)\./.test(st.entity_id))
+      .map((st) => `<option value="${esc(st.entity_id)}">${esc(st.attributes.friendly_name || "")}</option>`).join("");
+    const phones = r.phones ?? (this._opts?.phones || []).map((p) => p.id);
+    const speakers = r.speakers ?? (this._opts?.speakers || []).map((s) => s.id);
+    return `<div class="form rform">
+      <input id="r-sum" placeholder="Jakie zadanie dodać? np. Wypakuj zmywarkę" value="${esc(r.summary || "")}" />
+      <div class="frow"><span class="chk">Gdy</span>
+        <input id="r-ent" list="r-ents" placeholder="encja, np. sensor.zmywarka…" value="${esc(r.entity_id || "")}" style="flex:1;min-width:220px" />
+        <datalist id="r-ents">${ents}</datalist></div>
+      <div class="frow"><span class="chk"></span><span class="hint" id="r-ent-name"></span></div>
+      <div class="frow"><span class="chk"></span>
+        <select id="r-mode">
+          <option value="state"${r.mode === "state" || !r.mode ? " selected" : ""}>ma stan</option>
+          <option value="above"${r.mode === "above" ? " selected" : ""}>jest powyżej</option>
+          <option value="below"${r.mode === "below" ? " selected" : ""}>jest poniżej</option>
+          <option value="calendar"${r.mode === "calendar" ? " selected" : ""}>ma wydarzenie (kalendarz)</option>
+        </select>
+        <span class="grp" id="r-cal-g">
+          <input id="r-days" type="number" min="0" value="${r.days_before ?? 1}" /> dni przed, o
+          <input id="r-at" type="time" value="${esc(r.at_time || "18:00")}" />
+          <input id="r-contains" placeholder="tylko gdy zawiera… (opcjonalnie)" value="${esc(r.contains || "")}" style="width:200px" />
+        </span>
+        <span class="grp" id="r-st-g">
+        <input id="r-val" list="r-vals" value="${esc(r.value ?? "")}" placeholder="wartość" style="width:160px" />
+        <datalist id="r-vals"></datalist>
+        <span class="hint" id="r-val-l"></span>
+        przez <input id="r-for" type="number" min="0" value="${r.for_minutes || 0}" /> min</span>
+      </div>
+      <div class="frow" id="r-cal-h"><span class="chk"></span><span class="hint">W treści zadania możesz użyć {wydarzenie}, np. „Wystaw śmietnik: {wydarzenie}”. Bez tego nazwa wydarzenia doda się na końcu.</span></div>
+      <div class="frow">
+        <label class="chk"><input type="checkbox" id="r-rep" ${r.interval === 0 ? "" : "checked"} /> Ponawiaj</label>
+        <span class="grp" id="r-rep-g">co <input id="r-int" type="number" min="1" value="${di % 60 === 0 ? di / 60 : di}" />
+          <select id="r-int-u"><option value="1"${di % 60 === 0 ? "" : " selected"}>minut</option><option value="60"${di % 60 === 0 ? " selected" : ""}>godzin</option></select></span>
+        <span class="hint">dopóki nie odhaczę (bez ponawiania = przypomni raz)</span>
+      </div>
+      <div class="frow where">
+        <span>Gdzie przypominać:</span>
+        ${(this._opts?.phones || []).map((p) => `<label><input type="checkbox" class="r-phone" value="${esc(p.id)}" ${phones.includes(p.id) ? "checked" : ""} /> 📱 ${esc(p.name)}</label>`).join("")}
+        ${(this._opts?.speakers || []).map((sp) => `<label><input type="checkbox" class="r-spk" value="${esc(sp.id)}" ${speakers.includes(sp.id) ? "checked" : ""} /> 🔊 ${esc(sp.name)}</label>`).join("")}
+      </div>
+      <div class="frow"><label><input type="checkbox" id="r-close" ${r.auto_close === false ? "" : "checked"} /> Zamknij zadanie samo, gdy warunek przestanie być spełniony</label></div>
+      <div class="frow end">
+        <button data-a="r-cancel">Anuluj</button>
+        <button class="ok" data-a="r-save">${r.id ? "Zapisz" : "Dodaj regułę"}</button>
+      </div></div>`;
+  }
+
+  _ruleUpdate() {
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    if (!$("r-ent")) return;
+    const id = $("r-ent").value.trim(), st = this._hass?.states[id];
+    $("r-ent-name").textContent = st ? `${st.attributes.friendly_name || id} — teraz: ${this._stateLabel(id, st.state)}` : (id ? "nie ma takiej encji" : "");
+    const vals = new Set();
+    if (st) {
+      vals.add(st.state);
+      (st.attributes.options || []).forEach((o) => vals.add(o));
+      if (/^(binary_sensor|switch|input_boolean|light|fan)\./.test(id)) { vals.add("on"); vals.add("off"); }
+      if (/^cover\./.test(id)) ["open", "closed", "opening", "closing"].forEach((v) => vals.add(v));
+      if (/^lock\./.test(id)) ["locked", "unlocked"].forEach((v) => vals.add(v));
+    }
+    vals.delete("unavailable"); vals.delete("unknown");
+    $("r-vals").innerHTML = [...vals].map((v) => `<option value="${esc(v)}">${esc(this._stateLabel(id, v))}</option>`).join("");
+    if (/^calendar\./.test(id) && $("r-mode").dataset.auto !== id) { $("r-mode").value = "calendar"; $("r-mode").dataset.auto = id; }
+    const cal = $("r-mode").value === "calendar";
+    $("r-cal-g").style.display = cal ? "" : "none";
+    $("r-cal-h").style.display = cal ? "" : "none";
+    $("r-st-g").style.display = cal ? "none" : "";
+    const v = $("r-val").value;
+    $("r-val-l").textContent = $("r-mode").value === "state" && v && this._stateLabel(id, v) !== v ? `(${this._stateLabel(id, v)})` : "";
+    const on = $("r-rep").checked;
+    $("r-rep-g").classList.toggle("off", !on);
+    $("r-rep-g").querySelectorAll("input,select").forEach((e) => { e.disabled = !on; });
+  }
+
+  _saveRule() {
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const summary = $("r-sum").value.trim(), entity_id = $("r-ent").value.trim(), value = $("r-val").value.trim();
+    if (!summary) return $("r-sum").focus();
+    if (!this._hass.states[entity_id]) { $("r-ent").focus(); $("r-ent-name").textContent = "Wybierz istniejącą encję z listy"; return; }
+    const cal = $("r-mode").value === "calendar";
+    if (!value && !cal) return $("r-val").focus();
+    const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
+    const data = { summary, entity_id, mode: $("r-mode").value, value, for_minutes: Number($("r-for").value || 0),
+      auto_close: $("r-close").checked, enabled: this._editRule?.enabled ?? true,
+      interval: $("r-rep").checked ? Math.max(1, Number($("r-int").value || 1)) * Number($("r-int-u").value) : 0,
+      phones: pick(".r-phone"), speakers: pick(".r-spk") };
+    if (cal) Object.assign(data, { days_before: Number($("r-days").value || 0), at_time: $("r-at").value || "18:00", contains: $("r-contains").value.trim() || null, for_minutes: 0 });
+    if (this._editRule?.id) data.id = this._editRule.id;
+    this._ruleFormOpen = false; this._editRule = null; this._forceRender = true;
+    this._call("rule_save", data);
+  }
+
   _render() {
     if (!this.shadowRoot || !this._config) return;
     // Nie przerywaj wpisywania w formularzu
     // (lista odświeży się po zamknięciu formularza)
-    if (this._formOpen && this.shadowRoot.querySelector(".form") && !this._forceRender) return;
+    if ((this._formOpen || this._ruleFormOpen) && this.shadowRoot.querySelector(".form") && !this._forceRender) return;
     this._forceRender = false;
     const g = this._groups();
     const empty = !g.now.length && !g.planned.length && !g.notes.length;
     this.shadowRoot.innerHTML = `<style>${ZadaniaCard.styles}</style>
       <ha-card>
-        <div class="head"><span>${esc(this._config.title)}</span>${g.now.length ? `<span class="badge">${g.now.length}</span>` : ""}</div>
+        <div class="head"><span>${esc(this._config.title)}</span>${g.now.length ? `<span class="badge">${g.now.length}</span>` : ""}
+          <span class="tabs"><button class="tab ${this._tab === "tasks" ? "sel" : ""}" data-a="tab" data-tab="tasks">Zadania</button><button class="tab ${this._tab === "rules" ? "sel" : ""}" data-a="tab" data-tab="rules">Automatyczne${(this._rules || []).length ? ` (${this._rules.length})` : ""}</button></span></div>
         ${this._error ? `<div class="err">${esc(this._error)} <button data-a="err">OK</button></div>` : ""}
+        ${this._tab === "rules" ? this._rulesView() : `
         ${this._section("Teraz", g.now, "now")}
         ${this._section("Zaplanowane", g.planned, "planned")}
         ${this._section("Notatki", g.notes, "notes")}
         ${empty ? `<div class="empty">Nic do zrobienia 🎉</div>` : ""}
         ${this._config.show_done ? this._section("Ostatnio zrobione", g.done, "done") : ""}
-        ${this._form()}
+        ${this._form()}`}
       </ha-card>`;
     this.shadowRoot.querySelector("ha-card").onclick = (e) => this._onClick(e);
     this.shadowRoot.querySelector("ha-card").onchange = (e) => this._onChange(e);
     const sum = this.shadowRoot.getElementById("f-sum");
     if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(); }; this._unit(); }
+    const rent = this.shadowRoot.getElementById("r-ent");
+    if (rent) { rent.oninput = () => this._ruleUpdate(); this.shadowRoot.getElementById("r-val").oninput = () => this._ruleUpdate(); this._ruleUpdate(); }
   }
 }
 
@@ -272,6 +421,11 @@ ZadaniaCard.styles = `
   .chk { min-width:120px; font-weight:500; }
   .grp { display:inline-flex; gap:6px; align-items:center; }
   .grp.off { opacity:.4; }
+  .tabs { margin-left:auto; display:flex; gap:4px; }
+  .tab { min-height:32px; padding:4px 12px; font-size:13px; }
+  .tab.sel { background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: transparent; }
+  .task.rule.disabled { opacity:.5; }
+  .rform .chk { min-width:60px; }
   input[type=number] { width:64px; }
   input[type=checkbox] { width:18px; height:18px; vertical-align:middle; }
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }

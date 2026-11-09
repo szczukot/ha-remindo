@@ -8,7 +8,7 @@ from pytest_homeassistant_custom_component.common import (
     async_mock_service,
 )
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.util import dt as dt_util
 
 from custom_components.zadania.const import DOMAIN
@@ -181,3 +181,95 @@ async def test_targets_and_snooze(hass: HomeAssistant, freezer: FrozenDateTimeFa
 def test_hourly() -> None:
     d = datetime(2026, 11, 9, 9, 0, tzinfo=dt_util.UTC)
     assert next_occurrence(d, "hourly", 5, d + timedelta(hours=6)) == d + timedelta(hours=10)
+
+
+async def test_rules(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    manager = entry.runtime_data
+    hass.states.async_set("binary_sensor.brama", "off")
+    hass.states.async_set("sensor.zmywarka", "run")
+    gate = await hass.services.async_call(
+        DOMAIN, "rule_save",
+        {"summary": "Zamknij bramę", "entity_id": "binary_sensor.brama", "value": "on", "for_minutes": 10},
+        blocking=True, return_response=True,
+    )
+    await hass.services.async_call(
+        DOMAIN, "rule_save",
+        {"summary": "Wypakuj zmywarkę", "entity_id": "sensor.zmywarka", "value": "finished"},
+        blocking=True, return_response=True,
+    )
+    # zmywarka: od razu; restart (unavailable -> finished) nie dubluje
+    hass.states.async_set("sensor.zmywarka", "finished")
+    await hass.async_block_till_done()
+    assert [t.summary for t in manager.open_tasks()] == ["Wypakuj zmywarkę"]
+    hass.states.async_set("sensor.zmywarka", "unavailable")
+    hass.states.async_set("sensor.zmywarka", "finished")
+    await hass.async_block_till_done()
+    assert len(manager.open_tasks()) == 1
+    # otwarcie drzwi zmywarki zamyka zadanie
+    hass.states.async_set("sensor.zmywarka", "ready")
+    await hass.async_block_till_done()
+    assert manager.open_tasks() == []
+
+    # brama: dopiero po 10 min
+    hass.states.async_set("binary_sensor.brama", "on")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=5))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert manager.open_tasks() == []
+    freezer.tick(timedelta(minutes=6))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert [t.key for t in manager.open_tasks()] == [f"rule_{gate['id']}"]
+    hass.states.async_set("binary_sensor.brama", "off")
+    await hass.async_block_till_done()
+    assert manager.open_tasks() == []
+
+    # krótkie otwarcie nie tworzy zadania
+    hass.states.async_set("binary_sensor.brama", "on")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=2))
+    async_fire_time_changed(hass)
+    hass.states.async_set("binary_sensor.brama", "off")
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(minutes=10))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert manager.open_tasks() == []
+
+    # reguły przeżywają przeładowanie
+    await hass.services.async_call(DOMAIN, "rule_save", {"id": gate["id"], "summary": "Brama!", "entity_id": "binary_sensor.brama", "value": "on", "enabled": False}, blocking=True)
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    rules = entry.runtime_data.rules.rules
+    assert len(rules) == 2 and rules[gate["id"]].summary == "Brama!" and not rules[gate["id"]].enabled
+    await hass.services.async_call(DOMAIN, "rule_delete", {"id": gate["id"]}, blocking=True)
+    assert len(entry.runtime_data.rules.rules) == 1
+
+
+async def test_calendar_rule(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-12 17:59:50+01:00")
+    entry, calls = await _setup(hass)
+    manager = entry.runtime_data
+
+    async def get_events(call):
+        assert call.data["start_date_time"].startswith("2026-11-13T00:00")
+        return {"calendar.smieci": {"events": [{"summary": "Odpady biodegradowalne"}, {"summary": "Papier i tektura"}]}}
+
+    hass.services.async_register("calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY)
+    await hass.services.async_call(
+        DOMAIN, "rule_save",
+        {"summary": "Wystaw śmietnik", "entity_id": "calendar.smieci", "mode": "calendar", "days_before": 1, "at_time": "18:00"},
+        blocking=True,
+    )
+    freezer.tick(timedelta(seconds=11))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert [t.summary for t in manager.open_tasks()] == ["Wystaw śmietnik: Odpady biodegradowalne, Papier i tektura"]
+    # dzień po wywozie zamyka się samo
+    freezer.move_to("2026-11-14 00:00:05+01:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert manager.open_tasks() == []

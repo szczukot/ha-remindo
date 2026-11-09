@@ -177,6 +177,58 @@
           "description": "Key given when adding (e.g. gate)."
         }
       }
+    },
+    "rule_save": {
+      "name": "Save rule",
+      "description": "Creates or updates an automatic task rule.",
+      "fields": {
+        "id": {
+          "name": "ID",
+          "description": "Empty = new rule."
+        },
+        "summary": {
+          "name": "Task summary",
+          "description": "What to do."
+        },
+        "entity_id": {
+          "name": "Entity",
+          "description": "Entity to watch."
+        },
+        "mode": {
+          "name": "Condition",
+          "description": "state = equals, above, below."
+        },
+        "value": {
+          "name": "Value",
+          "description": "State or numeric threshold."
+        },
+        "for_minutes": {
+          "name": "For minutes",
+          "description": "How long the condition must hold."
+        },
+        "auto_close": {
+          "name": "Auto close",
+          "description": "Close the task when the condition ends."
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": ""
+        },
+        "interval": {
+          "name": "Interval (min)",
+          "description": "Empty = default."
+        }
+      }
+    },
+    "rule_delete": {
+      "name": "Delete rule",
+      "description": "Deletes a rule.",
+      "fields": {
+        "id": {
+          "name": "ID",
+          "description": ""
+        }
+      }
     }
   },
   "selector": {

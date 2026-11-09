@@ -17,6 +17,8 @@ from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .rules import RuleEngine
+
 from .const import (
     ACTION_DISMISS,
     ACTION_DONE,
@@ -169,12 +171,14 @@ class TaskManager:
         self.history: list[dict[str, Any]] = []
         self._timers: dict[str, CALLBACK_TYPE] = {}
         self._listeners: list[Callable[[], None]] = []
+        self.rules = RuleEngine(self)
 
     # ------------------------------------------------------------------ magazyn
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
         self.tasks = {t["uid"]: Task.from_dict(t) for t in data.get("tasks", [])}
         self.history = data.get("history", [])
+        self.rules.load(data.get("rules", []))
         now = dt_util.now()
         for task in self.tasks.values():
             if task.status == STATUS_OPEN and task.next_reminder:
@@ -195,6 +199,7 @@ class TaskManager:
             lambda: {
                 "tasks": [t.as_dict() for t in self.tasks.values()],
                 "history": self.history,
+                "rules": self.rules.dump(),
             },
             1,
         )
@@ -211,9 +216,21 @@ class TaskManager:
         for cancel in self._timers.values():
             cancel()
         self._timers.clear()
+        self.rules.stop()
         await self._store.async_save(
-            {"tasks": [t.as_dict() for t in self.tasks.values()], "history": self.history}
+            {"tasks": [t.as_dict() for t in self.tasks.values()], "history": self.history,
+             "rules": self.rules.dump()}
         )
+
+    # -------------------------------------------------------------------- reguły
+    async def async_rule_save(self, data: dict[str, Any]) -> dict[str, Any]:
+        rule = self.rules.save(data)
+        self._save()
+        return rule.as_dict()
+
+    async def async_rule_delete(self, rule_id: str) -> None:
+        self.rules.delete(rule_id)
+        self._save()
 
     # ---------------------------------------------------------------- wyszukiwanie
     def open_tasks(self) -> list[Task]:

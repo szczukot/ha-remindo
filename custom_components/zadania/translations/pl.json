@@ -177,6 +177,58 @@
           "description": "Klucz nadany przy dodawaniu (np. brama)."
         }
       }
+    },
+    "rule_save": {
+      "name": "Zapisz regułę",
+      "description": "Tworzy lub zmienia regułę automatycznego zadania.",
+      "fields": {
+        "id": {
+          "name": "ID",
+          "description": "Puste = nowa reguła."
+        },
+        "summary": {
+          "name": "Treść zadania",
+          "description": "Co trzeba zrobić."
+        },
+        "entity_id": {
+          "name": "Encja",
+          "description": "Którą encję obserwować."
+        },
+        "mode": {
+          "name": "Warunek",
+          "description": "state = stan równy, above = powyżej, below = poniżej."
+        },
+        "value": {
+          "name": "Wartość",
+          "description": "Stan albo próg liczbowy."
+        },
+        "for_minutes": {
+          "name": "Przez ile minut",
+          "description": "Jak długo warunek musi trwać."
+        },
+        "auto_close": {
+          "name": "Zamknij samo",
+          "description": "Zamknij zadanie, gdy warunek przestanie być spełniony."
+        },
+        "enabled": {
+          "name": "Włączona",
+          "description": ""
+        },
+        "interval": {
+          "name": "Co ile minut",
+          "description": "Puste = domyślnie."
+        }
+      }
+    },
+    "rule_delete": {
+      "name": "Usuń regułę",
+      "description": "Usuwa regułę.",
+      "fields": {
+        "id": {
+          "name": "ID",
+          "description": ""
+        }
+      }
     }
   },
   "selector": {

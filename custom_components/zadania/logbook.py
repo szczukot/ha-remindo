@@ -21,7 +21,7 @@ _TEXT = {
     EVENT_SNOOZED: "odłożono",
     EVENT_DISMISSED: "nie robię",
 }
-_SOURCE = {"phone": "z telefonu", "card": "z karty", "todo": "z listy To-do", "auto": "automatycznie"}
+_SOURCE = {"phone": "z telefonu", "card": "z karty", "todo": "z listy To-do", "auto": "automatycznie", "rule": "z reguły"}
 
 
 @callback

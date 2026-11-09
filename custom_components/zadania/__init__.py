@@ -82,6 +82,27 @@ SNOOZE_SCHEMA = vol.All(
     cv.has_at_least_one_key(ATTR_UID, ATTR_KEY),
 )
 CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
+RULE_SCHEMA = vol.Schema(
+    {
+        vol.Optional("id"): cv.string,
+        vol.Required(ATTR_SUMMARY): cv.string,
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("mode", default="state"): vol.In(["state", "above", "below", "calendar"]),
+        vol.Optional("value", default=""): vol.Coerce(str),
+        vol.Optional("days_before", default=1): vol.All(vol.Coerce(int), vol.Range(min=0, max=30)),
+        vol.Optional("at_time", default="18:00"): cv.string,
+        vol.Optional("contains"): vol.Any(None, cv.string),
+        vol.Optional("for_minutes", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=10080)),
+        vol.Optional("auto_close", default=True): cv.boolean,
+        vol.Optional("enabled", default=True): cv.boolean,
+        vol.Optional(ATTR_DESCRIPTION): vol.Any(None, cv.string),
+        vol.Optional(ATTR_INTERVAL): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=10080))),
+        vol.Optional(ATTR_PHONES): vol.Any(None, cv.ensure_list_csv),
+        vol.Optional(ATTR_SPEAKERS): vol.Any(None, cv.entity_ids),
+        vol.Optional(ATTR_TTS_MESSAGE): vol.Any(None, cv.string),
+    }
+)
+RULE_DELETE_SCHEMA = vol.Schema({vol.Required("id"): cv.string})
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -197,6 +218,18 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, "snooze", snooze, SNOOZE_SCHEMA)
     hass.services.async_register(DOMAIN, "close_by_key", close_by_key, CLOSE_SCHEMA)
 
+    async def rule_save(call: ServiceCall) -> ServiceResponse:
+        try:
+            return await _manager(hass).async_rule_save(dict(call.data))
+        except ValueError as err:
+            raise ServiceValidationError(str(err)) from err
+
+    async def rule_delete(call: ServiceCall) -> None:
+        await _manager(hass).async_rule_delete(call.data["id"])
+
+    hass.services.async_register(DOMAIN, "rule_save", rule_save, RULE_SCHEMA, SupportsResponse.OPTIONAL)
+    hass.services.async_register(DOMAIN, "rule_delete", rule_delete, RULE_DELETE_SCHEMA)
+
 
 @websocket_api.websocket_command({vol.Required("type"): "zadania/subscribe"})
 @websocket_api.async_response
@@ -209,6 +242,7 @@ async def ws_subscribe(
     def payload() -> dict[str, Any]:
         return {
             "tasks": [manager.serialize(t) for t in manager.tasks.values()],
+            "rules": manager.rules.dump(),
             "options": {
                 "phone_snooze": manager.options.get("phone_snooze"),
                 "default_interval": manager.options.get("default_interval"),
