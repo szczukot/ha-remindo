@@ -1,0 +1,181 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zadania z przypomnieniami",
+        "data": {
+          "notify_targets": "Telefony (powiadomienia push)",
+          "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
+          "tts_entity": "Silnik TTS",
+          "media_player": "Głośnik / tablet do komunikatów",
+          "screen_switch": "Włącz ekran tabletu przed komunikatem",
+          "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
+          "tts_default": "Komunikat głosowy domyślnie włączony",
+          "quiet_start": "Cisza nocna od",
+          "quiet_end": "Cisza nocna do",
+          "default_interval": "Domyślnie przypominaj co",
+          "default_time": "Godzina dla zadań z samą datą",
+          "phone_snooze": "Odłożenie z telefonu o"
+        },
+        "data_description": {
+          "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
+          "default_interval": "0 = przypomnij tylko raz."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Już skonfigurowano."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zadania z przypomnieniami",
+        "data": {
+          "notify_targets": "Telefony (powiadomienia push)",
+          "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
+          "tts_entity": "Silnik TTS",
+          "media_player": "Głośnik / tablet do komunikatów",
+          "screen_switch": "Włącz ekran tabletu przed komunikatem",
+          "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
+          "tts_default": "Komunikat głosowy domyślnie włączony",
+          "quiet_start": "Cisza nocna od",
+          "quiet_end": "Cisza nocna do",
+          "default_interval": "Domyślnie przypominaj co",
+          "default_time": "Godzina dla zadań z samą datą",
+          "phone_snooze": "Odłożenie z telefonu o"
+        },
+        "data_description": {
+          "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
+          "default_interval": "0 = przypomnij tylko raz."
+        }
+      }
+    }
+  },
+  "entity": {
+    "todo": {
+      "zadania": {
+        "name": "Zadania"
+      }
+    }
+  },
+  "services": {
+    "add": {
+      "name": "Dodaj zadanie",
+      "description": "Dodaje zadanie z przypomnieniami.",
+      "fields": {
+        "summary": {
+          "name": "Treść",
+          "description": "Co trzeba zrobić."
+        },
+        "description": {
+          "name": "Opis",
+          "description": "Dodatkowe informacje."
+        },
+        "start": {
+          "name": "Start",
+          "description": "Od kiedy przypominać: data i godzina, sama data albo 'now'. Puste = notatka bez przypomnień."
+        },
+        "interval": {
+          "name": "Co ile minut",
+          "description": "Co ile minut ponawiać, dopóki nie zareagujesz. 0 = raz."
+        },
+        "key": {
+          "name": "Klucz",
+          "description": "Zapobiega duplikatom; pozwala zamknąć zadanie automatycznie."
+        },
+        "repeat": {
+          "name": "Cykliczność",
+          "description": "Po zrobieniu zadanie wraca w następnym terminie."
+        },
+        "repeat_every": {
+          "name": "Co ile jednostek",
+          "description": "Np. 3 przy 'monthly' = co 3 miesiące."
+        },
+        "tts": {
+          "name": "Komunikat głosowy",
+          "description": "Mów na tablecie, gdy ktoś jest w domu."
+        },
+        "tts_message": {
+          "name": "Treść komunikatu",
+          "description": "Inny tekst do odczytania niż treść zadania."
+        },
+        "push": {
+          "name": "Push na telefon",
+          "description": "Wysyłaj powiadomienie na telefon."
+        }
+      }
+    },
+    "done": {
+      "name": "Zrobione",
+      "description": "Oznacza zadanie jako zrobione.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Identyfikator zadania."
+        },
+        "key": {
+          "name": "Klucz",
+          "description": "Klucz nadany przy dodawaniu (np. brama)."
+        }
+      }
+    },
+    "dismiss": {
+      "name": "Nie robię",
+      "description": "Anuluje zadanie (zostaje w historii).",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Identyfikator zadania."
+        },
+        "key": {
+          "name": "Klucz",
+          "description": "Klucz nadany przy dodawaniu (np. brama)."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Odłóż",
+      "description": "Przesuwa najbliższe przypomnienie.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Identyfikator zadania."
+        },
+        "key": {
+          "name": "Klucz",
+          "description": "Klucz nadany przy dodawaniu (np. brama)."
+        },
+        "minutes": {
+          "name": "O ile minut",
+          "description": "Za ile minut przypomnieć."
+        },
+        "until": {
+          "name": "Do kiedy",
+          "description": "Konkretny termin (data i godzina albo sama data)."
+        }
+      }
+    },
+    "close_by_key": {
+      "name": "Zamknij po kluczu",
+      "description": "Zamyka otwarte zadanie o danym kluczu (np. brama się zamknęła).",
+      "fields": {
+        "key": {
+          "name": "Klucz",
+          "description": "Klucz nadany przy dodawaniu (np. brama)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "repeat": {
+      "options": {
+        "none": "Jednorazowe",
+        "daily": "Codziennie",
+        "weekly": "Co tydzień",
+        "monthly": "Co miesiąc",
+        "yearly": "Co rok"
+      }
+    }
+  }
+}

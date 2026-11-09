@@ -1,0 +1,181 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tasks with reminders",
+        "data": {
+          "notify_targets": "Push notification targets",
+          "persistent_notification": "Persistent notification in HA",
+          "tts_entity": "TTS engine",
+          "media_player": "Media player for announcements",
+          "screen_switch": "Screen switch to turn on first",
+          "presence_entity": "Presence entity",
+          "tts_default": "Spoken announcement by default",
+          "quiet_start": "Quiet hours start",
+          "quiet_end": "Quiet hours end",
+          "default_interval": "Default reminder interval",
+          "default_time": "Time for date-only tasks",
+          "phone_snooze": "Snooze from phone by"
+        },
+        "data_description": {
+          "quiet_start": "No spoken announcements during quiet hours (push still sent).",
+          "default_interval": "0 = remind once."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tasks with reminders",
+        "data": {
+          "notify_targets": "Push notification targets",
+          "persistent_notification": "Persistent notification in HA",
+          "tts_entity": "TTS engine",
+          "media_player": "Media player for announcements",
+          "screen_switch": "Screen switch to turn on first",
+          "presence_entity": "Presence entity",
+          "tts_default": "Spoken announcement by default",
+          "quiet_start": "Quiet hours start",
+          "quiet_end": "Quiet hours end",
+          "default_interval": "Default reminder interval",
+          "default_time": "Time for date-only tasks",
+          "phone_snooze": "Snooze from phone by"
+        },
+        "data_description": {
+          "quiet_start": "No spoken announcements during quiet hours (push still sent).",
+          "default_interval": "0 = remind once."
+        }
+      }
+    }
+  },
+  "entity": {
+    "todo": {
+      "zadania": {
+        "name": "Tasks"
+      }
+    }
+  },
+  "services": {
+    "add": {
+      "name": "Add task",
+      "description": "Adds a task with reminders.",
+      "fields": {
+        "summary": {
+          "name": "Summary",
+          "description": "What to do."
+        },
+        "description": {
+          "name": "Description",
+          "description": "Extra info."
+        },
+        "start": {
+          "name": "Start",
+          "description": "When reminders start: datetime, date or 'now'. Empty = note."
+        },
+        "interval": {
+          "name": "Interval (min)",
+          "description": "Repeat every N minutes until handled. 0 = once."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Prevents duplicates; allows auto close."
+        },
+        "repeat": {
+          "name": "Repeat",
+          "description": "After done, task returns at the next date."
+        },
+        "repeat_every": {
+          "name": "Every",
+          "description": "E.g. 3 with monthly = every 3 months."
+        },
+        "tts": {
+          "name": "Spoken",
+          "description": "Speak on the tablet when someone is home."
+        },
+        "tts_message": {
+          "name": "Spoken text",
+          "description": "Different text to speak."
+        },
+        "push": {
+          "name": "Push",
+          "description": "Send phone notification."
+        }
+      }
+    },
+    "done": {
+      "name": "Done",
+      "description": "Marks task done.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Task id."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Key given when adding (e.g. gate)."
+        }
+      }
+    },
+    "dismiss": {
+      "name": "Dismiss",
+      "description": "Dismisses the task.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Task id."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Key given when adding (e.g. gate)."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Snooze",
+      "description": "Postpones the next reminder.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Task id."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Key given when adding (e.g. gate)."
+        },
+        "minutes": {
+          "name": "Minutes",
+          "description": "Remind in N minutes."
+        },
+        "until": {
+          "name": "Until",
+          "description": "Specific time or date."
+        }
+      }
+    },
+    "close_by_key": {
+      "name": "Close by key",
+      "description": "Closes the open task with this key.",
+      "fields": {
+        "key": {
+          "name": "Key",
+          "description": "Key given when adding (e.g. gate)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "repeat": {
+      "options": {
+        "none": "One-off",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
+      }
+    }
+  }
+}

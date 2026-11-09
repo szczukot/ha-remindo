@@ -1,0 +1,87 @@
+add:
+  fields:
+    summary:
+      required: true
+      example: "Zamknij bramę garażową"
+      selector:
+        text:
+    description:
+      selector:
+        text:
+          multiline: true
+    start:
+      example: "now"
+      default: "now"
+      selector:
+        text:
+    interval:
+      example: 30
+      selector:
+        number:
+          min: 0
+          max: 10080
+          unit_of_measurement: min
+          mode: box
+    key:
+      example: brama
+      selector:
+        text:
+    repeat:
+      default: none
+      selector:
+        select:
+          options: [none, daily, weekly, monthly, yearly]
+          translation_key: repeat
+    repeat_every:
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 365
+          mode: box
+    tts:
+      selector:
+        boolean:
+    tts_message:
+      selector:
+        text:
+    push:
+      default: true
+      selector:
+        boolean:
+done:
+  fields: &target
+    uid:
+      selector:
+        text:
+    key:
+      selector:
+        text:
+dismiss:
+  fields: *target
+snooze:
+  fields:
+    uid:
+      selector:
+        text:
+    key:
+      selector:
+        text:
+    minutes:
+      example: 10
+      selector:
+        number:
+          min: 1
+          max: 100000
+          unit_of_measurement: min
+          mode: box
+    until:
+      selector:
+        text:
+close_by_key:
+  fields:
+    key:
+      required: true
+      example: brama
+      selector:
+        text:
