@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.2.1";
+const VERSION = "0.2.2";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -119,7 +119,6 @@ class ZadaniaCard extends HTMLElement {
           <option value="now">od teraz</option>
           <option value="1h">za 1 h</option>
           <option value="evening">dziś 19:00</option>
-          <option value="tomorrow">jutro rano</option>
           <option value="custom">wybierz termin…</option>
           <option value="none">bez przypomnień (notatka)</option>
         </select>
@@ -161,7 +160,6 @@ class ZadaniaCard extends HTMLElement {
     let start = "now";
     if (when === "1h") start = localIso(new Date(Date.now() + 3600e3));
     else if (when === "evening") { d.setHours(19, 0, 0, 0); start = localIso(d); }
-    else if (when === "tomorrow") start = tomorrowDate();
     else if (when === "custom") start = $("f-dt").value ? `${$("f-dt").value}:00` : "now";
     else if (when === "none") start = null;
     const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
