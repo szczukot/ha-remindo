@@ -36,6 +36,8 @@ def _notify_services(hass: HomeAssistant) -> list[str]:
 
 def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
     values = {**DEFAULTS, **current}
+    if isinstance(values.get(CONF_MEDIA_PLAYER), str):
+        values[CONF_MEDIA_PLAYER] = [values[CONF_MEDIA_PLAYER]]
 
     def opt(key: str) -> vol.Optional:
         if values.get(key) not in (None, ""):
@@ -52,7 +54,7 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_PERSISTENT, default=values[CONF_PERSISTENT]): selector.BooleanSelector(),
             opt(CONF_TTS_ENTITY): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),
             opt(CONF_MEDIA_PLAYER): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="media_player")
+                selector.EntitySelectorConfig(domain="media_player", multiple=True)
             ),
             opt(CONF_SCREEN_SWITCH): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="switch")
@@ -77,6 +79,8 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
 
 def _clean(data: dict[str, Any]) -> dict[str, Any]:
     data = dict(data)
+    if isinstance(data.get(CONF_MEDIA_PLAYER), str):
+        data[CONF_MEDIA_PLAYER] = [data[CONF_MEDIA_PLAYER]]
     for key in (CONF_DEFAULT_INTERVAL, CONF_PHONE_SNOOZE):
         if key in data:
             data[key] = int(data[key])

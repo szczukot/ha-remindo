@@ -153,3 +153,26 @@ def test_add_months() -> None:
     d = datetime(2026, 1, 31, 9, 0, tzinfo=dt_util.UTC)
     assert add_months(d, 1).day == 28
     assert next_occurrence(d, "weekly", 2, d + timedelta(days=1)) == d + timedelta(weeks=2)
+
+
+async def test_targets_and_snooze(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    res = await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Tylko telefon", "phones": [], "speakers": []},
+        blocking=True, return_response=True,
+    )
+    res2 = await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Tylko głos", "phones": [], "speakers": ["media_player.tablet"]},
+        blocking=True, return_response=True,
+    )
+    freezer.tick(timedelta(seconds=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert len(calls["notify"]) == 0
+    assert len(calls["tts"]) == 1 and calls["tts"][0].data["media_player_entity_id"] == ["media_player.tablet"]
+    task = entry.runtime_data.tasks[res2["uid"]]
+    assert task.active
+    await hass.services.async_call(DOMAIN, "snooze", {"uid": task.uid, "minutes": 60}, blocking=True)
+    assert not task.active
+    assert task.next_reminder.startswith("2026-11-09T16:00")

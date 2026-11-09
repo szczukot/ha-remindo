@@ -28,9 +28,11 @@ from .const import (
     ATTR_INTERVAL,
     ATTR_KEY,
     ATTR_MINUTES,
+    ATTR_PHONES,
     ATTR_PUSH,
     ATTR_REPEAT,
     ATTR_REPEAT_EVERY,
+    ATTR_SPEAKERS,
     ATTR_START,
     ATTR_SUMMARY,
     ATTR_TTS,
@@ -63,6 +65,8 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_TTS): cv.boolean,
         vol.Optional(ATTR_TTS_MESSAGE): cv.string,
         vol.Optional(ATTR_PUSH, default=True): cv.boolean,
+        vol.Optional(ATTR_PHONES): vol.Any(None, cv.ensure_list_csv),
+        vol.Optional(ATTR_SPEAKERS): vol.Any(None, cv.entity_ids),
     }
 )
 TARGET = {vol.Optional(ATTR_UID): cv.string, vol.Optional(ATTR_KEY): cv.string}
@@ -152,6 +156,8 @@ def _register_services(hass: HomeAssistant) -> None:
                 tts=data.get(ATTR_TTS),
                 push=data.get(ATTR_PUSH, True),
                 tts_message=data.get(ATTR_TTS_MESSAGE),
+                phones=data.get(ATTR_PHONES),
+                speakers=data.get(ATTR_SPEAKERS),
                 source="service",
                 context=call.context,
             )
@@ -206,6 +212,8 @@ async def ws_subscribe(
             "options": {
                 "phone_snooze": manager.options.get("phone_snooze"),
                 "default_interval": manager.options.get("default_interval"),
+                "phones": [{"id": p, "name": manager.phone_label(p)} for p in manager.all_phones()],
+                "speakers": [{"id": s, "name": manager.speaker_label(s)} for s in manager.all_speakers()],
             },
         }
 

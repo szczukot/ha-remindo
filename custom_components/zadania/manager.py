@@ -125,6 +125,8 @@ class Task:
     tts: bool = True
     push: bool = True
     tts_message: str | None = None
+    phones: list[str] | None = None  # None = wszystkie z ustawień
+    speakers: list[str] | None = None  # None = wszystkie z ustawień
     status: str = STATUS_OPEN
     active: bool = False  # czy już przypomniało (zadanie „na teraz”)
     reminders: int = 0
@@ -258,6 +260,8 @@ class TaskManager:
         tts: bool | None = None,
         push: bool = True,
         tts_message: str | None = None,
+        phones: list[str] | None = None,
+        speakers: list[str] | None = None,
         source: str = "service",
         context: Context | None = None,
     ) -> Task:
@@ -282,6 +286,8 @@ class TaskManager:
             tts=self.options[CONF_TTS_DEFAULT] if tts is None else tts,
             push=push,
             tts_message=tts_message,
+            phones=self._norm(phones, "notify."),
+            speakers=self._norm(speakers, "media_player."),
         )
         if task.repeat != REPEAT_NONE and start_dt is None:
             raise ValueError("Zadanie cykliczne musi mieć start")
@@ -368,6 +374,7 @@ class TaskManager:
         await self._clear_notifications(task)
         task.next_reminder = _iso(when)
         task.snoozes += 1
+        task.active = False  # odłożone schodzi z „Teraz” do „Zaplanowane”
         self._schedule(task)
         self._fire(EVENT_SNOOZED, task, source, context, until=_iso(when))
         self._save()
@@ -434,6 +441,46 @@ class TaskManager:
         state = self.hass.states.get(entity)
         return state is not None and state.state in (STATE_HOME, STATE_ON)
 
+    @staticmethod
+    def _norm(values: list[str] | str | None, prefix: str) -> list[str] | None:
+        if values is None:
+            return None
+        if isinstance(values, str):
+            values = [v.strip() for v in values.split(",") if v.strip()]
+        return [v if v.startswith(prefix) else prefix + v for v in values]
+
+    def all_phones(self) -> list[str]:
+        return [t if t.startswith("notify.") else f"notify.{t}" for t in self.options.get(CONF_NOTIFY) or []]
+
+    def all_speakers(self) -> list[str]:
+        value = self.options.get(CONF_MEDIA_PLAYER) or []
+        return [value] if isinstance(value, str) else list(value)
+
+    def phones_for(self, task: Task) -> list[str]:
+        if not task.push:
+            return []
+        return self.all_phones() if task.phones is None else task.phones
+
+    def speakers_for(self, task: Task) -> list[str]:
+        if not task.tts:
+            return []
+        return self.all_speakers() if task.speakers is None else task.speakers
+
+    def phone_label(self, target: str) -> str:
+        """Nazwa telefonu z integracji mobile_app (notify.mobile_app_x → nazwa urządzenia)."""
+        from homeassistant.util import slugify  # noqa: PLC0415
+
+        service = target.removeprefix("notify.")
+        for entry in self.hass.config_entries.async_entries("mobile_app"):
+            name = entry.data.get("device_name") or entry.title
+            if service == f"mobile_app_{slugify(name)}":
+                return name
+        return service.removeprefix("mobile_app_").replace("_", " ")
+
+    def speaker_label(self, entity_id: str) -> str:
+        state = self.hass.states.get(entity_id)
+        return state.name if state else entity_id
+
     def _tag(self, task: Task) -> str:
         return f"zadania_{task.uid}"
 
@@ -441,8 +488,8 @@ class TaskManager:
         body = task.summary if not task.description else f"{task.summary}\n{task.description}"
         snooze = int(self.options[CONF_PHONE_SNOOZE])
         click = self.options.get(CONF_CLICK_URL) or "/todo?entity_id=todo.zadania"
-        if task.push:
-            for target in self.options.get(CONF_NOTIFY) or []:
+        for target in self.phones_for(task):
+            if True:
                 service = target.removeprefix("notify.")
                 await self.hass.services.async_call(
                     "notify",
@@ -472,13 +519,13 @@ class TaskManager:
                 {"title": "📋 Zadanie", "message": body, "notification_id": self._tag(task)},
                 blocking=False,
             )
-        if task.tts and not self.is_quiet() and self.someone_home():
-            await self._speak(task)
+        speakers = self.speakers_for(task)
+        if speakers and not self.is_quiet() and self.someone_home():
+            await self._speak(task, speakers)
 
-    async def _speak(self, task: Task) -> None:
+    async def _speak(self, task: Task, speakers: list[str]) -> None:
         tts_entity = self.options.get(CONF_TTS_ENTITY)
-        player = self.options.get(CONF_MEDIA_PLAYER)
-        if not tts_entity or not player:
+        if not tts_entity or not speakers:
             return
         if screen := self.options.get(CONF_SCREEN_SWITCH):
             await self.hass.services.async_call(
@@ -489,7 +536,7 @@ class TaskManager:
             "speak",
             {
                 "entity_id": tts_entity,
-                "media_player_entity_id": player,
+                "media_player_entity_id": speakers,
                 "message": task.tts_message or task.summary,
                 "cache": True,
             },
@@ -499,7 +546,7 @@ class TaskManager:
     async def _clear_notifications(self, task: Task) -> None:
         if task.reminders == 0:
             return
-        for target in self.options.get(CONF_NOTIFY) or []:
+        for target in sorted(set(self.all_phones()) | set(task.phones or [])):
             await self.hass.services.async_call(
                 "notify",
                 target.removeprefix("notify."),
@@ -548,4 +595,6 @@ class TaskManager:
     def serialize(self, task: Task) -> dict[str, Any]:
         data = task.as_dict()
         data["repeat_label"] = task.repeat_label
+        data["phone_labels"] = [self.phone_label(p) for p in self.phones_for(task)]
+        data["speaker_labels"] = [self.speaker_label(s) for s in self.speakers_for(task)]
         return data

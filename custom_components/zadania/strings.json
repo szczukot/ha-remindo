@@ -7,7 +7,7 @@
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
-          "media_player": "Media player for announcements",
+          "media_player": "Media players for announcements",
           "screen_switch": "Screen switch to turn on first",
           "presence_entity": "Presence entity",
           "tts_default": "Spoken announcement by default",
@@ -37,7 +37,7 @@
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
-          "media_player": "Media player for announcements",
+          "media_player": "Media players for announcements",
           "screen_switch": "Screen switch to turn on first",
           "presence_entity": "Presence entity",
           "tts_default": "Spoken announcement by default",
@@ -107,6 +107,14 @@
         "push": {
           "name": "Push",
           "description": "Send phone notification."
+        },
+        "phones": {
+          "name": "Phones",
+          "description": "Which phones get the push (empty = none; omitted = all configured)."
+        },
+        "speakers": {
+          "name": "Speakers",
+          "description": "Where to speak (omitted = all configured)."
         }
       }
     },

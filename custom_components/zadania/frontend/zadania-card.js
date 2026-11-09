@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.1.2";
+const VERSION = "0.2.0";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -79,13 +79,17 @@ class ZadaniaCard extends HTMLElement {
       meta.push(`przypomina od ${ago(t.last_reminded)}`);
       if (t.next_reminder) meta.push(`następne ${fmtTime(t.next_reminder)}`);
     } else if (kind === "planned") {
-      meta.push(fmtTime(t.next_reminder || t.start));
+      meta.push(t.snoozes && t.last_reminded ? `odłożone do ${fmtTime(t.next_reminder)}` : fmtTime(t.next_reminder || t.start));
       if (t.interval) meta.push(`przypomina co ${t.interval} min`);
     } else if (kind === "done") {
       meta.push(`zrobione ${ago(t.closed)}`);
     }
     if (t.repeat_label) meta.push(`🔁 ${t.repeat_label}`);
     if (t.snoozes) meta.push(`odłożone ${t.snoozes}×`);
+    if (kind !== "done" && kind !== "notes") {
+      const where = [...(t.phone_labels || []).map((n) => `📱 ${n}`), ...(t.speaker_labels || []).map((n) => `🔊 ${n}`)];
+      meta.push(where.length ? where.join(", ") : "bez powiadomień");
+    }
     const btns = kind === "done" ? "" : `
       <div class="btns">
         <button class="ok" data-a="done" data-uid="${t.uid}" title="Zrobione">✓</button>
@@ -137,9 +141,12 @@ class ZadaniaCard extends HTMLElement {
         <label id="f-every-l" style="display:none">co <input id="f-every" type="number" min="1" value="1" /> <span id="f-unit">dzień</span></label>
         <span class="hint" id="f-rep-hint" style="display:none">(po odhaczeniu wróci w następnym terminie)</span>
       </div>
-      <div class="frow">
-        <label><input id="f-tts" type="checkbox" checked /> mów na tablecie (gdy ktoś jest w domu)</label>
+      <div class="frow where">
+        <span>Gdzie przypominać:</span>
+        ${(this._opts?.phones || []).map((p) => `<label><input type="checkbox" class="f-phone" value="${esc(p.id)}" checked /> 📱 ${esc(p.name)}</label>`).join("")}
+        ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="f-spk" value="${esc(s.id)}" checked /> 🔊 ${esc(s.name)}</label>`).join("")}
       </div>
+      <div class="hint">🔊 mówi tylko, gdy ktoś jest w domu i nie trwa cisza nocna</div>
       <div class="frow end">
         <button data-a="cancel">Anuluj</button>
         <button class="ok" data-a="save">Dodaj</button>
@@ -158,7 +165,8 @@ class ZadaniaCard extends HTMLElement {
     else if (when === "tomorrow") start = tomorrowDate();
     else if (when === "custom") start = $("f-dt").value ? `${$("f-dt").value}:00` : "now";
     else if (when === "none") start = null;
-    const data = { summary, start, interval: Number($("f-int").value || 0), tts: $("f-tts").checked };
+    const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
+    const data = { summary, start, interval: Number($("f-int").value || 0), phones: pick(".f-phone"), speakers: pick(".f-spk") };
     const rep = $("f-rep").value;
     if (rep !== "none") {
       if (start === null) { this._error = "Zadanie cykliczne musi mieć termin"; this._render(); return; }

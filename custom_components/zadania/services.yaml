@@ -49,6 +49,16 @@ add:
       default: true
       selector:
         boolean:
+    phones:
+      example: "notify.mobile_app_mi_14t_pro"
+      selector:
+        text:
+          multiple: true
+    speakers:
+      selector:
+        entity:
+          domain: media_player
+          multiple: true
 done:
   fields: &target
     uid:

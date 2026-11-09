@@ -49,6 +49,8 @@ ATTR_PUSH = "push"
 ATTR_MINUTES = "minutes"
 ATTR_UNTIL = "until"
 ATTR_TTS_MESSAGE = "tts_message"
+ATTR_PHONES = "phones"
+ATTR_SPEAKERS = "speakers"
 
 REPEAT_NONE = "none"
 REPEAT_OPTIONS = [REPEAT_NONE, "daily", "weekly", "monthly", "yearly"]

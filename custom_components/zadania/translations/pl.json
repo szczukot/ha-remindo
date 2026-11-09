@@ -7,7 +7,7 @@
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
-          "media_player": "Głośnik / tablet do komunikatów",
+          "media_player": "Głośniki / tablety do komunikatów",
           "screen_switch": "Włącz ekran tabletu przed komunikatem",
           "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
           "tts_default": "Komunikat głosowy domyślnie włączony",
@@ -37,7 +37,7 @@
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
-          "media_player": "Głośnik / tablet do komunikatów",
+          "media_player": "Głośniki / tablety do komunikatów",
           "screen_switch": "Włącz ekran tabletu przed komunikatem",
           "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
           "tts_default": "Komunikat głosowy domyślnie włączony",
@@ -107,6 +107,14 @@
         "push": {
           "name": "Push na telefon",
           "description": "Wysyłaj powiadomienie na telefon."
+        },
+        "phones": {
+          "name": "Telefony",
+          "description": "Na które telefony wysłać push (puste = żadne; brak pola = wszystkie z ustawień)."
+        },
+        "speakers": {
+          "name": "Głośniki",
+          "description": "Na których głośnikach/tabletach mówić (brak pola = wszystkie z ustawień)."
         }
       }
     },
