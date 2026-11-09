@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.1.0";
+const VERSION = "0.1.2";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -80,7 +80,7 @@ class ZadaniaCard extends HTMLElement {
       if (t.next_reminder) meta.push(`następne ${fmtTime(t.next_reminder)}`);
     } else if (kind === "planned") {
       meta.push(fmtTime(t.next_reminder || t.start));
-      if (t.interval) meta.push(`potem co ${t.interval} min`);
+      if (t.interval) meta.push(`przypomina co ${t.interval} min`);
     } else if (kind === "done") {
       meta.push(`zrobione ${ago(t.closed)}`);
     }
@@ -123,16 +123,22 @@ class ZadaniaCard extends HTMLElement {
         <input id="f-dt" type="datetime-local" style="display:none" />
       </div>
       <div class="frow">
-        <label>co <input id="f-int" type="number" min="0" value="${this._opts?.default_interval ?? 30}" /> min</label>
-        <select id="f-rep">
-          <option value="none">jednorazowe</option>
-          <option value="daily">codziennie</option>
-          <option value="weekly">co tydzień</option>
-          <option value="monthly">co miesiąc</option>
-          <option value="yearly">co rok</option>
-        </select>
-        <label id="f-every-l" style="display:none">co <input id="f-every" type="number" min="1" value="1" /></label>
-        <label><input id="f-tts" type="checkbox" checked /> głos</label>
+        <label>Przypominaj co <input id="f-int" type="number" min="0" value="${this._opts?.default_interval ?? 30}" /> min, dopóki nie odhaczę</label>
+        <span class="hint">(0 = przypomnij tylko raz)</span>
+      </div>
+      <div class="frow">
+        <label>Powtarzaj: <select id="f-rep">
+          <option value="none">nie (jednorazowe)</option>
+          <option value="daily">w dniach</option>
+          <option value="weekly">w tygodniach</option>
+          <option value="monthly">w miesiącach</option>
+          <option value="yearly">w latach</option>
+        </select></label>
+        <label id="f-every-l" style="display:none">co <input id="f-every" type="number" min="1" value="1" /> <span id="f-unit">dzień</span></label>
+        <span class="hint" id="f-rep-hint" style="display:none">(po odhaczeniu wróci w następnym terminie)</span>
+      </div>
+      <div class="frow">
+        <label><input id="f-tts" type="checkbox" checked /> mów na tablecie (gdy ktoś jest w domu)</label>
       </div>
       <div class="frow end">
         <button data-a="cancel">Anuluj</button>
@@ -181,7 +187,19 @@ class ZadaniaCard extends HTMLElement {
   _onChange(ev) {
     const $ = (id) => this.shadowRoot.getElementById(id);
     if (ev.target.id === "f-when") $("f-dt").style.display = ev.target.value === "custom" ? "" : "none";
-    if (ev.target.id === "f-rep") $("f-every-l").style.display = ev.target.value === "none" ? "none" : "";
+    if (ev.target.id === "f-rep" || ev.target.id === "f-every") this._unit();
+  }
+
+  _unit() {
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const rep = $("f-rep").value, n = Number($("f-every").value || 1);
+    $("f-every-l").style.display = rep === "none" ? "none" : "";
+    $("f-rep-hint").style.display = rep === "none" ? "none" : "";
+    const forms = { daily: ["dzień", "dni", "dni"], weekly: ["tydzień", "tygodnie", "tygodni"],
+      monthly: ["miesiąc", "miesiące", "miesięcy"], yearly: ["rok", "lata", "lat"] }[rep];
+    if (!forms) return;
+    const f = n === 1 ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 1 : 2;
+    $("f-unit").textContent = forms[f];
   }
 
   _render() {
@@ -237,6 +255,7 @@ ZadaniaCard.styles = `
   input, select { font: inherit; font-size:15px; padding:8px; border-radius:8px; border:1px solid var(--divider-color);
                   background: var(--card-background-color); color: var(--primary-text-color); }
   #f-sum { width:100%; box-sizing:border-box; }
+  .hint { font-size:12px; color: var(--secondary-text-color); }
   input[type=number] { width:64px; }
   input[type=checkbox] { width:18px; height:18px; vertical-align:middle; }
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
