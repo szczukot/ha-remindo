@@ -183,6 +183,7 @@
     "repeat": {
       "options": {
         "none": "Jednorazowe",
+        "hourly": "Co godzinę",
         "daily": "Codziennie",
         "weekly": "Co tydzień",
         "monthly": "Co miesiąc",

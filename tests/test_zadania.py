@@ -176,3 +176,8 @@ async def test_targets_and_snooze(hass: HomeAssistant, freezer: FrozenDateTimeFa
     await hass.services.async_call(DOMAIN, "snooze", {"uid": task.uid, "minutes": 60}, blocking=True)
     assert not task.active
     assert task.next_reminder.startswith("2026-11-09T16:00")
+
+
+def test_hourly() -> None:
+    d = datetime(2026, 11, 9, 9, 0, tzinfo=dt_util.UTC)
+    assert next_occurrence(d, "hourly", 5, d + timedelta(hours=6)) == d + timedelta(hours=10)

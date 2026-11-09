@@ -53,7 +53,7 @@ ATTR_PHONES = "phones"
 ATTR_SPEAKERS = "speakers"
 
 REPEAT_NONE = "none"
-REPEAT_OPTIONS = [REPEAT_NONE, "daily", "weekly", "monthly", "yearly"]
+REPEAT_OPTIONS = [REPEAT_NONE, "hourly", "daily", "weekly", "monthly", "yearly"]
 
 STATUS_OPEN = "open"
 STATUS_DONE = "done"

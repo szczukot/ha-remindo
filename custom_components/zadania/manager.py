@@ -54,7 +54,8 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-_REPEAT_LABEL = {"daily": "dzień", "weekly": "tydzień", "monthly": "mies.", "yearly": "rok"}
+_REPEAT_LABEL = {"hourly": "godz.", "daily": "dni", "weekly": "tyg.", "monthly": "mies.", "yearly": "lat"}
+_REPEAT_ONE = {"hourly": "godzinę", "daily": "dzień", "weekly": "tydzień", "monthly": "miesiąc", "yearly": "rok"}
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -92,6 +93,10 @@ def next_occurrence(base: datetime, repeat: str, every: int, after: datetime) ->
     candidate = base
     while candidate <= after:
         step += every
+        if repeat == "hourly":
+            # Co N godzin: bez przestawiania godziny
+            candidate = base + timedelta(hours=step)
+            continue
         if repeat == "daily":
             candidate = base + timedelta(days=step)
         elif repeat == "weekly":
@@ -148,8 +153,9 @@ class Task:
     def repeat_label(self) -> str | None:
         if self.repeat == REPEAT_NONE:
             return None
-        unit = _REPEAT_LABEL.get(self.repeat, self.repeat)
-        return f"co {self.repeat_every} {unit}" if self.repeat_every > 1 else f"co {unit}"
+        if self.repeat_every > 1:
+            return f"co {self.repeat_every} {_REPEAT_LABEL.get(self.repeat, self.repeat)}"
+        return f"co {_REPEAT_ONE.get(self.repeat, self.repeat)}"
 
 
 class TaskManager:

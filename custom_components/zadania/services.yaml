@@ -30,7 +30,7 @@ add:
       default: none
       selector:
         select:
-          options: [none, daily, weekly, monthly, yearly]
+          options: [none, hourly, daily, weekly, monthly, yearly]
           translation_key: repeat
     repeat_every:
       default: 1

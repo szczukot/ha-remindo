@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.2.2";
+const VERSION = "0.3.0";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -112,39 +112,35 @@ class ZadaniaCard extends HTMLElement {
   _form() {
     if (!this._config.show_form) return "";
     if (!this._formOpen) return `<button class="add-btn" data-a="form">＋ Dodaj zadanie</button>`;
+    const di = Number(this._opts?.default_interval ?? 30) || 30;
     return `<div class="form">
       <input id="f-sum" placeholder="Co trzeba zrobić?" />
       <div class="frow">
-        <select id="f-when">
+        <label class="chk"><input type="checkbox" id="f-rem" checked /> Przypominaj</label>
+        <span class="grp" id="f-rem-g"><select id="f-when">
           <option value="now">od teraz</option>
           <option value="1h">za 1 h</option>
           <option value="evening">dziś 19:00</option>
           <option value="custom">wybierz termin…</option>
-          <option value="none">bez przypomnień (notatka)</option>
         </select>
         <input id="f-dt" type="datetime-local" style="display:none" />
+        co <input id="f-int" type="number" min="1" value="${di % 60 === 0 ? di / 60 : di}" />
+          <select id="f-int-u"><option value="1"${di % 60 === 0 ? "" : " selected"}>minut</option><option value="60"${di % 60 === 0 ? " selected" : ""}>godzin</option></select></span>
+        <span class="hint" id="f-rem-h">dopóki nie odhaczę</span>
+        <span class="hint" id="f-note-h" style="display:none">bez przypomnień — zwykła notatka na liście</span>
       </div>
       <div class="frow">
-        <label>Przypominaj co <input id="f-int" type="number" min="0" value="${this._opts?.default_interval ?? 30}" /> min, dopóki nie odhaczę</label>
-        <span class="hint">(0 = przypomnij tylko raz)</span>
+        <label class="chk"><input type="checkbox" id="f-rep-on" /> Powtarzaj</label>
+        <span class="grp off" id="f-rep-g">co <input id="f-every" type="number" min="1" value="1" />
+          <select id="f-rep"><option value="hourly">godzin</option><option value="daily" selected>dni</option><option value="weekly">tygodni</option><option value="monthly">miesięcy</option><option value="yearly">lat</option></select></span>
+        <span class="hint" id="f-rep-h">po odhaczeniu wróci w następnym terminie</span>
       </div>
-      <div class="frow">
-        <label>Powtarzaj: <select id="f-rep">
-          <option value="none">nie (jednorazowe)</option>
-          <option value="daily">w dniach</option>
-          <option value="weekly">w tygodniach</option>
-          <option value="monthly">w miesiącach</option>
-          <option value="yearly">w latach</option>
-        </select></label>
-        <label id="f-every-l" style="display:none">co <input id="f-every" type="number" min="1" value="1" /> <span id="f-unit">dzień</span></label>
-        <span class="hint" id="f-rep-hint" style="display:none">(po odhaczeniu wróci w następnym terminie)</span>
-      </div>
-      <div class="frow where">
+      <div class="frow where" id="f-where">
         <span>Gdzie przypominać:</span>
         ${(this._opts?.phones || []).map((p) => `<label><input type="checkbox" class="f-phone" value="${esc(p.id)}" checked /> 📱 ${esc(p.name)}</label>`).join("")}
         ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="f-spk" value="${esc(s.id)}" checked /> 🔊 ${esc(s.name)}</label>`).join("")}
       </div>
-      <div class="hint">🔊 mówi tylko, gdy ktoś jest w domu i nie trwa cisza nocna</div>
+      <div class="hint" id="f-where-h">🔊 mówi tylko, gdy ktoś jest w domu i nie trwa cisza nocna</div>
       <div class="frow end">
         <button data-a="cancel">Anuluj</button>
         <button class="ok" data-a="save">Dodaj</button>
@@ -161,10 +157,11 @@ class ZadaniaCard extends HTMLElement {
     if (when === "1h") start = localIso(new Date(Date.now() + 3600e3));
     else if (when === "evening") { d.setHours(19, 0, 0, 0); start = localIso(d); }
     else if (when === "custom") start = $("f-dt").value ? `${$("f-dt").value}:00` : "now";
-    else if (when === "none") start = null;
+    if (!$("f-rem").checked) start = null;
     const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
-    const data = { summary, start, interval: Number($("f-int").value || 0), phones: pick(".f-phone"), speakers: pick(".f-spk") };
-    const rep = $("f-rep").value;
+    const interval = $("f-rem").checked ? Math.max(1, Number($("f-int").value || 1)) * Number($("f-int-u").value) : 0;
+    const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk") };
+    const rep = $("f-rep-on").checked ? $("f-rep").value : "none";
     if (rep !== "none") {
       if (start === null) { this._error = "Zadanie cykliczne musi mieć termin"; this._render(); return; }
       data.repeat = rep; data.repeat_every = Number($("f-every").value || 1);
@@ -182,35 +179,43 @@ class ZadaniaCard extends HTMLElement {
       case "dismiss": return this._call("dismiss", { uid });
       case "snooze": return this._call("snooze", { uid, minutes: Number(b.dataset.min) });
       case "tomorrow": return this._call("snooze", { uid, until: tomorrowDate() });
-      case "form": this._formOpen = true; this._render(); return this.shadowRoot.getElementById("f-sum")?.focus();
-      case "cancel": this._formOpen = false; return this._render();
+      case "form": this._formOpen = true; this._render(); this._unit(); return this.shadowRoot.getElementById("f-sum")?.focus();
+      case "cancel": this._formOpen = false; this._forceRender = true; return this._render();
       case "save": return this._save();
-      case "err": this._error = null; return this._render();
+      case "err": this._error = null; this._forceRender = true; return this._render();
     }
   }
 
   _onChange(ev) {
     const $ = (id) => this.shadowRoot.getElementById(id);
     if (ev.target.id === "f-when") $("f-dt").style.display = ev.target.value === "custom" ? "" : "none";
-    if (ev.target.id === "f-rep" || ev.target.id === "f-every") this._unit();
+    this._unit();
   }
 
   _unit() {
     const $ = (id) => this.shadowRoot.getElementById(id);
-    const rep = $("f-rep").value, n = Number($("f-every").value || 1);
-    $("f-every-l").style.display = rep === "none" ? "none" : "";
-    $("f-rep-hint").style.display = rep === "none" ? "none" : "";
-    const forms = { daily: ["dzień", "dni", "dni"], weekly: ["tydzień", "tygodnie", "tygodni"],
-      monthly: ["miesiąc", "miesiące", "miesięcy"], yearly: ["rok", "lata", "lat"] }[rep];
-    if (!forms) return;
-    const f = n === 1 ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 1 : 2;
-    $("f-unit").textContent = forms[f];
+    if (!$("f-rem")) return;
+    const pl = (n, forms) => forms[n === 1 ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 1 : 2];
+    const label = (sel, n, map) => [...sel.options].forEach((o) => { o.textContent = pl(n, map[o.value]); });
+    const on = (chk, grp, hint) => { $(grp).classList.toggle("off", !$(chk).checked); $(grp).querySelectorAll("input,select").forEach((e) => { e.disabled = !$(chk).checked; }); $(hint).style.visibility = $(chk).checked ? "" : "hidden"; };
+    label($("f-int-u"), Number($("f-int").value || 1), { 1: ["minutę", "minuty", "minut"], 60: ["godzinę", "godziny", "godzin"] });
+    label($("f-rep"), Number($("f-every").value || 1), { hourly: ["godzinę", "godziny", "godzin"], daily: ["dzień", "dni", "dni"],
+      weekly: ["tydzień", "tygodnie", "tygodni"], monthly: ["miesiąc", "miesiące", "miesięcy"], yearly: ["rok", "lata", "lat"] });
+    on("f-rem", "f-rem-g", "f-rem-h");
+    $("f-rep-on").disabled = !$("f-rem").checked;
+    if (!$("f-rem").checked) $("f-rep-on").checked = false;
+    on("f-rep-on", "f-rep-g", "f-rep-h");
+    $("f-note-h").style.display = $("f-rem").checked ? "none" : "";
+    $("f-rem-h").style.display = $("f-rem").checked ? "" : "none";
+    for (const id of ["f-where", "f-where-h"]) $(id).style.display = $("f-rem").checked ? "" : "none";
   }
 
   _render() {
     if (!this.shadowRoot || !this._config) return;
     // Nie przerywaj wpisywania w formularzu
-    if (this._formOpen && this.shadowRoot.activeElement && this.shadowRoot.querySelector(".form")) return;
+    // (lista odświeży się po zamknięciu formularza)
+    if (this._formOpen && this.shadowRoot.querySelector(".form") && !this._forceRender) return;
+    this._forceRender = false;
     const g = this._groups();
     const empty = !g.now.length && !g.planned.length && !g.notes.length;
     this.shadowRoot.innerHTML = `<style>${ZadaniaCard.styles}</style>
@@ -227,7 +232,7 @@ class ZadaniaCard extends HTMLElement {
     this.shadowRoot.querySelector("ha-card").onclick = (e) => this._onClick(e);
     this.shadowRoot.querySelector("ha-card").onchange = (e) => this._onChange(e);
     const sum = this.shadowRoot.getElementById("f-sum");
-    if (sum) sum.onkeydown = (e) => { if (e.key === "Enter") this._save(); };
+    if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(); }; this._unit(); }
   }
 }
 
@@ -264,6 +269,9 @@ ZadaniaCard.styles = `
                   background: var(--card-background-color); color: var(--primary-text-color); }
   #f-sum { width:100%; box-sizing:border-box; }
   .hint { font-size:12px; color: var(--secondary-text-color); }
+  .chk { min-width:120px; font-weight:500; }
+  .grp { display:inline-flex; gap:6px; align-items:center; }
+  .grp.off { opacity:.4; }
   input[type=number] { width:64px; }
   input[type=checkbox] { width:18px; height:18px; vertical-align:middle; }
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
