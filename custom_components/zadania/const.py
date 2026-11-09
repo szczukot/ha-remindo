@@ -20,6 +20,7 @@ CONF_DEFAULT_INTERVAL = "default_interval"
 CONF_DEFAULT_TIME = "default_time"
 CONF_PHONE_SNOOZE = "phone_snooze"
 CONF_KEEP_HISTORY = "keep_history"
+CONF_CLICK_URL = "click_url"
 
 DEFAULTS = {
     CONF_NOTIFY: [],
@@ -31,6 +32,7 @@ DEFAULTS = {
     CONF_DEFAULT_TIME: "09:00:00",
     CONF_PHONE_SNOOZE: 10,
     CONF_KEEP_HISTORY: 50,
+    CONF_CLICK_URL: "/todo?entity_id=todo.zadania",
 }
 
 # Pola usług

@@ -22,6 +22,7 @@ from .const import (
     ACTION_DONE,
     ACTION_PREFIX,
     ACTION_SNOOZE,
+    CONF_CLICK_URL,
     CONF_DEFAULT_INTERVAL,
     CONF_DEFAULT_TIME,
     CONF_KEEP_HISTORY,
@@ -439,6 +440,7 @@ class TaskManager:
     async def _send_notifications(self, task: Task) -> None:
         body = task.summary if not task.description else f"{task.summary}\n{task.description}"
         snooze = int(self.options[CONF_PHONE_SNOOZE])
+        click = self.options.get(CONF_CLICK_URL) or "/todo?entity_id=todo.zadania"
         if task.push:
             for target in self.options.get(CONF_NOTIFY) or []:
                 service = target.removeprefix("notify.")
@@ -452,6 +454,8 @@ class TaskManager:
                             "tag": self._tag(task),
                             "group": "zadania",
                             "sticky": "true",
+                            "clickAction": click,
+                            "url": click,
                             "actions": [
                                 {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": "✅ Zrobione"},
                                 {"action": f"{ACTION_PREFIX}_{ACTION_SNOOZE}_{task.uid}", "title": f"⏰ +{snooze} min"},

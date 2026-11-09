@@ -15,11 +15,13 @@
           "quiet_end": "Cisza nocna do",
           "default_interval": "Domyślnie przypominaj co",
           "default_time": "Godzina dla zadań z samą datą",
-          "phone_snooze": "Odłożenie z telefonu o"
+          "phone_snooze": "Odłożenie z telefonu o",
+          "click_url": "Po kliknięciu powiadomienia otwórz"
         },
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
-          "default_interval": "0 = przypomnij tylko raz."
+          "default_interval": "0 = przypomnij tylko raz.",
+          "click_url": "Ścieżka w HA, np. /dashboard-tablet/zadania"
         }
       }
     },
@@ -43,11 +45,13 @@
           "quiet_end": "Cisza nocna do",
           "default_interval": "Domyślnie przypominaj co",
           "default_time": "Godzina dla zadań z samą datą",
-          "phone_snooze": "Odłożenie z telefonu o"
+          "phone_snooze": "Odłożenie z telefonu o",
+          "click_url": "Po kliknięciu powiadomienia otwórz"
         },
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
-          "default_interval": "0 = przypomnij tylko raz."
+          "default_interval": "0 = przypomnij tylko raz.",
+          "click_url": "Ścieżka w HA, np. /dashboard-tablet/zadania"
         }
       }
     }

@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_CLICK_URL,
     CONF_DEFAULT_INTERVAL,
     CONF_DEFAULT_TIME,
     CONF_MEDIA_PLAYER,
@@ -69,6 +70,7 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_PHONE_SNOOZE, default=values[CONF_PHONE_SNOOZE]): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=1440, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Optional(CONF_CLICK_URL, default=values[CONF_CLICK_URL]): selector.TextSelector(),
         }
     )
 

@@ -15,11 +15,13 @@
           "quiet_end": "Quiet hours end",
           "default_interval": "Default reminder interval",
           "default_time": "Time for date-only tasks",
-          "phone_snooze": "Snooze from phone by"
+          "phone_snooze": "Snooze from phone by",
+          "click_url": "Open on notification tap"
         },
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours (push still sent).",
-          "default_interval": "0 = remind once."
+          "default_interval": "0 = remind once.",
+          "click_url": "HA path, e.g. /dashboard-tablet/zadania"
         }
       }
     },
@@ -43,11 +45,13 @@
           "quiet_end": "Quiet hours end",
           "default_interval": "Default reminder interval",
           "default_time": "Time for date-only tasks",
-          "phone_snooze": "Snooze from phone by"
+          "phone_snooze": "Snooze from phone by",
+          "click_url": "Open on notification tap"
         },
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours (push still sent).",
-          "default_interval": "0 = remind once."
+          "default_interval": "0 = remind once.",
+          "click_url": "HA path, e.g. /dashboard-tablet/zadania"
         }
       }
     }
