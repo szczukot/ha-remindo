@@ -106,7 +106,9 @@ Examples:
 
 Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never triggers a rule by itself, and does not hide a real change either: "running → unavailable → finished" still counts.
 
-A "for at least N min" countdown survives a restart of Home Assistant. A calendar check that was missed because Home Assistant was down runs after the start. A calendar task nobody ticked off disappears after the event day.
+A "for at least N min" countdown survives a restart of Home Assistant. A calendar check that was missed because Home Assistant was down runs after the start. A calendar task nobody ticked off disappears after the event day. Deleting a rule also closes its open task.
+
+If a rule watches an entity that no longer exists (renamed or removed), or compares a text state with a number, Home Assistant shows a warning in *Settings → System → Repairs*. The rule form refuses such a rule from the start.
 
 ## Use cases
 

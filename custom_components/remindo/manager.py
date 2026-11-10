@@ -72,7 +72,8 @@ SPEAK_CHARS_PER_SECOND = 12  # to estimate the length of a message spoken over m
 _BUSY = ("playing", "buffering")
 
 # A recurring task stays open after "done", so a second tap from another phone or the
-# card a moment later would close the next date too; such a repeat is ignored.
+# card a moment later would close the next date too; the same action repeated this soon
+# is ignored (a different one, e.g. "skip" corrected to "done", still goes through).
 REPEAT_CLOSE_WINDOW = 30.0  # s
 
 # Dismissed tasks stay restorable; only the most recent ones are kept.
@@ -217,7 +218,7 @@ class TaskManager:
         self._speaking: set[asyncio.Task[None]] = set()
         self._warned: set[str] = set()
         self._closing: set[str] = set()  # tasks being closed right now
-        self._closed_at: dict[str, float] = {}  # recurring task → when it was last closed
+        self._closed_at: dict[str, tuple[float, str]] = {}  # recurring task → (when, status) of the last close
 
     # ------------------------------------------------------------------ storage
     async def async_load(self) -> None:
@@ -470,11 +471,12 @@ class TaskManager:
             # already closed, or being closed by a simultaneous tap on another phone
             return
         loop_time = self.hass.loop.time()
-        if task.recurring and loop_time - self._closed_at.get(task.uid, -REPEAT_CLOSE_WINDOW) < REPEAT_CLOSE_WINDOW:
-            return  # the same date was just closed from somewhere else
+        last_time, last_status = self._closed_at.get(task.uid, (-REPEAT_CLOSE_WINDOW, ""))
+        if task.recurring and last_status == status and loop_time - last_time < REPEAT_CLOSE_WINDOW:
+            return  # the same date was just closed the same way from somewhere else
         self._closing.add(task.uid)
         if task.recurring:
-            self._closed_at[task.uid] = loop_time
+            self._closed_at[task.uid] = (loop_time, status)
         try:
             await self._close_now(task, status, event, source, context)
         finally:
@@ -557,6 +559,11 @@ class TaskManager:
         self._schedule(task)
         self._fire(EVENT_SNOOZED, task, source, context, until=_iso(when))
         self._save()
+
+    async def async_drop_orphans(self, keys: set[str]) -> None:
+        """Dismiss open tasks whose rule was deleted."""
+        for task in [t for t in self.open_tasks() if t.key in keys]:
+            await self.async_dismiss(task, "rule_removed")
 
     async def async_delete(self, task: Task) -> None:
         """Remove a task for good (also a recurring one), without a history entry."""

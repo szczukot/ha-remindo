@@ -23,6 +23,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "src_auto": "automatically",
         "src_rule": "by rule",
         "src_expired": "date passed",
+        "src_rule_removed": "rule deleted",
         "nth": ", time #{count}",
     },
     "pl": {
@@ -42,6 +43,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "src_auto": "automatycznie",
         "src_rule": "z reguły",
         "src_expired": "termin minął",
+        "src_rule_removed": "reguła usunięta",
         "nth": ", {count}. raz",
     },
 }

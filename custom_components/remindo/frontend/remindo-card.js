@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.10.3";
+const VERSION = "0.10.4";
 
 const I18N = {
   en: {
@@ -118,15 +118,26 @@ class RemindoCard extends HTMLElement {
   }
   disconnectedCallback() {
     clearInterval(this._tick);
-    if (this._unsub) { this._unsub.then((u) => u()).catch(() => {}); this._unsub = null; }
+    clearTimeout(this._retry);
+    if (this._unsub) { this._unsub.then((u) => u && u()).catch(() => {}); this._unsub = null; }
   }
 
   _subscribe() {
-    if (!this._hass || this._unsub) return;
-    this._unsub = this._hass.connection
+    // only while on screen: a card on a view nobody looks at must not keep a connection
+    if (!this._hass || this._unsub || !this.isConnected) return;
+    const sub = this._hass.connection
       .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._opts = msg.options || {}; this._error = null; this._render(); },
         { type: "remindo/subscribe" })
-      .catch((err) => { this._error = err.message || String(err); this._unsub = null; this._render(); setTimeout(() => this._subscribe(), 15000); });
+      .catch((err) => {
+        // e.g. Home Assistant restarting: try again later, but only if still on screen
+        if (this._unsub === sub) this._unsub = null;
+        if (!this.isConnected) return null;
+        this._error = err.message || String(err); this._render();
+        clearTimeout(this._retry);
+        this._retry = setTimeout(() => this._subscribe(), 15000);
+        return null;
+      });
+    this._unsub = sub;
   }
 
   getCardSize() { return 3 + this._tasks.length; }

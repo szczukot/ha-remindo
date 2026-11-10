@@ -22,7 +22,7 @@ _KEYS = {
     EVENT_SNOOZED: "ev_snoozed",
     EVENT_DISMISSED: "ev_dismissed",
 }
-_SOURCES = ("phone", "card", "todo", "auto", "rule", "expired")
+_SOURCES = ("phone", "card", "todo", "auto", "rule", "expired", "rule_removed")
 
 
 @callback

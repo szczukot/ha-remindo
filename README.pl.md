@@ -106,7 +106,9 @@ Przykłady:
 
 Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) samo nigdy nie wyzwala reguły, ale też nie ukrywa prawdziwej zmiany: „pracuje → niedostępna → skończyła” nadal się liczy.
 
-Odliczanie „przez co najmniej N min” przetrwa restart Home Assistant. Sprawdzenie kalendarza, które przepadło, bo Home Assistant nie działał, wykona się po starcie. Zadanie z kalendarza, którego nikt nie odhaczył, znika po dniu wydarzenia.
+Odliczanie „przez co najmniej N min” przetrwa restart Home Assistant. Sprawdzenie kalendarza, które przepadło, bo Home Assistant nie działał, wykona się po starcie. Zadanie z kalendarza, którego nikt nie odhaczył, znika po dniu wydarzenia. Usunięcie reguły zamyka też jej otwarte zadanie.
+
+Jeśli reguła obserwuje encję, której już nie ma (zmiana nazwy albo usunięcie), albo porównuje tekstowy stan z liczbą, Home Assistant pokaże ostrzeżenie w *Ustawienia → System → Naprawy*. Formularz reguły nie pozwoli takiej reguły zapisać.
 
 ## Przykłady zastosowań
 

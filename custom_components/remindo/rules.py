@@ -15,13 +15,18 @@ from homeassistant.core import (
     State,
     callback,
 )
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import (
     async_call_later,
     async_track_point_in_time,
     async_track_state_change_event,
     async_track_time_change,
 )
+from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
+
+from .const import DOMAIN
 
 if TYPE_CHECKING:
     from .manager import TaskManager
@@ -60,6 +65,20 @@ def _tokens(text: str | None, entity_id: str) -> str | None:
     return text.replace("{state}", state).replace("{name}", name)
 
 
+def rule_problem(mode: str, entity_id: str, state: State | None, exists: bool) -> str | None:
+    """Why a rule can never work, or None. Shared by the rule form and the Repairs check."""
+    if not exists:
+        return "rule_entity_missing"
+    if mode == MODE_CALENDAR and not entity_id.startswith("calendar."):
+        return "rule_not_calendar"
+    if mode in (MODE_ABOVE, MODE_BELOW) and state is not None and state.state not in _IGNORED:
+        try:
+            float(state.state)
+        except ValueError:
+            return "rule_not_numeric"
+    return None
+
+
 @dataclass
 class Rule:
     """When entity_id meets the condition for for_minutes, add a task."""
@@ -93,6 +112,11 @@ class Rule:
     def key(self) -> str:
         return f"rule_{self.id}"
 
+    @property
+    def signature(self) -> str:
+        """What a running countdown depends on; when it changes, the countdown starts over."""
+        return f"{self.entity_id}|{self.mode}|{self.value}|{self.for_minutes}"
+
     def matches(self, state: State | None) -> bool | None:
         """True/False, or None when the state cannot be judged (unavailable)."""
         if self.mode == MODE_CALENDAR:
@@ -120,12 +144,14 @@ class RuleEngine:
         # last result that could be judged; survives a detour through "unavailable"
         self._last: dict[str, bool] = {}
         # persisted, so a restart or a settings change does not lose them:
-        self._deadlines: dict[str, str] = {}  # rule id → end of the "for N minutes" countdown
+        # rule id → {"until": end of the "for N minutes" countdown, "sig": Rule.signature}
+        self._deadlines: dict[str, dict[str, str]] = {}
         self._calendar_checked: dict[str, str] = {}  # rule id → date of the last calendar check
 
     # ------------------------------------------------------------- persistence
     def restore(self, state: dict[str, Any]) -> None:
-        self._deadlines = dict(state.get("pending") or {})
+        # entries without a signature (older versions) cannot be checked: start over
+        self._deadlines = {k: v for k, v in (state.get("pending") or {}).items() if isinstance(v, dict)}
         self._calendar_checked = dict(state.get("calendar_checked") or {})
 
     def state(self) -> dict[str, Any]:
@@ -140,11 +166,51 @@ class RuleEngine:
                 continue
             if rule.mode in MODES:
                 self.rules[rule.id] = rule
-        # forget the state of rules that were removed
-        self._deadlines = {k: v for k, v in self._deadlines.items() if k in self.rules}
+        # forget the state of rules that were removed, and countdowns of rules that changed
+        self._deadlines = {
+            k: v for k, v in self._deadlines.items() if k in self.rules and v.get("sig") == self.rules[k].signature
+        }
         self._calendar_checked = {k: v for k, v in self._calendar_checked.items() if k in self.rules}
         for rule in self.rules.values():
             self._watch(rule)
+        # problems with a rule's entity are shown in Settings → Repairs; checked once
+        # Home Assistant has started, so entities that load late are not reported
+        self._unsubs["__check__"] = async_at_started(self.hass, self._check_entities)
+
+    def orphan_keys(self, keys: set[str]) -> set[str]:
+        """Task keys that belonged to a rule which no longer exists."""
+        orphans = set()
+        for key in keys:
+            if key.startswith("rule_"):
+                rule_id = key.removeprefix("rule_").split("_", 1)[0]
+                if rule_id not in self.rules:
+                    orphans.add(key)
+        return orphans
+
+    # ---------------------------------------------------------------- checks
+    @callback
+    def _check_entities(self, _hass: Any = None) -> None:
+        self._unsubs.pop("__check__", None)
+        registry = er.async_get(self.hass)
+        # warnings about rules that were deleted since
+        for domain, issue_id in list(ir.async_get(self.hass).issues):
+            if domain == DOMAIN and issue_id.startswith("rule_") and issue_id.removeprefix("rule_") not in self.rules:
+                ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+        for rule in self.rules.values():
+            problem = self._problem(rule, registry)
+            issue_id = f"rule_{rule.id}"
+            if problem:
+                ir.async_create_issue(
+                    self.hass, DOMAIN, issue_id, is_fixable=False, severity=ir.IssueSeverity.WARNING,
+                    translation_key=problem,
+                    translation_placeholders={"rule": rule.summary, "entity": rule.entity_id},
+                )
+            else:
+                ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+
+    def _problem(self, rule: Rule, registry: er.EntityRegistry) -> str | None:
+        exists = self.hass.states.get(rule.entity_id) is not None or registry.async_get(rule.entity_id) is not None
+        return rule_problem(rule.mode, rule.entity_id, self.hass.states.get(rule.entity_id), exists)
 
     @callback
     def stop(self) -> None:
@@ -175,7 +241,7 @@ class RuleEngine:
                 self._drop_deadline(rule.id)
             else:
                 earliest = dt_util.utcnow() + timedelta(seconds=STARTUP_DELAY)
-                self._arm(rule, max(dt_util.parse_datetime(deadline) or earliest, earliest))
+                self._arm(rule, max(dt_util.parse_datetime(deadline.get("until", "")) or earliest, earliest))
 
     @callback
     def _evaluate(self, rule: Rule, new: State | None, old: State | None) -> None:
@@ -201,7 +267,7 @@ class RuleEngine:
             self.hass.async_create_task(self._fire(rule))
             return
         deadline = dt_util.utcnow() + timedelta(minutes=rule.for_minutes)
-        self._deadlines[rule.id] = deadline.isoformat()
+        self._deadlines[rule.id] = {"until": deadline.isoformat(), "sig": rule.signature}
         self.manager.async_schedule_save()
         self._arm(rule, deadline)
 

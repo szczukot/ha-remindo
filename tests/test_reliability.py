@@ -8,6 +8,7 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import Context, HomeAssistant, SupportsResponse
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
@@ -161,6 +162,8 @@ async def test_rule_fires_after_a_detour_through_unavailable(hass: HomeAssistant
 async def test_rule_does_not_fire_when_the_state_just_appears(hass: HomeAssistant) -> None:
     """After a restart the entity shows up already in the target state: that is not a change."""
     entry, _ = await setup_integration(hass)
+    # known to HA (entity registry) but its integration has not loaded yet: no state
+    er.async_get(hass).async_get_or_create("sensor", "test", "washer", suggested_object_id="washer")
     await add_rule(hass, entry, {"summary": "Unload", "entity_id": "sensor.washer", "value": "off"})
     hass.states.async_set("sensor.washer", "unavailable")
     hass.states.async_set("sensor.washer", "off")

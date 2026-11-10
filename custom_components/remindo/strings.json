@@ -401,7 +401,10 @@
         "reconfigure_successful": "Rule saved."
       },
       "error": {
-        "not_mapping": "Enter key: value pairs, e.g. car_ui: true"
+        "not_mapping": "Enter key: value pairs, e.g. car_ui: true",
+        "rule_entity_missing": "This entity does not exist.",
+        "rule_not_calendar": "\"Has a calendar event\" needs a calendar entity.",
+        "rule_not_numeric": "\"Is above / below\" needs an entity with a number as its state (now: text)."
       }
     }
   },
@@ -427,6 +430,20 @@
     },
     "task_closed": {
       "message": "The task \"{summary}\" is already done or skipped. Restore it first."
+    }
+  },
+  "issues": {
+    "rule_entity_missing": {
+      "title": "Remindo rule \"{rule}\": entity not found",
+      "description": "The rule \"{rule}\" watches {entity}, which does not exist (renamed or removed?). The rule cannot add tasks. Edit the rule in Settings → Devices & services → Remindo, or delete it."
+    },
+    "rule_not_calendar": {
+      "title": "Remindo rule \"{rule}\": not a calendar",
+      "description": "The rule \"{rule}\" looks for calendar events in {entity}, which is not a calendar. Edit the rule in Settings → Devices & services → Remindo."
+    },
+    "rule_not_numeric": {
+      "title": "Remindo rule \"{rule}\": not a number",
+      "description": "The rule \"{rule}\" compares {entity} with a number, but its state is text. The rule cannot add tasks. Edit the rule in Settings → Devices & services → Remindo."
     }
   }
 }

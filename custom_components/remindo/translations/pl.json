@@ -401,7 +401,10 @@
         "reconfigure_successful": "Reguła zapisana."
       },
       "error": {
-        "not_mapping": "Wpisz pary klucz: wartość, np. car_ui: true"
+        "not_mapping": "Wpisz pary klucz: wartość, np. car_ui: true",
+        "rule_entity_missing": "Ta encja nie istnieje.",
+        "rule_not_calendar": "„Wydarzenie w kalendarzu” wymaga encji kalendarza.",
+        "rule_not_numeric": "„Powyżej / poniżej” wymaga encji, której stan jest liczbą (teraz: tekst)."
       }
     }
   },
@@ -427,6 +430,20 @@
     },
     "task_closed": {
       "message": "Zadanie „{summary}” jest już zrobione albo odrzucone. Najpierw je przywróć."
+    }
+  },
+  "issues": {
+    "rule_entity_missing": {
+      "title": "Reguła Remindo „{rule}”: nie ma takiej encji",
+      "description": "Reguła „{rule}” obserwuje {entity}, która nie istnieje (zmieniona nazwa albo usunięta?). Reguła nie doda żadnego zadania. Popraw ją w Ustawienia → Urządzenia i usługi → Remindo albo usuń."
+    },
+    "rule_not_calendar": {
+      "title": "Reguła Remindo „{rule}”: to nie kalendarz",
+      "description": "Reguła „{rule}” szuka wydarzeń w {entity}, a to nie jest kalendarz. Popraw ją w Ustawienia → Urządzenia i usługi → Remindo."
+    },
+    "rule_not_numeric": {
+      "title": "Reguła Remindo „{rule}”: to nie liczba",
+      "description": "Reguła „{rule}” porównuje {entity} z liczbą, ale jej stan jest tekstem. Reguła nie doda żadnego zadania. Popraw ją w Ustawienia → Urządzenia i usługi → Remindo."
     }
   }
 }

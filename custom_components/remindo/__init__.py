@@ -173,6 +173,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: RemindoConfigEntry) -> b
     manager.rules.load(
         [{**sub.data, "id": sub.subentry_id} for sub in entry.subentries.values() if sub.subentry_type == "rule"]
     )
+    # the rule of an open task was deleted: nothing would ever close it any more
+    await manager.async_drop_orphans(manager.rules.orphan_keys({t.key for t in manager.open_tasks() if t.key}))
     entry.async_on_unload(
         hass.bus.async_listen("mobile_app_notification_action", manager.async_handle_phone_action)
     )

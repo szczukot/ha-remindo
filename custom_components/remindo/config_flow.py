@@ -14,6 +14,7 @@ from homeassistant.config_entries import (
     SubentryFlowResult,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 
 from .const import (
@@ -36,7 +37,7 @@ from .const import (
     DEFAULTS,
     DOMAIN,
 )
-from .rules import MODES
+from .rules import MODES, rule_problem
 
 # shown literally in the form help texts
 _TOKENS = {"state": "{state}", "name": "{name}", "event": "{event}"}
@@ -192,11 +193,17 @@ class RuleSubentryFlow(ConfigSubentryFlow):
         return self.add_suggested_values_to_schema(vol.Schema(schema), known)
 
     async def async_step_trigger(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
-            if user_input["entity_id"].startswith("calendar."):
+            entity_id = user_input["entity_id"]
+            if entity_id.startswith("calendar."):
                 user_input["mode"] = "calendar"
+            exists = self.hass.states.get(entity_id) is not None or er.async_get(self.hass).async_get(entity_id) is not None
+            if problem := rule_problem(user_input["mode"], entity_id, self.hass.states.get(entity_id), exists):
+                errors["entity_id" if problem == "rule_entity_missing" else "mode"] = problem
             self._data.update(user_input)
-            return await self.async_step_condition()
+            if not errors:
+                return await self.async_step_condition()
         schema = {
             vol.Required("summary"): selector.TextSelector(),
             vol.Required("entity_id"): selector.EntitySelector(),
@@ -205,7 +212,9 @@ class RuleSubentryFlow(ConfigSubentryFlow):
                                               mode=selector.SelectSelectorMode.LIST)
             ),
         }
-        return self.async_show_form(step_id="trigger", data_schema=self._suggest(schema), description_placeholders=_TOKENS)
+        return self.async_show_form(
+            step_id="trigger", data_schema=self._suggest(schema), errors=errors, description_placeholders=_TOKENS
+        )
 
     async def async_step_condition(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         mode = self._data["mode"]
