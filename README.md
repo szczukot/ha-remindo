@@ -14,13 +14,16 @@ Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadani
 
 ## Instalacja
 
-### Ręcznie
-1. Skopiuj folder `custom_components/remindo` do `/config/custom_components/` (np. przez dodatek File editor albo Samba).
-2. Zrestartuj Home Assistant.
-3. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Remindo***.
+Wymaga Home Assistant **2026.11** lub nowszego.
 
-### HACS (repozytorium niestandardowe)
-*HACS → ⋮ → Niestandardowe repozytoria* → adres tego repozytorium, kategoria **Integracja**.
+### Marketplace (zalecane)
+1. *Ustawienia → **Marketplace*** → menu **⋮** → **Dodaj z linku**.
+2. Wklej `https://github.com/szczukot/ha-remindo` → **Remindo** → **Zainstaluj**.
+3. Zrestartuj Home Assistant, gdy pojawi się prośba w *Ustawienia → System → Naprawy*.
+4. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Remindo***.
+
+### Ręcznie
+Skopiuj folder `custom_components/remindo` do `/config/custom_components/` (np. przez dodatek File editor albo Samba), zrestartuj HA i dodaj integrację **Remindo** jak w kroku 4.
 
 ## Konfiguracja
 
@@ -119,7 +122,7 @@ pytest
 
 ## English
 
-**Remindo**: tasks with reminders for Home Assistant: a to-do list whose items keep reminding you (push with action buttons, optional TTS when someone is home) until you mark them done, snooze or dismiss them. Supports recurring tasks, reminder limits, per-task phone/speaker targeting, and **rules** (Settings → Devices & services → Remindo → *Add rule*) that create tasks automatically when an entity reaches a state/threshold or before a calendar event, closing them when the condition ends. Ships with a Lovelace card (`custom:remindo-card`). The UI is in Polish, with English translations for the configuration screens.
+**Remindo**: tasks with reminders for Home Assistant: a to-do list whose items keep reminding you (push with action buttons, optional TTS when someone is home) until you mark them done, snooze or dismiss them. Supports recurring tasks, reminder limits, per-task phone/speaker targeting, and **rules** (Settings → Devices & services → Remindo → *Add rule*) that create tasks automatically when an entity reaches a state/threshold or before a calendar event, closing them when the condition ends. Install via *Settings → Marketplace → ⋮ → Add from link* (`https://github.com/szczukot/ha-remindo`, HA 2026.11+). Ships with a Lovelace card (`custom:remindo-card`). The UI is in Polish, with English translations for the configuration screens.
 
 ## Licencja
 
