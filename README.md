@@ -1,10 +1,10 @@
-# Zadania z przypomnieniami — Home Assistant
+# Remindo — zadania z przypomnieniami dla Home Assistant
 
 [🇬🇧 English summary below](#english)
 
 Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadania, które **same przypominają**, dopóki ich nie odhaczysz.
 
-- 📋 **Lista zadań** (`todo.zadania`), widoczna też w standardowej karcie To-do i kalendarzu.
+- 📋 **Lista zadań** (`todo.remindo`), widoczna też w standardowej karcie To-do i kalendarzu.
 - ⏰ **Przypomnienia co X minut/godzin**, aż zareagujesz, z limitem („maks. 3 razy” albo „do 22:00”).
 - 📱 **Push na telefony** z przyciskami ✅ Zrobione / ⏰ Odłóż / ❌ Nie robię. Powiadomienie znika ze wszystkich telefonów po każdej akcji.
 - 🔊 **Komunikat głosowy** (TTS) na tablecie lub głośniku, tylko gdy ktoś jest w domu i poza ciszą nocną.
@@ -15,9 +15,9 @@ Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadani
 ## Instalacja
 
 ### Ręcznie
-1. Skopiuj folder `custom_components/zadania` do `/config/custom_components/` (np. przez dodatek File editor albo Samba).
+1. Skopiuj folder `custom_components/remindo` do `/config/custom_components/` (np. przez dodatek File editor albo Samba).
 2. Zrestartuj Home Assistant.
-3. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Zadania z przypomnieniami***.
+3. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Remindo***.
 
 ### HACS (repozytorium niestandardowe)
 *HACS → ⋮ → Niestandardowe repozytoria* → adres tego repozytorium, kategoria **Integracja**.
@@ -39,10 +39,10 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 
 ## Karta
 
-Ładuje się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” wybierz **Zadania**:
+Ładuje się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” wybierz **Remindo**:
 
 ```yaml
-type: custom:zadania-card
+type: custom:remindo-card
 title: Zadania
 show_done: true    # sekcje Zrobione / Odrzucone (zwinięte)
 show_form: true    # przycisk „＋ Dodaj zadanie”
@@ -61,7 +61,7 @@ Odznaczone „Przypominaj” = zwykła notatka na liście.
 
 ## Reguły (zadania dodawane automatycznie)
 
-*Ustawienia → Urządzenia i usługi → Zadania → **＋ Dodaj regułę***. Trzy kroki:
+*Ustawienia → Urządzenia i usługi → Remindo → **＋ Dodaj regułę***. Trzy kroki:
 
 1. **Kiedy**: treść zadania, encja, warunek (*ma stan* / *powyżej* / *poniżej* / *wydarzenie w kalendarzu*).
 2. **Warunek**: wartość (lista stanów encji) i „przez co najmniej N min”; dla kalendarza: ile dni przed i o której.
@@ -82,13 +82,13 @@ Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie w
 
 | Usługa | Pola |
 |---|---|
-| `zadania.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`. Zwraca `uid`. |
-| `zadania.done`, `zadania.dismiss` | `uid` albo `key` |
-| `zadania.snooze` | `uid`/`key` + `minutes` albo `until` |
-| `zadania.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła) |
+| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`. Zwraca `uid`. |
+| `remindo.done`, `remindo.dismiss` | `uid` albo `key` |
+| `remindo.snooze` | `uid`/`key` + `minutes` albo `until` |
+| `remindo.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła) |
 
 ```yaml
-action: zadania.add
+action: remindo.add
 data:
   summary: Wymień filtr w rekuperatorze
   start: "2026-12-01"
@@ -100,9 +100,13 @@ data:
 
 ## Encje i zdarzenia
 
-- `todo.zadania`: lista (odhaczenie w zwykłej karcie To-do zamyka zadanie i czyści powiadomienia),
-- `sensor.zadania_aktywne`: ile zadań przypomina teraz (atrybut `zadania` z nazwami),
-- zdarzenia `zadania_created`, `zadania_reminded`, `zadania_done`, `zadania_snoozed`, `zadania_dismissed`, opisane po polsku w dzienniku.
+- `todo.remindo`: lista (odhaczenie w zwykłej karcie To-do zamyka zadanie i czyści powiadomienia),
+- `sensor.remindo_active`: ile zadań przypomina teraz (atrybut `tasks` z nazwami),
+- zdarzenia `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, opisane po polsku w dzienniku.
+
+## Aktualizacja ze starej nazwy „zadania”
+
+Wersje < 0.7 nazywały się `zadania`. Remindo przy pierwszym uruchomieniu samo przejmuje zadania, historię i reguły starej integracji. Potem usuń wpis „Zadania” z *Urządzenia i usługi* oraz folder `custom_components/zadania`, a w karcie zmień `custom:zadania-card` na `custom:remindo-card`.
 
 ## Rozwój
 
@@ -115,7 +119,7 @@ pytest
 
 ## English
 
-**Tasks with reminders** for Home Assistant: a to-do list whose items keep reminding you (push with action buttons, optional TTS when someone is home) until you mark them done, snooze or dismiss them. Supports recurring tasks, reminder limits, per-task phone/speaker targeting, and **rules** (Settings → Devices & services → Tasks → *Add rule*) that create tasks automatically when an entity reaches a state/threshold or before a calendar event, closing them when the condition ends. Ships with a Lovelace card (`custom:zadania-card`). The UI is in Polish, with English translations for the configuration screens.
+**Remindo**: tasks with reminders for Home Assistant: a to-do list whose items keep reminding you (push with action buttons, optional TTS when someone is home) until you mark them done, snooze or dismiss them. Supports recurring tasks, reminder limits, per-task phone/speaker targeting, and **rules** (Settings → Devices & services → Remindo → *Add rule*) that create tasks automatically when an entity reaches a state/threshold or before a calendar event, closing them when the condition ends. Ships with a Lovelace card (`custom:remindo-card`). The UI is in Polish, with English translations for the configuration screens.
 
 ## Licencja
 
