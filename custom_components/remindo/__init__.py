@@ -273,6 +273,7 @@ async def ws_subscribe(
             "options": {
                 "phone_snooze": manager.options.get("phone_snooze"),
                 "default_interval": manager.options.get("default_interval"),
+                "default_time": manager.options.get("default_time"),
                 "phones": [{"id": p, "name": manager.phone_label(p)} for p in manager.all_phones()],
                 "speakers": [{"id": s, "name": manager.speaker_label(s)} for s in manager.all_speakers()],
             },

@@ -323,3 +323,47 @@ async def test_tasks_survive_restart_and_missed_reminder_fires(
     assert task.summary == "Later"
     assert task.active
     assert len([c for c in calls["notify"] if c.data["message"] == "Later"]) == 1
+
+
+async def test_snooze_until_picked_time(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    uid = (await hass.services.async_call(DOMAIN, "add", {"summary": "X", "speakers": []}, blocking=True, return_response=True))["uid"]
+    # card "tomorrow 09:00" and the date picker both send a local date-time
+    await hass.services.async_call(DOMAIN, "snooze", {"uid": uid, "until": "2026-11-10T09:00:00"}, blocking=True)
+    task = entry.runtime_data.tasks[uid]
+    assert task.next_reminder.startswith("2026-11-10T09:00:00") and not task.active
+    await hass.services.async_call(DOMAIN, "snooze", {"uid": uid, "until": "2026-11-12T18:45:00"}, blocking=True)
+    assert task.next_reminder.startswith("2026-11-12T18:45:00")
+
+
+async def test_card_gets_default_time(hass: HomeAssistant, hass_ws_client) -> None:
+    await _setup(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "remindo/subscribe"})
+    await client.receive_json()
+    msg = await client.receive_json()
+    assert msg["event"]["options"]["default_time"] == "09:00:00"
+
+
+async def test_snooze_then_interval_resumes(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """+1 h on a task reminding every 5 min: one reminder in an hour, then every 5 min again."""
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    uid = (await hass.services.async_call(DOMAIN, "add", {"summary": "X", "interval": 5, "speakers": []}, blocking=True, return_response=True))["uid"]
+    task = entry.runtime_data.tasks[uid]
+
+    async def tick(**kw):
+        freezer.tick(timedelta(**kw))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+
+    await tick(seconds=2)
+    assert task.reminders == 1
+    await hass.services.async_call(DOMAIN, "snooze", {"uid": uid, "minutes": 60}, blocking=True)
+    await tick(minutes=59)
+    assert task.reminders == 1 and not task.active  # quiet during the snooze
+    await tick(minutes=1, seconds=1)
+    assert task.reminders == 2 and task.active
+    await tick(minutes=5, seconds=1)
+    assert task.reminders == 3  # back to every 5 min

@@ -62,6 +62,8 @@ Gdzie przypominać: ☑ 📱 telefon  ☑ 🔊 tablet
 
 Odznaczone „Przypominaj” = zwykła notatka na liście.
 
+Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅 wybierz…** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie.
+
 Karta wyświetla się w języku profilu użytkownika.
 
 ## Reguły (zadania dodawane automatycznie)

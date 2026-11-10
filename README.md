@@ -63,6 +63,8 @@ Remind on: ☑ 📱 phone  ☑ 🔊 tablet
 
 With "Remind" unticked the task is a plain note on the list.
 
+Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅 pick…** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time.
+
 The card follows the language of the user's profile.
 
 ## Rules (tasks added automatically)

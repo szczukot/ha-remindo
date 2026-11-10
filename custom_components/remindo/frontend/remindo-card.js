@@ -1,13 +1,13 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.8.0";
+const VERSION = "0.8.1";
 
 const I18N = {
   en: {
     title: "Tasks", today: "today", tomorrow: "tomorrow", just_now: "just now", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago",
     now: "now", now_again: "now · again {t}", now_no_more: "now · no more reminders", dismissed_ago: "skipped {t}", snoozed_until: "snoozed until ",
-    done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n} min", snoozed_n: "snoozed {n}×",
+    done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n} min", then_every: "then every {n} min again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} min again", snoozed_n: "snoozed {n}×",
     max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications",
-    btn_done: "Done", btn_tomorrow: "tomorrow", btn_dismiss: "Skip",
+    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} min again", btn_pick: "📅 pick…", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip",
     sec_now: "Now", sec_planned: "Scheduled", sec_notes: "Notes", sec_done: "Done", sec_dismissed: "Skipped", empty: "Nothing to do 🎉",
     add: "＋ Add task", what: "What needs doing?", remind: "Remind", from_now: "from now", in_1h: "in 1 h", tonight: "today 19:00",
     pick: "pick a time…", every: "every", until_done: "until I tick it off", note_hint: "no reminders — just a note on the list",
@@ -22,9 +22,9 @@ const I18N = {
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
     now: "teraz", now_again: "teraz · znowu {t}", now_no_more: "teraz · już nie przypomina", dismissed_ago: "odrzucone {t}", snoozed_until: "odłożone do ",
-    done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n} min", snoozed_n: "odłożone {n}×",
+    done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n} min", then_every: "potem znowu co {n} min", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n} min", snoozed_n: "odłożone {n}×",
     max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień",
-    btn_done: "Zrobione", btn_tomorrow: "jutro", btn_dismiss: "Nie robię",
+    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n} min", btn_pick: "📅 wybierz…", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię",
     sec_now: "Teraz", sec_planned: "Zaplanowane", sec_notes: "Notatki", sec_done: "Zrobione", sec_dismissed: "Odrzucone", empty: "Nic do zrobienia 🎉",
     add: "＋ Dodaj zadanie", what: "Co trzeba zrobić?", remind: "Przypominaj", from_now: "od teraz", in_1h: "za 1 h", tonight: "dziś 19:00",
     pick: "wybierz termin…", every: "co", until_done: "dopóki nie odhaczę", note_hint: "bez przypomnień — zwykła notatka na liście",
@@ -140,7 +140,7 @@ class RemindoCard extends HTMLElement {
     else if (kind === "done") when = t("done_ago", { t: ago(task.closed) });
     const meta = [];
     if (kind === "now") meta.push(t("reminding_since", { t: ago(task.last_reminded) }));
-    if (task.interval && kind !== "done" && kind !== "notes") meta.push(t("every_min", { n: task.interval }));
+    if (task.interval && kind !== "done" && kind !== "notes") meta.push(t(kind === "planned" ? "then_every" : "every_min", { n: task.interval }));
     if (task.repeat && task.repeat !== "none") meta.push(`🔁 ${repeatLabel(task)}`);
     if (task.snoozes) meta.push(t("snoozed_n", { n: task.snoozes }));
     if (task.max_reminders && kind !== "done") meta.push(t("max_n", { n: task.max_reminders, m: task.reminders || 0 }));
@@ -149,20 +149,39 @@ class RemindoCard extends HTMLElement {
       const where = [...(task.phone_labels || []).map((n) => `📱 ${n}`), ...(task.speaker_labels || []).map((n) => `🔊 ${n}`)];
       meta.push(where.length ? where.join(", ") : t("no_notify"));
     }
+    const hint = (when) => t(task.interval ? "snooze_hint_then" : "snooze_hint", { t: when, n: task.interval });
     const btns = kind === "done" || kind === "dismissed" ? "" : `
       <div class="btns">
         <button class="ok" data-a="done" data-uid="${task.uid}" title="${t("btn_done")}">✓</button>
         ${kind !== "notes" ? `
-        <button data-a="snooze" data-min="10" data-uid="${task.uid}">+10 min</button>
-        <button data-a="snooze" data-min="60" data-uid="${task.uid}">+1 h</button>
-        <button data-a="tomorrow" data-uid="${task.uid}">${t("btn_tomorrow")}</button>` : ""}
+        <button data-a="snooze" data-min="10" data-uid="${task.uid}" title="${hint("10 min")}">+10 min</button>
+        <button data-a="snooze" data-min="60" data-uid="${task.uid}" title="${hint("1 h")}">+1 h</button>
+        <button data-a="tomorrow" data-uid="${task.uid}" title="${t(task.interval ? "btn_tomorrow_hint_then" : "btn_tomorrow_hint", { t: this._morning(), n: task.interval })}">${t("btn_tomorrow", { t: this._morning() })}</button>
+        <button data-a="pick" data-uid="${task.uid}" title="${t("btn_pick_hint")}">${t("btn_pick")}</button>` : ""}
         <button class="no" data-a="dismiss" data-uid="${task.uid}" title="${t("btn_dismiss")}">✕</button>
       </div>`;
     return `<div class="task ${kind}">
       <div class="txt"><div class="sum">${esc(task.summary)}</div>
         ${when ? `<div class="when">${esc(when)}</div>` : ""}
         ${task.description ? `<div class="desc">${esc(task.description)}</div>` : ""}
-        <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}</div>`;
+        <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}</div>`;
+  }
+
+  _morning() {
+    return String(this._opts?.default_time || "09:00").slice(0, 5);
+  }
+
+  _picker(task) {
+    const d = new Date(Date.now() + 3600e3);
+    d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0);
+    const min = localIso(new Date()).slice(0, 16);
+    return `<div class="picker">
+      <span>${t("pick_label")}</span>
+      <input id="p-dt" type="datetime-local" min="${min}" value="${localIso(d).slice(0, 16)}" />
+      <button class="ok" data-a="pick-ok" data-uid="${task.uid}">${t("pick_ok")}</button>
+      <button data-a="pick-cancel">${t("cancel")}</button>
+      ${task.interval ? `<span>${t("then_every", { n: task.interval })}</span>` : ""}
+    </div>`;
   }
 
   _section(title, list, kind) {
@@ -248,7 +267,16 @@ class RemindoCard extends HTMLElement {
       case "done": return this._call("done", { uid });
       case "dismiss": return this._call("dismiss", { uid });
       case "snooze": return this._call("snooze", { uid, minutes: Number(b.dataset.min) });
-      case "tomorrow": return this._call("snooze", { uid, until: tomorrowDate() });
+      case "tomorrow": return this._call("snooze", { uid, until: `${tomorrowDate()}T${this._morning()}:00` });
+      case "pick": this._pick = this._pick === uid ? null : uid; this._forceRender = true; this._render();
+        return this.shadowRoot.getElementById("p-dt")?.focus();
+      case "pick-cancel": this._pick = null; this._forceRender = true; return this._render();
+      case "pick-ok": {
+        const v = this.shadowRoot.getElementById("p-dt")?.value;
+        if (!v || new Date(v) <= new Date()) { this._error = t("pick_past"); this._forceRender = true; return this._render(); }
+        this._pick = null;
+        return this._call("snooze", { uid, until: `${v}:00` });
+      }
       case "form": this._formOpen = true; this._render(); this._unit(); return this.shadowRoot.getElementById("f-sum")?.focus();
       case "cancel": this._formOpen = false; this._forceRender = true; return this._render();
       case "save": return this._save();
@@ -287,6 +315,8 @@ class RemindoCard extends HTMLElement {
     if (!this.shadowRoot || !this._config) return;
     // Do not interrupt typing in the form (the list refreshes after it closes)
     if (this._formOpen && this.shadowRoot.querySelector(".form") && !this._forceRender) return;
+    // Do not close the date picker while the user is choosing
+    if (this._pick && this.shadowRoot.getElementById("p-dt") && !this._forceRender) return;
     this._forceRender = false;
     const g = this._groups();
     const empty = !g.now.length && !g.planned.length && !g.notes.length;
@@ -350,6 +380,8 @@ RemindoCard.styles = `
   .grp.off { opacity:.4; }
   input[type=number] { width:64px; }
   input[type=checkbox] { width:18px; height:18px; vertical-align:middle; }
+  .picker { flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-top:6px; }
+  .picker span { font-size:13px; color: var(--secondary-text-color); }
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
 `;
 
