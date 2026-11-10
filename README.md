@@ -107,10 +107,6 @@ data:
 - `sensor.remindo_active`: ile zadań przypomina teraz (atrybut `tasks` z nazwami),
 - zdarzenia `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, opisane po polsku w dzienniku.
 
-## Aktualizacja ze starej nazwy „zadania”
-
-Wersje < 0.7 nazywały się `zadania`. Remindo przy pierwszym uruchomieniu samo przejmuje zadania, historię i reguły starej integracji. Potem usuń wpis „Zadania” z *Urządzenia i usługi* oraz folder `custom_components/zadania`, a w karcie zmień `custom:zadania-card` na `custom:remindo-card`.
-
 ## Rozwój
 
 ```bash
