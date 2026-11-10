@@ -18,7 +18,8 @@
           "phone_snooze": "Snooze from phone by",
           "click_url": "Open on notification tap",
           "keep_done": "Keep done tasks on the list",
-          "quiet_push": "Quiet hours also for push notifications"
+          "quiet_push": "Quiet hours also for push notifications",
+          "notify_data": "Extra data for app notifications"
         },
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours. Push is still sent unless the option below is on.",
@@ -26,7 +27,8 @@
           "click_url": "HA path, e.g. /lovelace/remindo",
           "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
-          "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end."
+          "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
+          "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task."
         }
       }
     },
@@ -53,7 +55,8 @@
           "phone_snooze": "Snooze from phone by",
           "click_url": "Open on notification tap",
           "keep_done": "Keep done tasks on the list",
-          "quiet_push": "Quiet hours also for push notifications"
+          "quiet_push": "Quiet hours also for push notifications",
+          "notify_data": "Extra data for app notifications"
         },
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours. Push is still sent unless the option below is on.",
@@ -61,7 +64,8 @@
           "click_url": "HA path, e.g. /lovelace/remindo",
           "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
-          "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end."
+          "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
+          "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task."
         }
       }
     }
@@ -134,6 +138,10 @@
         "done_message": {
           "name": "Message when resolved",
           "description": "Sent when the task closes itself (close_by_key / rule). Templates allowed."
+        },
+        "notify_data": {
+          "name": "Notification data",
+          "description": "Extra data for the HA app notification (icon, Android Auto, priority…)."
         }
       }
     },
@@ -258,6 +266,10 @@
         "keep_done": {
           "name": "Keep after done",
           "description": "Keep the task in Done (null = integration option)."
+        },
+        "notify_data": {
+          "name": "Notification data",
+          "description": "Extra data for the HA app notification (icon, Android Auto, priority…)."
         }
       }
     }
@@ -347,7 +359,9 @@
             "speakers": "Speakers (announcement)",
             "auto_close": "Close the task when the condition ends",
             "done_message": "Message when resolved",
-            "keep_done": "Keep on the list after done"
+            "keep_done": "Keep on the list after done",
+            "tts_message": "Spoken text",
+            "notify_data": "Extra notification data"
           },
           "data_description": {
             "remind": "Off = remind once.",
@@ -355,7 +369,9 @@
             "phones": "None selected = list only.",
             "auto_close": "For calendars: after the event day.",
             "done_message": "Sent to the same targets when the task closes itself, e.g. \"Garage door closed ✅\". {state} and {name} work here too. Empty = nothing.",
-            "keep_done": "Off = disappears once done."
+            "keep_done": "Off = disappears once done.",
+            "tts_message": "What is said aloud instead of the task text, e.g. \"The dishwasher is done, please open it.\" {state} and {name} work here too (for calendars: {event}). Empty = the task text.",
+            "notify_data": "Advanced. Extra data for the HA app notification of this rule, e.g. car_ui: true, priority: high."
           }
         }
       },

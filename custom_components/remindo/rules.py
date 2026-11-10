@@ -79,6 +79,7 @@ class Rule:
     max_reminders: int | None = None
     keep_done: bool | None = None
     done_message: str | None = None
+    notify_data: dict[str, Any] | None = None
     # calendar only
     days_before: int = 1
     at_time: str = "18:00"
@@ -246,6 +247,7 @@ class RuleEngine:
             max_reminders=rule.max_reminders,
             keep_done=rule.keep_done,
             done_message=_tokens(rule.done_message, rule.entity_id),
+            notify_data=rule.notify_data,
             templates=True,  # rule texts are written by an administrator
             source="rule",
         )
@@ -318,6 +320,7 @@ class RuleEngine:
             tts_message=(rule.tts_message or summary).replace("{event}", what),
             max_reminders=rule.max_reminders,
             keep_done=rule.keep_done,
+            notify_data=rule.notify_data,
             # nobody ticked it off: drop the task once the event day is over
             expires=day + timedelta(days=1) if rule.auto_close else None,
             templates=False,  # event names come from outside: never run them as templates

@@ -18,7 +18,8 @@
           "phone_snooze": "Odłożenie z telefonu o",
           "click_url": "Po kliknięciu powiadomienia otwórz",
           "keep_done": "Zostawiaj wykonane zadania na liście",
-          "quiet_push": "Cisza nocna także dla powiadomień push"
+          "quiet_push": "Cisza nocna także dla powiadomień push",
+          "notify_data": "Dodatkowe dane powiadomień w aplikacji"
         },
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych. Push nadal przychodzi, chyba że włączysz opcję poniżej.",
@@ -26,7 +27,8 @@
           "click_url": "Ścieżka w HA, np. /lovelace/remindo",
           "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
-          "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca."
+          "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
+          "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu."
         }
       }
     },
@@ -53,7 +55,8 @@
           "phone_snooze": "Odłożenie z telefonu o",
           "click_url": "Po kliknięciu powiadomienia otwórz",
           "keep_done": "Zostawiaj wykonane zadania na liście",
-          "quiet_push": "Cisza nocna także dla powiadomień push"
+          "quiet_push": "Cisza nocna także dla powiadomień push",
+          "notify_data": "Dodatkowe dane powiadomień w aplikacji"
         },
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych. Push nadal przychodzi, chyba że włączysz opcję poniżej.",
@@ -61,7 +64,8 @@
           "click_url": "Ścieżka w HA, np. /lovelace/remindo",
           "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
-          "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca."
+          "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
+          "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu."
         }
       }
     }
@@ -134,6 +138,10 @@
         "done_message": {
           "name": "Komunikat po załatwieniu",
           "description": "Wysyłany, gdy zadanie zamknie się samo (close_by_key / reguła). Można użyć szablonów."
+        },
+        "notify_data": {
+          "name": "Dane powiadomienia",
+          "description": "Dodatkowe dane powiadomienia w aplikacji HA (ikona, Android Auto, priorytet…)."
         }
       }
     },
@@ -258,6 +266,10 @@
         "keep_done": {
           "name": "Zostaw po wykonaniu",
           "description": "Zostaw zadanie w „Zrobione” (null = opcja integracji)."
+        },
+        "notify_data": {
+          "name": "Dane powiadomienia",
+          "description": "Dodatkowe dane powiadomienia w aplikacji HA (ikona, Android Auto, priorytet…)."
         }
       }
     }
@@ -347,7 +359,9 @@
             "speakers": "Głośniki / tablety (komunikat)",
             "auto_close": "Zamknij zadanie samo, gdy warunek minie",
             "done_message": "Komunikat po załatwieniu",
-            "keep_done": "Zostaw na liście po wykonaniu"
+            "keep_done": "Zostaw na liście po wykonaniu",
+            "tts_message": "Tekst mówiony",
+            "notify_data": "Dodatkowe dane powiadomienia"
           },
           "data_description": {
             "remind": "Wyłączone = przypomni tylko raz.",
@@ -355,7 +369,9 @@
             "phones": "Nic nie zaznaczone = bez powiadomień, zadanie tylko na liście.",
             "auto_close": "Np. brama zamknięta, zmywarka otwarta. Przy kalendarzu: po dniu wydarzenia.",
             "done_message": "Wysyłany na te same kanały, gdy zadanie zamknie się samo, np. „Brama zamknięta ✅”. Tu też działa {state} i {name}. Puste = nic.",
-            "keep_done": "Wyłączone = znika po wykonaniu."
+            "keep_done": "Wyłączone = znika po wykonaniu.",
+            "tts_message": "Co zostanie powiedziane na głos zamiast treści zadania, np. „Zmywarka skończyła, otwórz ją”. Tu też działa {state} i {name} (przy kalendarzu: {event}). Puste = treść zadania.",
+            "notify_data": "Zaawansowane. Dodatkowe dane powiadomienia w aplikacji HA dla tej reguły, np. car_ui: true, priority: high."
           }
         }
       },

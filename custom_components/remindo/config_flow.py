@@ -23,6 +23,7 @@ from .const import (
     CONF_KEEP_DONE,
     CONF_MEDIA_PLAYER,
     CONF_NOTIFY,
+    CONF_NOTIFY_DATA,
     CONF_PERSISTENT,
     CONF_PHONE_SNOOZE,
     CONF_PRESENCE,
@@ -95,6 +96,7 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_QUIET_PUSH, default=values[CONF_QUIET_PUSH]): selector.BooleanSelector(),
             vol.Optional(CONF_CLICK_URL, default=values[CONF_CLICK_URL]): selector.TextSelector(),
             vol.Optional(CONF_KEEP_DONE, default=values[CONF_KEEP_DONE]): selector.BooleanSelector(),
+            opt(CONF_NOTIFY_DATA): selector.ObjectSelector(),
         }
     )
 
@@ -259,7 +261,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             data["max_reminders"] = int(data["max_reminders"]) if data.get("max_reminders") else None
             data.pop("remind", None)
             # a field left empty is not sent at all: clear it instead of keeping the old value
-            for key in ("max_reminders", "done_message"):
+            for key in ("max_reminders", "done_message", "tts_message", "notify_data"):
                 if key not in user_input:
                     data[key] = None
             # no channel configured yet → None = "all configured" once there are some
@@ -298,9 +300,12 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             schema[vol.Optional("speakers", default=self._data.get("speakers", speakers))] = selector.SelectSelector(
                 selector.SelectSelectorConfig(options=labels(speakers, "media_player"), multiple=True)
             )
+            schema[vol.Optional("tts_message")] = selector.TextSelector()
         schema[vol.Required("auto_close", default=self._data.get("auto_close", True))] = selector.BooleanSelector()
         if self._data.get("mode") != "calendar":
             schema[vol.Optional("done_message")] = selector.TextSelector()
         schema[vol.Required("keep_done", default=self._data.get("keep_done", options[CONF_KEEP_DONE]))] = selector.BooleanSelector()
+        if phones:
+            schema[vol.Optional("notify_data")] = selector.ObjectSelector()
         return self.async_show_form(step_id="notify", data_schema=self._suggest(schema), description_placeholders=_TOKENS)
 

@@ -36,6 +36,7 @@ from .const import (
     ATTR_KEY,
     ATTR_MAX_REMINDERS,
     ATTR_MINUTES,
+    ATTR_NOTIFY_DATA,
     ATTR_PHONES,
     ATTR_PUSH,
     ATTR_REMIND_UNTIL,
@@ -98,6 +99,7 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_REMIND_UNTIL): vol.Any(None, _when),
         vol.Optional(ATTR_KEEP_DONE): cv.boolean,
         vol.Optional(ATTR_DONE_MESSAGE): cv.string,
+        vol.Optional(ATTR_NOTIFY_DATA): vol.Any(None, dict),
     }
 )
 TARGET = {vol.Optional(ATTR_UID): cv.string, vol.Optional(ATTR_KEY): cv.string}
@@ -124,6 +126,7 @@ UPDATE_FIELDS = {
     vol.Optional(ATTR_MAX_REMINDERS): _MAX_REMINDERS,
     vol.Optional(ATTR_REMIND_UNTIL): vol.Any(None, _when),
     vol.Optional(ATTR_KEEP_DONE): vol.Any(None, cv.boolean),
+    vol.Optional(ATTR_NOTIFY_DATA): vol.Any(None, dict),
 }
 UPDATE_SCHEMA = vol.All(vol.Schema({**TARGET, **UPDATE_FIELDS}), _HAS_TARGET)
 CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
@@ -237,6 +240,7 @@ def _register_services(hass: HomeAssistant) -> None:
             remind_until=data.get(ATTR_REMIND_UNTIL),
             keep_done=data.get(ATTR_KEEP_DONE),
             done_message=data.get(ATTR_DONE_MESSAGE),
+            notify_data=data.get(ATTR_NOTIFY_DATA),
             templates=await _may_use_templates(hass, call),
             source="service",
             context=call.context,

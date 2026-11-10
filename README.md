@@ -45,6 +45,7 @@ When adding the integration (and later under *Configure*) you set:
 | Quiet hours also for push | on = nothing is sent at night; a reminder that falls into the quiet hours waits until they end |
 | Default interval, time for date-only tasks, snooze from phone | |
 | Open when the notification is tapped | e.g. `/lovelace/remindo` |
+| Extra data for app notifications | advanced: anything the HA Companion app understands is added to every notification, e.g. `car_ui: true` (Android Auto), `priority: high` + `ttl: 0` (deliver immediately), `notification_icon`, `color`, `channel`. Can be overridden per rule and in `remindo.add`. |
 | Keep done tasks on the list | off = a task disappears once ticked off (it stays in the logbook); can be changed per task and per rule |
 
 ## Card
@@ -82,7 +83,7 @@ The card follows the language of the user's profile.
 
 1. **When**: task text, entity, condition (*has state* / *above* / *below* / *calendar event*).
 2. **Condition**: value (list of the entity's states) and "for at least N min"; for a calendar: how many days before and at what time.
-3. **Reminders**: repeat interval, limit, channels, speakers, "close automatically when the condition ends", message when resolved, "keep on the list after done".
+3. **Reminders**: repeat interval, limit, channels, speakers, "close automatically when the condition ends", message when resolved, "keep on the list after done". Optional: **spoken text** (what the speaker says instead of the task text, e.g. "It's me, your dishwasher. Open me, please.") and extra notification data for this rule.
 
 **Values in the text, no templates needed.** In the rule text (and the message when resolved) you can write:
 
@@ -163,7 +164,7 @@ A "for at least N min" countdown survives a restart of Home Assistant. A calenda
 
 | Action | Fields |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
 | `remindo.update` | `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Only the fields you send change; `null` clears a field. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time. |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |

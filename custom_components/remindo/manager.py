@@ -35,6 +35,7 @@ from .const import (
     CONF_KEEP_HISTORY,
     CONF_MEDIA_PLAYER,
     CONF_NOTIFY,
+    CONF_NOTIFY_DATA,
     CONF_PERSISTENT,
     CONF_PHONE_SNOOZE,
     CONF_PRESENCE,
@@ -168,6 +169,7 @@ class Task:
     expires: str | None = None  # drop the task at this time if still open (ISO)
     keep_done: bool | None = None  # None = integration option
     done_message: str | None = None  # sent when the task closes itself
+    notify_data: dict[str, Any] | None = None  # extra data for the HA app notification
     templates: bool = False  # texts come from a trusted source and may be HA templates
     template: str | None = None  # summary template, rendered at every reminder
     status: str = STATUS_OPEN
@@ -332,6 +334,7 @@ class TaskManager:
         expires: datetime | None = None,
         keep_done: bool | None = None,
         done_message: str | None = None,
+        notify_data: dict[str, Any] | None = None,
         templates: bool = False,
         source: str = "service",
         context: Context | None = None,
@@ -374,6 +377,7 @@ class TaskManager:
             expires=_iso(expires),
             keep_done=keep_done,
             done_message=done_message or None,
+            notify_data=dict(notify_data) if notify_data else None,
             templates=templates,
             template=template,
         )
@@ -417,6 +421,8 @@ class TaskManager:
             task.remind_until = _iso(self._resolve_start(until)) if until else None
         if "keep_done" in changes:
             task.keep_done = changes["keep_done"]
+        if "notify_data" in changes:
+            task.notify_data = dict(changes["notify_data"]) if changes["notify_data"] else None
         self._schedule(task)
         self._save()
         return task
@@ -701,6 +707,9 @@ class TaskManager:
         body = task.summary if not task.description else f"{task.summary}\n{task.description}"
         snooze = int(self.options[CONF_PHONE_SNOOZE])
         click = self.options.get(CONF_CLICK_URL) or DEFAULTS[CONF_CLICK_URL]
+        # anything the Companion app understands (icon, Android Auto, priority…): from the
+        # integration options, then from the task; the tag and the buttons stay ours
+        extra = {**(self.options.get(CONF_NOTIFY_DATA) or {}), **(task.notify_data or {})}
         for target in self.phones_for(task):
             if not self._is_mobile(target):
                 await self._notify_plain(target, title, body)
@@ -712,11 +721,12 @@ class TaskManager:
                     "title": title,
                     "message": body,
                     "data": {
-                        "tag": self._tag(task),
                         "group": "remindo",
                         "sticky": "true",
                         "clickAction": click,
                         "url": click,
+                        **extra,
+                        "tag": self._tag(task),
                         "actions": [
                             {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": texts.text(self.hass, "done")},
                             {"action": f"{ACTION_PREFIX}_{ACTION_SNOOZE}_{task.uid}", "title": texts.text(self.hass, "snooze", minutes=snooze)},

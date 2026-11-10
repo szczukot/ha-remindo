@@ -23,6 +23,7 @@ CONF_KEEP_HISTORY = "keep_history"
 CONF_CLICK_URL = "click_url"
 CONF_KEEP_DONE = "keep_done"
 CONF_QUIET_PUSH = "quiet_push"
+CONF_NOTIFY_DATA = "notify_data"
 
 DEFAULTS = {
     CONF_NOTIFY: [],
@@ -59,6 +60,7 @@ ATTR_MAX_REMINDERS = "max_reminders"
 ATTR_REMIND_UNTIL = "remind_until"
 ATTR_KEEP_DONE = "keep_done"
 ATTR_DONE_MESSAGE = "done_message"
+ATTR_NOTIFY_DATA = "notify_data"
 
 REPEAT_NONE = "none"
 REPEAT_OPTIONS = [REPEAT_NONE, "hourly", "daily", "weekly", "monthly", "yearly"]

@@ -558,3 +558,51 @@ async def test_rule_simple_tokens(hass: HomeAssistant, freezer: FrozenDateTimeFa
     hass.states.async_set("sensor.hum", "82", attrs)
     await _remind(hass, freezer, 30 * 60 + 1)
     assert task.summary == "Air the bathroom: Bathroom humidity 82 %"
+
+
+async def test_rule_spoken_text_and_notify_data(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """A rule can say something else than the task text, and add Companion app options."""
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await setup_integration(hass, notify_data={"car_ui": True, "channel": "Remindo"})
+    hass.states.async_set("sensor.dishwasher", "run", {"friendly_name": "Dishwasher"})
+    flow = await hass.config_entries.subentries.async_init((entry.entry_id, "rule"), context={"source": "user"})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Unload the dishwasher", "entity_id": "sensor.dishwasher", "mode": "state"})
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": "finished", "for_minutes": 0})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"],
+        {"remind": True, "interval": 3, "auto_close": True, "keep_done": False,
+         "phones": ["notify.mobile_app_test"], "speakers": ["media_player.tablet"],
+         "tts_message": "It's me, your {name}. Open me, please.",
+         "notify_data": {"priority": "high", "ttl": 0, "channel": "Appliances", "tag": "mine", "actions": []}},
+    )
+    assert flow["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    hass.states.async_set("sensor.dishwasher", "finished", {"friendly_name": "Dishwasher"})
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(seconds=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    assert calls["tts"][0].data["message"] == "It's me, your Dishwasher. Open me, please."
+    push = calls["notify"][0].data
+    assert push["message"] == "Unload the dishwasher"
+    data = push["data"]
+    assert data["car_ui"] is True  # from the integration options
+    assert data["priority"] == "high" and data["ttl"] == 0 and data["channel"] == "Appliances"  # the rule wins
+    # the tag and the buttons cannot be replaced: clearing and Done/Snooze depend on them
+    assert data["tag"].startswith("remindo_") and len(data["actions"]) == 3
+
+
+async def test_notify_data_from_the_action(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await setup_integration(hass)
+    res = await hass.services.async_call(
+        DOMAIN, "add", {"summary": "X", "speakers": [], "notify_data": {"notification_icon": "mdi:washing-machine"}},
+        blocking=True, return_response=True)
+    freezer.tick(timedelta(seconds=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert calls["notify"][0].data["data"]["notification_icon"] == "mdi:washing-machine"
+    await hass.services.async_call(DOMAIN, "update", {"uid": res["uid"], "notify_data": None}, blocking=True)
+    assert entry.runtime_data.tasks[res["uid"]].notify_data is None
