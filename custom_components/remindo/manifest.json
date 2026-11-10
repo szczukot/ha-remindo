@@ -6,6 +6,10 @@
     "tts",
     "logbook"
   ],
+  "categories": [
+    "productivity_information.calendars_todos",
+    "messaging_notifications.push_notifications"
+  ],
   "codeowners": [
     "@szczukot"
   ],
