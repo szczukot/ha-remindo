@@ -251,8 +251,11 @@ def _register_services(hass: HomeAssistant) -> None:
     @_translated
     async def update(call: ServiceCall) -> None:
         manager = _manager(hass)
+        task = _target(manager, call.data)
+        if task.status != "open":
+            raise RemindoError("task_closed", summary=task.summary)
         changes = {k: v for k, v in call.data.items() if k not in (ATTR_UID, ATTR_KEY)}
-        await manager.async_update(_target(manager, call.data), changes)
+        await manager.async_update(task, changes)
 
     async def done(call: ServiceCall) -> None:
         manager = _manager(hass)

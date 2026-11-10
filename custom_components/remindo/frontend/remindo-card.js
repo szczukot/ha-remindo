@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.10.2";
+const VERSION = "0.10.3";
 
 const I18N = {
   en: {
@@ -173,7 +173,7 @@ class RemindoCard extends HTMLElement {
     const btns = closed ? `
       <div class="btns">
         <button data-a="reopen" data-uid="${task.uid}" title="${t("restore")}">↩</button>
-        <button class="no" data-a="delete-yes" data-uid="${task.uid}" title="${t("del_title")}">🗑</button>
+        <button class="no" data-a="delete" data-uid="${task.uid}" title="${t("del_title")}">🗑</button>
       </div>` : `
       <div class="btns">
         <button class="ok" data-a="done" data-uid="${task.uid}" title="${t("btn_done")}">✓</button>

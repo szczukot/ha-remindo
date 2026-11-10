@@ -165,8 +165,8 @@ A "for at least N min" countdown survives a restart of Home Assistant. A calenda
 | Action | Fields |
 |---|---|
 | `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
-| `remindo.update` | `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Only the fields you send change; `null` clears a field. |
-| `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time. |
+| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Only the fields you send change; `null` clears a field. |
+| `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time; a second close within 30 s (another phone, the card) is ignored, so a date is never skipped by accident. |
 | `remindo.reopen` | `uid`: opens a done or skipped task again; a task with a due time reminds again right away |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |
 | `remindo.snooze` | `uid`/`key` + `minutes` or `until` |

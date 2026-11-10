@@ -315,7 +315,8 @@ class RuleEngine:
             description=rule.description,
             start="now",
             interval=rule.interval,
-            key=rule.key,
+            # one task per event day: with "2 days before" two pickups in a row stay separate
+            key=f"{rule.key}_{day.date().isoformat()}",
             phones=rule.phones,
             speakers=rule.speakers,
             tts_message=(rule.tts_message or summary).replace("{event}", what),

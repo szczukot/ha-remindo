@@ -7,7 +7,7 @@ import calendar
 import logging
 import re
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, time, timedelta
 from typing import Any
@@ -70,6 +70,10 @@ SPEAK_WAIT_MAX = 20.0  # s, max wait for a busy speaker (longer = music, not an 
 SPEAK_START_MAX = 5.0  # s, max wait for our own message to start playing
 SPEAK_CHARS_PER_SECOND = 12  # to estimate the length of a message spoken over music
 _BUSY = ("playing", "buffering")
+
+# A recurring task stays open after "done", so a second tap from another phone or the
+# card a moment later would close the next date too; such a repeat is ignored.
+REPEAT_CLOSE_WINDOW = 30.0  # s
 
 # Dismissed tasks stay restorable; only the most recent ones are kept.
 KEEP_DISMISSED = 20
@@ -212,6 +216,8 @@ class TaskManager:
         self._speak_lock = asyncio.Lock()
         self._speaking: set[asyncio.Task[None]] = set()
         self._warned: set[str] = set()
+        self._closing: set[str] = set()  # tasks being closed right now
+        self._closed_at: dict[str, float] = {}  # recurring task → when it was last closed
 
     # ------------------------------------------------------------------ storage
     async def async_load(self) -> None:
@@ -233,7 +239,9 @@ class TaskManager:
                 if when is None:
                     task.next_reminder = None
                 elif when < now:
-                    task.next_reminder = _iso(now + MISSED_DELAY)
+                    until = _dt(task.remind_until)
+                    # missed while Home Assistant was down, unless "stop reminding at" has passed
+                    task.next_reminder = None if until and until < now else _iso(now + MISSED_DELAY)
             self._schedule(task)
             self._schedule_expiry(task)
 
@@ -458,8 +466,23 @@ class TaskManager:
     async def _close(
         self, task: Task, status: str, event: str, source: str, context: Context | None
     ) -> None:
-        if task.status != STATUS_OPEN:
+        if task.status != STATUS_OPEN or task.uid in self._closing:
+            # already closed, or being closed by a simultaneous tap on another phone
             return
+        loop_time = self.hass.loop.time()
+        if task.recurring and loop_time - self._closed_at.get(task.uid, -REPEAT_CLOSE_WINDOW) < REPEAT_CLOSE_WINDOW:
+            return  # the same date was just closed from somewhere else
+        self._closing.add(task.uid)
+        if task.recurring:
+            self._closed_at[task.uid] = loop_time
+        try:
+            await self._close_now(task, status, event, source, context)
+        finally:
+            self._closing.discard(task.uid)
+
+    async def _close_now(
+        self, task: Task, status: str, event: str, source: str, context: Context | None
+    ) -> None:
         now = dt_util.now()
         await self._clear_notifications(task)
         if source == "auto" and task.done_message and task.reminders:
@@ -503,8 +526,9 @@ class TaskManager:
         task.closed = None
         task.active = False
         task.reminders = task.snoozes = 0
-        if task.start:
-            task.next_reminder = _iso(now)
+        if start := _dt(task.start):
+            # reminds right away, or at its due time if that is still ahead
+            task.next_reminder = _iso(max(now, start))
         if (expires := _dt(task.expires)) and expires <= now:
             task.expires = None  # restored after its date passed: keep it until handled
         self._schedule(task)
@@ -591,8 +615,11 @@ class TaskManager:
             await self.async_dismiss(task, "expired")
             return
         if self.options.get(CONF_QUIET_PUSH) and self.is_quiet(now):
-            # quiet hours also for push: the reminder waits until they end
-            task.next_reminder = _iso(self._quiet_end(now))
+            # quiet hours also for push: the reminder waits until they end,
+            # unless "stop reminding at" comes first
+            later = self._quiet_end(now)
+            until = _dt(task.remind_until)
+            task.next_reminder = None if until and later > until else _iso(later)
             self._schedule(task)
             self._save()
             return
@@ -610,7 +637,10 @@ class TaskManager:
         self._schedule(task)
         self._fire(EVENT_REMINDED, task, "schedule", None, count=task.reminders)
         self._save()
-        await self._send_notifications(task)
+        try:
+            await self._send_notifications(task)
+        except Exception:  # noqa: BLE001 - a broken notification must not stop the schedule
+            _LOGGER.exception("Remindo could not send the reminder for %s", task.summary)
 
     # ------------------------------------------------------------ notifications
     def _quiet_times(self) -> tuple[time, time]:
@@ -699,6 +729,17 @@ class TaskManager:
             return False
         return True
 
+    def _mapping(self, value: Any) -> dict[str, Any]:
+        """Extra notification data must be key: value pairs; anything else is ignored."""
+        if not value:
+            return {}
+        if isinstance(value, Mapping):
+            return dict(value)
+        if "notify_data" not in self._warned:
+            self._warned.add("notify_data")
+            _LOGGER.warning("Remindo ignores the extra notification data, it is not a key: value mapping: %r", value)
+        return {}
+
     @staticmethod
     def _is_mobile(target: str) -> bool:
         return target.removeprefix("notify.").startswith("mobile_app_")
@@ -740,7 +781,7 @@ class TaskManager:
         click = self.options.get(CONF_CLICK_URL) or DEFAULTS[CONF_CLICK_URL]
         # anything the Companion app understands (icon, Android Auto, priority…): from the
         # integration options, then from the task; the tag and the buttons stay ours
-        extra = {**(self.options.get(CONF_NOTIFY_DATA) or {}), **(task.notify_data or {})}
+        extra = {**self._mapping(self.options.get(CONF_NOTIFY_DATA)), **self._mapping(task.notify_data)}
         for target in self.phones_for(task):
             if not self._is_mobile(target):
                 await self._notify_plain(target, title, body)

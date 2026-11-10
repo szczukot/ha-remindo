@@ -101,6 +101,12 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
     )
 
 
+def _bad_mapping(data: dict[str, Any], key: str) -> dict[str, str]:
+    """Extra notification data must be key: value pairs."""
+    value = data.get(key)
+    return {key: "not_mapping"} if value and not isinstance(value, dict) else {}
+
+
 def _clean(data: dict[str, Any]) -> dict[str, Any]:
     data = dict(data)
     if isinstance(data.get(CONF_MEDIA_PLAYER), str):
@@ -117,9 +123,11 @@ class RemindoConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(title="Remindo", data={}, options=_clean(user_input))
-        return self.async_show_form(step_id="user", data_schema=_schema(self.hass, {}))
+            if not (errors := _bad_mapping(user_input, CONF_NOTIFY_DATA)):
+                return self.async_create_entry(title="Remindo", data={}, options=_clean(user_input))
+        return self.async_show_form(step_id="user", data_schema=_schema(self.hass, user_input or {}), errors=errors)
 
     @staticmethod
     @callback
@@ -139,10 +147,14 @@ class RemindoOptionsFlow(OptionsFlow):
     """Change the settings."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(data=_clean(user_input))
+            if not (errors := _bad_mapping(user_input, CONF_NOTIFY_DATA)):
+                return self.async_create_entry(data=_clean(user_input))
         return self.async_show_form(
-            step_id="init", data_schema=_schema(self.hass, dict(self.config_entry.options))
+            step_id="init",
+            data_schema=_schema(self.hass, user_input or dict(self.config_entry.options)),
+            errors=errors,
         )
 
 
@@ -257,6 +269,10 @@ class RuleSubentryFlow(ConfigSubentryFlow):
         phones = [p if p.startswith("notify.") else f"notify.{p}" for p in options.get(CONF_NOTIFY) or []]
         speakers = options.get(CONF_MEDIA_PLAYER) or []
         speakers = [speakers] if isinstance(speakers, str) else list(speakers)
+        errors: dict[str, str] = {}
+        if user_input is not None and (errors := _bad_mapping(user_input, "notify_data")):
+            self._data.update(user_input)
+            user_input = None
         if user_input is not None:
             data = {**self._data, **user_input}
             data["interval"] = int(data.get("interval") or 0) if data.get("remind", True) else 0
@@ -312,5 +328,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
         schema[vol.Required("keep_done", default=self._data.get("keep_done", options[CONF_KEEP_DONE]))] = selector.BooleanSelector()
         if phones:
             schema[vol.Optional("notify_data")] = selector.ObjectSelector()
-        return self.async_show_form(step_id="notify", data_schema=self._suggest(schema), description_placeholders=_TOKENS)
+        return self.async_show_form(
+            step_id="notify", data_schema=self._suggest(schema), errors=errors, description_placeholders=_TOKENS
+        )
 

@@ -35,6 +35,9 @@
     },
     "abort": {
       "single_instance_allowed": "Already configured."
+    },
+    "error": {
+      "not_mapping": "Enter key: value pairs, e.g. car_ui: true"
     }
   },
   "options": {
@@ -70,6 +73,9 @@
           "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task."
         }
       }
+    },
+    "error": {
+      "not_mapping": "Enter key: value pairs, e.g. car_ui: true"
     }
   },
   "services": {
@@ -393,6 +399,9 @@
       },
       "abort": {
         "reconfigure_successful": "Rule saved."
+      },
+      "error": {
+        "not_mapping": "Enter key: value pairs, e.g. car_ui: true"
       }
     }
   },
@@ -415,6 +424,9 @@
     },
     "repeat_needs_start": {
       "message": "A recurring task needs a start date"
+    },
+    "task_closed": {
+      "message": "The task \"{summary}\" is already done or skipped. Restore it first."
     }
   }
 }

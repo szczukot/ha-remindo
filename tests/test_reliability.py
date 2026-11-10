@@ -551,3 +551,120 @@ async def test_card_is_told_about_the_ha_notification(hass: HomeAssistant, hass_
     msg = await client.receive_json()
     assert msg["event"]["options"]["persistent"] is True
     assert "dismissed" not in msg["event"]
+
+
+# -------------------------------------------------- third review (0.10.3)
+
+
+async def test_simultaneous_done_closes_once(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """Two phones (or a phone and the card) tap "Done" at the same moment."""
+    freezer.move_to("2026-11-10 08:00:00+01:00")
+    entry, _ = await setup_integration(hass)
+    manager = entry.runtime_data
+    uid = await add_task(hass, summary="Pills", start="2026-11-10T08:00:00", repeat="daily", speakers=[])
+    await tick(hass, freezer, seconds=2)
+    task = manager.tasks[uid]
+    await asyncio.gather(manager.async_done(task, "phone"), manager.async_done(task, "card"))
+    assert task.start == "2026-11-11T08:00:00+01:00"
+    assert len(manager.history) == 1
+
+
+async def test_bad_extra_data_does_not_block_reminders(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await setup_integration(hass, notify_data="car_ui: true")  # text, not key: value pairs
+    await add_task(hass, summary="X")
+    await tick(hass, freezer, seconds=2)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert len(calls["notify"]) == 1 and len(calls["pn_create"]) == 1 and len(calls["tts"]) == 1
+    assert "car_ui" not in calls["notify"][0].data["data"]
+
+
+async def test_forms_reject_extra_data_that_is_not_a_mapping(hass: HomeAssistant) -> None:
+    entry, _ = await setup_integration(hass)
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    flow = await hass.config_entries.options.async_configure(flow["flow_id"], {**entry.options, "media_player": ["media_player.tablet"], "notify_data": ["car_ui"]})
+    assert flow["type"] is FlowResultType.FORM and flow["errors"] == {"notify_data": "not_mapping"}
+
+    hass.states.async_set("binary_sensor.gate", "off")
+    flow = await hass.config_entries.subentries.async_init((entry.entry_id, "rule"), context={"source": "user"})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Gate", "entity_id": "binary_sensor.gate", "mode": "state"})
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": "on", "for_minutes": 0})
+    bad = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"remind": True, "interval": 5, "auto_close": True, "keep_done": True, "notify_data": "x"})
+    assert bad["type"] is FlowResultType.FORM and bad["errors"] == {"notify_data": "not_mapping"}
+    good = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"remind": True, "interval": 5, "auto_close": True, "keep_done": True, "notify_data": {"car_ui": True}})
+    assert good["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_reopen_keeps_a_future_due_time(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, _ = await setup_integration(hass)
+    uid = await add_task(hass, summary="Tomorrow", start="2026-11-10T09:00:00", speakers=[])
+    await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
+    await hass.services.async_call(DOMAIN, "reopen", {"uid": uid}, blocking=True)
+    assert entry.runtime_data.tasks[uid].next_reminder == "2026-11-10T09:00:00+01:00"
+
+
+async def test_stop_time_beats_quiet_hours(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """ "Stop reminding at 23:00": a reminder pushed by quiet hours to the morning is dropped."""
+    freezer.move_to("2026-11-09 21:50:00+01:00")
+    entry, calls = await setup_integration(hass, quiet_push=True)
+    uid = await add_task(hass, summary="X", interval=30, remind_until="2026-11-09T23:00:00", speakers=[])
+    task = entry.runtime_data.tasks[uid]
+    await tick(hass, freezer, seconds=2)
+    await tick(hass, freezer, minutes=30, seconds=1)  # 22:20, quiet hours
+    assert task.next_reminder is None
+    await tick(hass, freezer, hours=10)
+    assert task.reminders == 1 and len(calls["notify"]) == 1
+
+
+async def test_stop_time_passed_while_ha_was_down(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, _ = await setup_integration(hass)
+    uid = await add_task(hass, summary="X", interval=30, remind_until="2026-11-09T16:00:00", speakers=[])
+    await tick(hass, freezer, seconds=2)
+    await hass.config_entries.async_unload(entry.entry_id)
+    freezer.move_to("2026-11-09 20:00:00+01:00")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await tick(hass, freezer, minutes=5)
+    assert entry.runtime_data.tasks[uid].reminders == 1
+
+
+async def test_update_refuses_a_closed_task(hass: HomeAssistant) -> None:
+    entry, _ = await setup_integration(hass)
+    uid = await add_task(hass, summary="X", start=None)
+    await hass.services.async_call(DOMAIN, "dismiss", {"uid": uid}, blocking=True)
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(DOMAIN, "update", {"uid": uid, "start": "2026-12-01T09:00:00"}, blocking=True)
+    assert err.value.translation_key == "task_closed"
+    # the To-do card may still rename a done task
+    await hass.services.async_call(DOMAIN, "reopen", {"uid": uid}, blocking=True)
+    await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
+    await hass.services.async_call("todo", "update_item", {"item": uid, "rename": "Y"}, target=TODO, blocking=True)
+    assert entry.runtime_data.tasks[uid].summary == "Y"
+
+
+async def test_calendar_pickups_on_consecutive_days_stay_separate(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """ "2 days before": paper on the 13th and glass on the 14th are two tasks."""
+    freezer.move_to("2026-11-11 17:59:50+01:00")
+    entry, _ = await setup_integration(hass)
+    days = {"2026-11-13": ["Paper"], "2026-11-14": ["Glass"]}
+
+    async def get_events(call):
+        day = str(call.data["start_date_time"])[:10]
+        return {"calendar.waste": {"events": [{"summary": s} for s in days.get(day, [])]}}
+
+    hass.services.async_register("calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY)
+    hass.states.async_set("calendar.waste", "off")
+    await add_rule(hass, entry, {"summary": "Bins", "entity_id": "calendar.waste", "days_before": 2, "at_time": "18:00:00"})
+    await tick(hass, freezer, seconds=11)
+    await tick(hass, freezer, days=1)
+    assert sorted(t.summary for t in entry.runtime_data.open_tasks()) == ["Bins: Glass", "Bins: Paper"]
+    # each one disappears after its own day
+    freezer.move_to("2026-11-14 00:00:05+01:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert [t.summary for t in entry.runtime_data.open_tasks()] == ["Bins: Glass"]
