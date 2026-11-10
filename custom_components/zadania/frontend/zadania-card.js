@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.5.0";
+const VERSION = "0.5.1";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -30,7 +30,8 @@ class ZadaniaCard extends HTMLElement {
     this._config = { title: "Zadania", show_done: true, show_form: true, ...config };
     this._tasks = [];
     this._formOpen = false;
-    this._tab = "tasks";
+    // mode: "tasks" (lista zadań) albo "rules" (reguły automatyczne)
+    this._tab = this._config.mode === "rules" ? "rules" : "tasks";
     this._rules = [];
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     this._render();
@@ -198,6 +199,7 @@ class ZadaniaCard extends HTMLElement {
       case "save": return this._save();
       case "err": this._error = null; this._forceRender = true; return this._render();
       case "sec": this._collapsed[b.dataset.k] = !this._collapsed[b.dataset.k]; this._forceRender = true; return this._render();
+      case "nav": history.pushState(null, "", b.dataset.path); window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } })); return;
       case "tab": this._tab = b.dataset.tab; this._formOpen = this._ruleFormOpen = false; this._forceRender = true; return this._render();
       case "r-new": this._editRule = null; this._ruleFormOpen = true; this._forceRender = true; this._render(); return this.shadowRoot.getElementById("r-sum")?.focus();
       case "r-edit": this._editRule = (this._rules || []).find((r) => r.id === b.dataset.id); this._ruleFormOpen = true; this._forceRender = true; return this._render();
@@ -382,7 +384,7 @@ class ZadaniaCard extends HTMLElement {
     this.shadowRoot.innerHTML = `<style>${ZadaniaCard.styles}</style>
       <ha-card>
         <div class="head"><span>${esc(this._config.title)}</span>${g.now.length ? `<span class="badge">${g.now.length}</span>` : ""}
-          <span class="tabs"><button class="tab ${this._tab === "tasks" ? "sel" : ""}" data-a="tab" data-tab="tasks">Zadania</button><button class="tab ${this._tab === "rules" ? "sel" : ""}" data-a="tab" data-tab="rules">Automatyczne${(this._rules || []).length ? ` (${this._rules.length})` : ""}</button></span></div>
+          ${this._config.link ? `<span class="tabs"><button class="tab" data-a="nav" data-path="${esc(this._config.link)}">${esc(this._config.link_name || (this._tab === "rules" ? "← Zadania" : "⚙ Reguły"))}</button></span>` : ""}</div>
         ${this._error ? `<div class="err">${esc(this._error)} <button data-a="err">OK</button></div>` : ""}
         ${this._tab === "rules" ? this._rulesView() : `
         ${this._section("Teraz", g.now, "now")}
@@ -450,9 +452,19 @@ ZadaniaCard.styles = `
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
 `;
 
+// Osobna karta z regułami (to samo, tylko mode: rules) — żeby była do wyboru w „Dodaj kartę”
+class ZadaniaRulesCard extends ZadaniaCard {
+  setConfig(config) { super.setConfig({ title: "Reguły zadań", ...config, mode: "rules" }); }
+  static getStubConfig() { return { title: "Reguły zadań" }; }
+}
+
 if (!customElements.get("zadania-card")) {
   customElements.define("zadania-card", ZadaniaCard);
+  customElements.define("zadania-rules-card", ZadaniaRulesCard);
   window.customCards = window.customCards || [];
-  window.customCards.push({ type: "zadania-card", name: "Zadania", description: "Zadania z przypomnieniami", preview: false });
+  window.customCards.push(
+    { type: "zadania-card", name: "Zadania – lista", description: "Lista zadań z przyciskami i dodawaniem", preview: false },
+    { type: "zadania-rules-card", name: "Zadania – reguły", description: "Reguły: gdy coś się stanie, dodaj zadanie", preview: false },
+  );
   console.info(`%c ZADANIA-CARD %c ${VERSION} `, "background:#43a047;color:#fff", "");
 }

@@ -23,12 +23,26 @@ Zadanie cykliczne po zrobieniu (albo „nie robię”) wraca w następnym termin
 ## Zdarzenia
 `zadania_created`, `zadania_reminded`, `zadania_done`, `zadania_snoozed`, `zadania_dismissed` (widoczne w dzienniku).
 
-## Karta
+## Karty
+Ładują się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” są dwie:
+
+**Zadania – lista**: zadania do zrobienia, przyciski ✓ / odłóż / ✕, dodawanie ręczne.
 ```yaml
 type: custom:zadania-card
 title: Zadania
+link: /dashboard-tablet/zadania-reguly   # opcjonalnie: przycisk „⚙ Reguły”
+show_done: true                          # sekcje Zrobione / Odrzucone (zwinięte)
+show_form: true                          # przycisk „＋ Dodaj zadanie”
 ```
-Ładuje się automatycznie z integracją (bez dodawania zasobu).
+
+**Zadania – reguły**: ustawianie „gdy coś się stanie → dodaj zadanie” (stan encji, próg liczbowy, wydarzenie w kalendarzu).
+```yaml
+type: custom:zadania-rules-card
+title: Reguły zadań
+link: /dashboard-tablet/zadania          # opcjonalnie: przycisk „← Zadania”
+```
+
+Każdą kartę można postawić na dowolnym widoku, np. listę na tablecie, a reguły na dashboardzie admina.
 
 ## Przykład: brama
 ```yaml
