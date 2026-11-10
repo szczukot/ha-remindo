@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -116,10 +117,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Rejestruje kartę Lovelace (raz na uruchomienie HA)."""
     integration = await async_get_integration(hass, DOMAIN)
     path = Path(__file__).parent / "frontend" / "zadania-card.js"
+    # Wersja w adresie = skrót zawartości pliku, żeby przeglądarki nie trzymały starej karty
+    digest = await hass.async_add_executor_job(lambda: hashlib.sha1(path.read_bytes()).hexdigest()[:8])
     await hass.http.async_register_static_paths(
         [StaticPathConfig(CARD_URL, str(path), cache_headers=False)]
     )
-    frontend.add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}")
+    frontend.add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}-{digest}")
     websocket_api.async_register_command(hass, ws_subscribe)
     return True
 
