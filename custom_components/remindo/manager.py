@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import calendar
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
@@ -57,6 +58,13 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Announcement queue: wait a moment (other automations reacting to the same
+# change may speak too), then until the speakers are quiet, one message at a time.
+SPEAK_SETTLE = 3.0  # s
+SPEAK_WAIT_MAX = 60.0  # s, max wait for a busy speaker
+SPEAK_START_MAX = 5.0  # s, max wait for our own message to start playing
+_BUSY = ("playing", "buffering")
 
 
 class RemindoError(ValueError):
@@ -181,6 +189,7 @@ class TaskManager:
         self._listeners: list[Callable[[], None]] = []
         self.rules = RuleEngine(self)
         self._legacy_rules: list[dict[str, Any]] = []
+        self._speak_lock = asyncio.Lock()
 
     # ------------------------------------------------------------------ magazyn
     async def async_load(self) -> None:
@@ -565,7 +574,33 @@ class TaskManager:
             )
         speakers = self.speakers_for(task)
         if speakers and not self.is_quiet() and self.someone_home():
+            self.hass.async_create_background_task(self._speak_queued(task.uid, speakers), "remindo speak")
+
+    def _busy(self, speakers: list[str]) -> bool:
+        return any((st := self.hass.states.get(e)) is not None and st.state in _BUSY for e in speakers)
+
+    async def _wait(self, condition: Callable[[], bool], timeout: float) -> bool:
+        """Poll every 0.5 s until condition() is true; False on timeout."""
+        for _ in range(int(timeout * 2)):
+            if condition():
+                return True
+            await asyncio.sleep(0.5)
+        return condition()
+
+    async def _speak_queued(self, uid: str, speakers: list[str]) -> None:
+        async with self._speak_lock:
+            if SPEAK_SETTLE:
+                await asyncio.sleep(SPEAK_SETTLE)
+            if not await self._wait(lambda: not self._busy(speakers), SPEAK_WAIT_MAX):
+                _LOGGER.debug("Speakers %s still busy, speaking anyway", speakers)
+            task = self.tasks.get(uid)
+            # the task may have been ticked off while waiting
+            if task is None or task.status != STATUS_OPEN or not task.active:
+                return
             await self._speak(task, speakers)
+            # hold the queue until our own message has played
+            if await self._wait(lambda: self._busy(speakers), SPEAK_START_MAX):
+                await self._wait(lambda: not self._busy(speakers), SPEAK_WAIT_MAX)
 
     async def _speak(self, task: Task, speakers: list[str]) -> None:
         tts_entity = self.options.get(CONF_TTS_ENTITY)

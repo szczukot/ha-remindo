@@ -17,6 +17,7 @@ from pytest_homeassistant_custom_component.common import (
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import ServiceValidationError
+from homeassistant.util import dt as dt_util
 
 from custom_components.remindo import texts
 from custom_components.remindo.const import DOMAIN
@@ -367,3 +368,42 @@ async def test_snooze_then_interval_resumes(hass: HomeAssistant, freezer: Frozen
     assert task.reminders == 2 and task.active
     await tick(minutes=5, seconds=1)
     assert task.reminders == 3  # back to every 5 min
+
+
+async def test_speech_waits_for_busy_speaker(hass: HomeAssistant, monkeypatch) -> None:
+    """Another automation is talking on the tablet: Remindo waits until it is quiet."""
+    import asyncio
+
+    from custom_components.remindo import manager as mgr
+
+    monkeypatch.setattr(mgr, "SPEAK_WAIT_MAX", 5)
+    entry, calls = await _setup(hass)
+    hass.states.async_set("media_player.tablet", "playing")
+    await hass.services.async_call(DOMAIN, "add", {"summary": "Washer"}, blocking=True, return_response=True)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=2))
+    await hass.async_block_till_done()
+    await asyncio.sleep(1)
+    assert len(calls["notify"]) == 1  # push is not delayed
+    assert calls["tts"] == []  # speaker busy: waiting
+    hass.states.async_set("media_player.tablet", "idle")
+    await asyncio.sleep(1)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert len(calls["tts"]) == 1
+
+
+async def test_speech_skipped_if_done_while_waiting(hass: HomeAssistant, monkeypatch) -> None:
+    import asyncio
+
+    from custom_components.remindo import manager as mgr
+
+    monkeypatch.setattr(mgr, "SPEAK_WAIT_MAX", 5)
+    entry, calls = await _setup(hass)
+    hass.states.async_set("media_player.tablet", "playing")
+    uid = (await hass.services.async_call(DOMAIN, "add", {"summary": "Washer"}, blocking=True, return_response=True))["uid"]
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=2))
+    await hass.async_block_till_done()
+    await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
+    hass.states.async_set("media_player.tablet", "idle")
+    await asyncio.sleep(1)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert calls["tts"] == []

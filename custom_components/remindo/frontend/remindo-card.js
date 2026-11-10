@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.8.1";
+const VERSION = "0.8.2";
 
 const I18N = {
   en: {

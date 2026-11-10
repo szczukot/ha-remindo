@@ -7,7 +7,7 @@ A Home Assistant integration that turns "remember to…" into tasks that **keep 
 - 📋 **Task list** (`todo.remindo`), also visible in the standard To-do card and the calendar.
 - ⏰ **Reminders every X minutes/hours** until you react, with a limit ("at most 3 times" or "until 22:00").
 - 📱 **Push to phones** with ✅ Done / ⏰ Snooze / ❌ Skip buttons. After any action the notification disappears from every phone.
-- 🔊 **Spoken announcement** (TTS) on a tablet or speaker, only when someone is home and outside quiet hours.
+- 🔊 **Spoken announcement** (TTS) on a tablet or speaker, only when someone is home and outside quiet hours. Announcements queue up: Remindo waits until the speaker is quiet (e.g. another automation is talking) instead of cutting it off.
 - 🔁 **Recurring tasks**: every N hours / days / weeks / months / years (e.g. "HRV filter every 3 months").
 - 🤖 **Rules**: a task adds itself when a device reaches a state (dishwasher finished, garage open for 10 min, humidity > 70%) or the day before a calendar event (bin collection). It closes itself when the condition ends.
 - 🗂️ **Lovelace card** shipped with the integration: Now / Scheduled / Notes / Done / Skipped, one-tap snooze, adding tasks by hand.
