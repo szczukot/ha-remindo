@@ -11,6 +11,11 @@ Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadani
 - 🔁 **Zadania cykliczne**: co N godzin / dni / tygodni / miesięcy / lat (np. „filtr rekuperatora co 3 miesiące”).
 - 🤖 **Reguły**: zadanie dodaje się samo, gdy urządzenie osiągnie stan (zmywarka skończyła, brama otwarta 10 min, wilgotność > 70%) albo dzień przed wydarzeniem w kalendarzu (wywóz śmieci). Zamyka się samo, gdy warunek minie.
 - 🗂️ **Karta Lovelace** dostarczana z integracją: Teraz / Zaplanowane / Notatki / Zrobione / Odrzucone, odkładanie jednym kliknięciem, ręczne dodawanie zadań.
+- 📣 **Dowolne kanały**: aplikacja HA (z przyciskami) oraz Telegram, e-mail, SMS i każde inne powiadomienie, które masz w HA (sam tekst).
+- ✅ **Komunikat po załatwieniu**: np. „Brama zamknięta ✅”, gdy zadanie zamknie się samo.
+- 🌍 Po polsku i angielsku.
+
+<p align="center"><img src="docs/images/card-pl.png" width="460" alt="Karta Remindo"></p>
 
 ## Instalacja
 
@@ -31,7 +36,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 
 | Opcja | Opis |
 |---|---|
-| Telefony | encje `notify.mobile_app_*`, na które idzie push |
+| Kanały powiadomień | aplikacja HA (`notify.mobile_app_*`, z przyciskami) oraz każdy inny kanał z HA: Telegram, e-mail, SMS, encje `notify.*` (sam tekst) |
 | Powiadomienie w HA | dodatkowo dzwoneczek w HA |
 | Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
 | Włącz ekran tabletu | np. `switch.<tablet>_screen` z Fully Kiosk |
@@ -39,6 +44,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Cisza nocna | bez komunikatów głosowych (push nadal przychodzi) |
 | Domyślny interwał, godzina dla zadań z samą datą, odłożenie z telefonu | |
 | Po kliknięciu powiadomienia otwórz | np. `/lovelace/remindo` |
+| Zostawiaj wykonane zadania na liście | wyłączone = zadanie znika po odhaczeniu (zostaje w dzienniku); można to zmienić dla każdego zadania i reguły |
 
 ## Karta
 
@@ -53,14 +59,11 @@ show_form: true    # przycisk „＋ Dodaj zadanie”
 
 Formularz dodawania:
 
-```
-☑ Przypominaj  [od teraz ▾]  co [30] [minut ▾]   dopóki nie odhaczę
-               przestań przypominać: [nigdy ▾ / po … razach / o konkretnej porze]
-☐ Powtarzaj                  co [5]  [dni ▾]     po odhaczeniu wróci w następnym terminie
-Gdzie przypominać: ☑ 📱 telefon  ☑ 🔊 tablet
-```
+<p align="center"><img src="docs/images/form-pl.png" width="460" alt="Dodawanie zadania"></p>
 
-Odznaczone „Przypominaj” = zwykła notatka na liście.
+Odznaczone „Przypominaj” = zwykła notatka na liście. Odznaczone „Zostaw na liście po wykonaniu” = zadanie zniknie po odhaczeniu (cykliczne zostają zawsze).
+
+<p align="center"><img src="docs/images/snooze-pl.png" width="460" alt="Odkładanie na wybrany termin"></p>
 
 Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅 wybierz…** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie.
 
@@ -72,7 +75,17 @@ Karta wyświetla się w języku profilu użytkownika.
 
 1. **Kiedy**: treść zadania, encja, warunek (*ma stan* / *powyżej* / *poniżej* / *wydarzenie w kalendarzu*).
 2. **Warunek**: wartość (lista stanów encji) i „przez co najmniej N min”; dla kalendarza: ile dni przed i o której.
-3. **Przypomnienia**: ponawianie, limit, telefony, głośniki, „zamknij samo, gdy warunek minie”.
+3. **Przypomnienia**: ponawianie, limit, kanały, głośniki, „zamknij samo, gdy warunek minie”, komunikat po załatwieniu, „zostaw na liście po wykonaniu”.
+
+**Wartość w treści, bez szablonów.** W treści reguły (i w komunikacie po załatwieniu) możesz wpisać:
+
+| Znacznik | Co wstawia | Przykład |
+|---|---|---|
+| `{state}` | aktualną wartość z jednostką | „Wilgotność {state}, przewietrz łazienkę” → „Wilgotność 78 %, przewietrz łazienkę” |
+| `{name}` | nazwę urządzenia | „{name} otwarte za długo” → „Brama garażowa otwarte za długo” |
+| `{event}` | (kalendarz) nazwy wydarzeń | „Jutro wywóz: {event}” |
+
+Wartość odświeża się przy każdym przypomnieniu. Kto zna szablony HA, może też użyć `{{ ... }}`, np. „Na dworze {{ states('sensor.temperatura_zewn') }}°C”.
 
 Przykłady:
 
@@ -87,38 +100,64 @@ Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie w
 
 ## Przykłady zastosowań
 
-Prosto z domu autora:
+### U autora
 
-| Sytuacja | Jak | Przypomnienia |
-|---|---|---|
-| 🧺 Pralka skończyła prać | reguła: `sensor.pralka` ma stan `off` | tablet co 1 min, aż odhaczysz |
-| 🍽️ Zmywarka skończyła | reguła: `sensor.zmywarka_…_operation_state` ma stan `finished` | co 30 min, zamyka się samo po otwarciu drzwi |
-| 🗑️ Wywóz śmieci | reguła kalendarzowa: kalendarz z Waste Collection Schedule, 1 dzień przed o 18:00 | „Wystaw śmieci: Papier i tektura”, push + tablet, co 30 min, maks. 8 razy |
-
-Inne pomysły:
-
-| Sytuacja | Jak |
+| Sytuacja | Ustawienia |
 |---|---|
-| 🚪 Brama garażowa otwarta za długo | reguła: `binary_sensor.brama` ma stan `on` przez 10 min; zamyka się sama po zamknięciu bramy |
-| 🪟 Okno otwarte, a na dworze mróz | reguła „powyżej/poniżej” na temperaturze albo automatyzacja z `remindo.add` i `remindo.close_by_key` |
-| 💧 Wilgotność w łazience | reguła: wilgotność powyżej 70 przez 15 min → „Przewietrz łazienkę” |
-| 🔋 Bateria w czujniku | reguła: bateria poniżej 15 → „Wymień baterię w czujniku drzwi” |
-| 🌬️ Filtr rekuperatora | zadanie cykliczne co 3 miesiące, z samą datą (przypomina o 09:00) |
-| 💊 Leki / witaminy | zadanie cykliczne codziennie o 8:00, przypomina co 10 min, aż odhaczysz |
+| 🧺 Pralka skończyła | reguła: `sensor.pralka` ma stan `off` → „Rozpakuj pralkę”, tablet co 1 min, aż odhaczysz; nie zostaje na liście |
+| 🍽️ Zmywarka skończyła | reguła: `sensor.zmywarka_…_operation_state` ma stan `finished`, co 30 min; zamyka się sama po otwarciu drzwi |
+| 🗑️ Wywóz śmieci | reguła kalendarzowa na kalendarzu z Waste Collection Schedule: 1 dzień przed o 18:00 → „Wystaw śmieci: Papier i tektura”, push + tablet, co 30 min, maks. 8 razy |
+| 🇵🇱 Flaga | zadanie z karty: 11.11 o 9:00, powtarzaj co 1 rok |
+| 🚗 Ubezpieczenie auta | zadanie z karty: 10.12, powtarzaj co 1 rok, przypominaj co 1 dzień, aż odhaczysz |
+
+### Dom i AGD
+
+| Sytuacja | Ustawienia |
+|---|---|
+| 🧺 Suszarka skończyła | jak pralka: stan programu `finished` / moc gniazdka poniżej 5 W przez 3 min |
+| 🧂 Sól / nabłyszczacz w zmywarce | reguła na czujniku z integracji zmywarki (np. Home Connect) ma stan `on` → „Dosyp soli do zmywarki” |
+| 🧊 Lodówka/zamrażarka otwarta | reguła: czujnik drzwi `on` przez 2 min → tablet co 1 min, komunikat po zamknięciu „Lodówka zamknięta ✅” |
+| 🤖 Odkurzacz utknął | reguła: stan odkurzacza `error` → „Uratuj odkurzacz: {name}” |
+| ☕ Odkamienianie ekspresu | zadanie cykliczne co 2 miesiące |
+| 🪥 Wymiana szczoteczki / filtra wody | zadanie cykliczne co 3 miesiące, z samą datą |
 | 🪴 Podlewanie kwiatów | zadanie cykliczne co 4 dni, tylko na listę (bez przypominania) |
-| 🚗 Przegląd auta, OC | zadanie cykliczne co rok, z samą datą |
-| 🧊 Lodówka/zamrażarka otwarta | reguła: czujnik drzwi `on` przez 2 min, tablet co 1 min |
-| 🖨️ Kończy się toner | reguła na stanie tonera poniżej 10% |
-| 📦 Kurier ma dziś przyjść | ręcznie z karty: „Odbierz paczkę” od 9:00, co 1 h, przestań o 18:00 |
+
+### Bezpieczeństwo i wyjścia
+
+| Sytuacja | Ustawienia |
+|---|---|
+| 🚪 Brama garażowa / wjazdowa / furtka otwarta za długo | reguła: `on` przez 10 min, co 10 min, maks. 6 razy, komunikat po załatwieniu „{name} zamknięta ✅” |
+| 🛡️ Alarm nieuzbrojony na noc | reguła: stan alarmu `disarmed` + automatyzacja o 23:00 wywołująca `remindo.add` (albo reguła na pomocniku „noc”) |
+| 🪟 Okno otwarte, a działa klimatyzacja/ogrzewanie | reguła na czujniku okna `on` przez 5 min → „Zamknij okno, {name}”; zamyka się samo |
+| 🔑 Drzwi wejściowe niezamknięte na klucz | reguła na zamku `unlocked` przez 15 min |
+
+### Ogrzewanie, klimatyzacja, energia
+
+| Sytuacja | Ustawienia |
+|---|---|
+| 🔥 Niskie ciśnienie w kotle | reguła: ciśnienie (np. z eBUSd) poniżej 1.0 → „Dopompuj wodę w kotle: {state}” |
+| ❄️ Filtry klimatyzatorów | zadanie cykliczne co 3 miesiące |
+| 🛠️ Przegląd kotła / pompy ciepła | zadanie cykliczne co rok |
+| 📟 Odczyt gazomierza / wodomierza | zadanie cykliczne co miesiąc, 1. dnia o 9:00 |
+| 🔋 Słaba bateria w czujniku | reguła: bateria poniżej 15 → „Wymień baterię: {name} ({state})” |
+| 📱 Tablet się rozładowuje | reguła: bateria tabletu poniżej 20 → „Podłącz tablet” |
+
+### Rzeczy jednorazowe (ręcznie z karty)
+
+| Sytuacja | Ustawienia |
+|---|---|
+| 📦 Kurier ma dziś przyjść | „Odbierz paczkę” od 9:00, co 1 h, przestań o 18:00 |
+| 📞 Oddzwoń do kogoś | +1 h, przypomnij raz |
+| 🛒 Kupić coś przy okazji | notatka (bez przypominania) |
 
 ## Usługi (do automatyzacji i skryptów)
 
 | Usługa | Pola |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`. Zwraca `uid`. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
 | `remindo.done`, `remindo.dismiss` | `uid` albo `key` |
 | `remindo.snooze` | `uid`/`key` + `minutes` albo `until` |
-| `remindo.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła) |
+| `remindo.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła); wysyła `done_message`, jeśli był |
 
 ```yaml
 action: remindo.add

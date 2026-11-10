@@ -35,6 +35,8 @@ from .const import (
     ATTR_PHONES,
     ATTR_PUSH,
     ATTR_REMIND_UNTIL,
+    ATTR_DONE_MESSAGE,
+    ATTR_KEEP_DONE,
     ATTR_REPEAT,
     ATTR_REPEAT_EVERY,
     ATTR_SPEAKERS,
@@ -59,7 +61,17 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type RemindoConfigEntry = ConfigEntry[TaskManager]
 
-_WHEN = vol.Any(cv.datetime, cv.date, cv.string)
+def _when(value: Any) -> Any:
+    """Data bez godziny zostaje datą (→ domyślna godzina), a nie północą."""
+    if isinstance(value, str) and len(value.strip()) == 10:
+        try:
+            return cv.date(value.strip())
+        except vol.Invalid:
+            pass
+    return vol.Any(cv.datetime, cv.date, cv.string)(value)
+
+
+_WHEN = _when
 
 ADD_SCHEMA = vol.Schema(
     {
@@ -77,6 +89,8 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_SPEAKERS): vol.Any(None, cv.entity_ids),
         vol.Optional(ATTR_MAX_REMINDERS): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=1000))),
         vol.Optional(ATTR_REMIND_UNTIL): vol.Any(None, _WHEN),
+        vol.Optional(ATTR_KEEP_DONE): cv.boolean,
+        vol.Optional(ATTR_DONE_MESSAGE): cv.string,
     }
 )
 TARGET = {vol.Optional(ATTR_UID): cv.string, vol.Optional(ATTR_KEY): cv.string}
@@ -205,6 +219,8 @@ def _register_services(hass: HomeAssistant) -> None:
                 speakers=data.get(ATTR_SPEAKERS),
                 max_reminders=data.get(ATTR_MAX_REMINDERS),
                 remind_until=data.get(ATTR_REMIND_UNTIL),
+                keep_done=data.get(ATTR_KEEP_DONE),
+                done_message=data.get(ATTR_DONE_MESSAGE),
                 source="service",
                 context=call.context,
             )
@@ -274,6 +290,7 @@ async def ws_subscribe(
                 "phone_snooze": manager.options.get("phone_snooze"),
                 "default_interval": manager.options.get("default_interval"),
                 "default_time": manager.options.get("default_time"),
+                "keep_done": manager.options.get("keep_done", True),
                 "phones": [{"id": p, "name": manager.phone_label(p)} for p in manager.all_phones()],
                 "speakers": [{"id": s, "name": manager.speaker_label(s)} for s in manager.all_speakers()],
             },

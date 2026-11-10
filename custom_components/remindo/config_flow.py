@@ -21,6 +21,7 @@ from .const import (
     CONF_CLICK_URL,
     CONF_DEFAULT_INTERVAL,
     CONF_DEFAULT_TIME,
+    CONF_KEEP_DONE,
     CONF_MEDIA_PLAYER,
     CONF_NOTIFY,
     CONF_PERSISTENT,
@@ -36,9 +37,21 @@ from .const import (
 )
 
 
+# shown literally in the form help texts
+_TOKENS = {"state": "{state}", "name": "{name}", "event": "{event}"}
+
+_NOT_TARGETS = {"send_message", "persistent_notification", "notify"}
+
+
 def _notify_services(hass: HomeAssistant) -> list[str]:
+    """Aplikacja HA (z przyciskami) najpierw, potem inne kanały: Telegram, e-mail, SMS, encje notify.*."""
     services = hass.services.async_services().get("notify", {})
-    return sorted(f"notify.{name}" for name in services if name.startswith("mobile_app_"))
+    mobile = sorted(f"notify.{name}" for name in services if name.startswith("mobile_app_"))
+    other = sorted(
+        {f"notify.{name}" for name in services if not name.startswith("mobile_app_") and name not in _NOT_TARGETS}
+        | set(hass.states.async_entity_ids("notify"))
+    )
+    return mobile + other
 
 
 def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
@@ -80,6 +93,7 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(min=1, max=1440, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
             vol.Optional(CONF_CLICK_URL, default=values[CONF_CLICK_URL]): selector.TextSelector(),
+            vol.Optional(CONF_KEEP_DONE, default=values[CONF_KEEP_DONE]): selector.BooleanSelector(),
         }
     )
 
@@ -175,7 +189,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
                                               mode=selector.SelectSelectorMode.LIST)
             ),
         }
-        return self.async_show_form(step_id="trigger", data_schema=self._suggest(schema))
+        return self.async_show_form(step_id="trigger", data_schema=self._suggest(schema), description_placeholders=_TOKENS)
 
     async def async_step_condition(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         mode = self._data["mode"]
@@ -281,5 +295,8 @@ class RuleSubentryFlow(ConfigSubentryFlow):
                 selector.SelectSelectorConfig(options=labels(speakers, "media_player"), multiple=True)
             )
         schema[vol.Required("auto_close", default=self._data.get("auto_close", True))] = selector.BooleanSelector()
-        return self.async_show_form(step_id="notify", data_schema=self._suggest(schema))
+        if self._data.get("mode") != "calendar":
+            schema[vol.Optional("done_message")] = selector.TextSelector()
+        schema[vol.Required("keep_done", default=self._data.get("keep_done", options[CONF_KEEP_DONE]))] = selector.BooleanSelector()
+        return self.async_show_form(step_id="notify", data_schema=self._suggest(schema), description_placeholders=_TOKENS)
 

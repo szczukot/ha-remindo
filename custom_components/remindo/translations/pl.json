@@ -16,12 +16,15 @@
           "default_interval": "Domyślnie przypominaj co",
           "default_time": "Godzina dla zadań z samą datą",
           "phone_snooze": "Odłożenie z telefonu o",
-          "click_url": "Po kliknięciu powiadomienia otwórz"
+          "click_url": "Po kliknięciu powiadomienia otwórz",
+          "keep_done": "Zostawiaj wykonane zadania na liście"
         },
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
           "default_interval": "0 = przypomnij tylko raz.",
-          "click_url": "Ścieżka w HA, np. /lovelace/remindo"
+          "click_url": "Ścieżka w HA, np. /lovelace/remindo",
+          "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
+          "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst)."
         }
       }
     },
@@ -46,12 +49,15 @@
           "default_interval": "Domyślnie przypominaj co",
           "default_time": "Godzina dla zadań z samą datą",
           "phone_snooze": "Odłożenie z telefonu o",
-          "click_url": "Po kliknięciu powiadomienia otwórz"
+          "click_url": "Po kliknięciu powiadomienia otwórz",
+          "keep_done": "Zostawiaj wykonane zadania na liście"
         },
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
           "default_interval": "0 = przypomnij tylko raz.",
-          "click_url": "Ścieżka w HA, np. /lovelace/remindo"
+          "click_url": "Ścieżka w HA, np. /lovelace/remindo",
+          "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
+          "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst)."
         }
       }
     }
@@ -63,7 +69,7 @@
       "fields": {
         "summary": {
           "name": "Treść",
-          "description": "Co trzeba zrobić."
+          "description": "Treść zadania. Można użyć szablonów, np. „Okno otwarte, na dworze {{ states('sensor.temperatura_zewn') }}°C” (liczone przy każdym przypomnieniu)."
         },
         "description": {
           "name": "Opis",
@@ -108,6 +114,22 @@
         "speakers": {
           "name": "Głośniki",
           "description": "Na których głośnikach/tabletach mówić (brak pola = wszystkie z ustawień)."
+        },
+        "max_reminders": {
+          "name": "Maks. razy",
+          "description": "Przestań przypominać po tylu przypomnieniach."
+        },
+        "remind_until": {
+          "name": "Przypominaj do",
+          "description": "Nie przypominaj po tym terminie."
+        },
+        "keep_done": {
+          "name": "Zostaw po wykonaniu",
+          "description": "Zostaw zadanie w „Zrobione” (domyślnie: opcja integracji)."
+        },
+        "done_message": {
+          "name": "Komunikat po załatwieniu",
+          "description": "Wysyłany, gdy zadanie zamknie się samo (close_by_key / reguła). Można użyć szablonów."
         }
       }
     },
@@ -209,7 +231,7 @@
             "mode": "Warunek"
           },
           "data_description": {
-            "summary": "Np. „Wypakuj zmywarkę”. Przy kalendarzu nazwy wydarzeń (np. „Szkło”) dopiszą się na końcu."
+            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz)."
           }
         },
         "condition_state": {
@@ -255,13 +277,17 @@
             "max_reminders": "Maksymalnie razy",
             "phones": "Telefony (push)",
             "speakers": "Głośniki / tablety (komunikat)",
-            "auto_close": "Zamknij zadanie samo, gdy warunek minie"
+            "auto_close": "Zamknij zadanie samo, gdy warunek minie",
+            "done_message": "Komunikat po załatwieniu",
+            "keep_done": "Zostaw na liście po wykonaniu"
           },
           "data_description": {
             "remind": "Wyłączone = przypomni tylko raz.",
             "max_reminders": "Puste = aż odhaczysz.",
             "phones": "Nic nie zaznaczone = bez powiadomień, zadanie tylko na liście.",
-            "auto_close": "Np. brama zamknięta, zmywarka otwarta. Przy kalendarzu: po dniu wydarzenia."
+            "auto_close": "Np. brama zamknięta, zmywarka otwarta. Przy kalendarzu: po dniu wydarzenia.",
+            "done_message": "Wysyłany na te same kanały, gdy zadanie zamknie się samo, np. „Brama zamknięta ✅”. Tu też działa {state} i {name}. Puste = nic.",
+            "keep_done": "Wyłączone = znika po wykonaniu."
           }
         }
       },

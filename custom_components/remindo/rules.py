@@ -31,6 +31,22 @@ MODES = [MODE_STATE, MODE_ABOVE, MODE_BELOW, MODE_CALENDAR]
 _IGNORED = (STATE_UNAVAILABLE, STATE_UNKNOWN, None)
 
 
+def _tokens(text: str | None, entity_id: str) -> str | None:
+    """Proste znaczniki bez znajomości szablonów: {state} = wartość z jednostką, {name} = nazwa.
+
+    Zamieniane na szablon HA, więc liczą się na nowo przy każdym przypomnieniu.
+    """
+    if not text or ("{state}" not in text and "{name}" not in text):
+        return text
+    e = entity_id.replace("'", "")
+    state = (
+        f"{{{{ states('{e}') }}}}"
+        f"{{{{ ' ' ~ state_attr('{e}', 'unit_of_measurement') if state_attr('{e}', 'unit_of_measurement') else '' }}}}"
+    )
+    name = f"{{{{ state_attr('{e}', 'friendly_name') or '{e}' }}}}"
+    return text.replace("{state}", state).replace("{name}", name)
+
+
 @dataclass
 class Rule:
     """Gdy entity_id spełnia warunek przez for_minutes, dodaj zadanie."""
@@ -49,6 +65,8 @@ class Rule:
     speakers: list[str] | None = None
     tts_message: str | None = None
     max_reminders: int | None = None
+    keep_done: bool | None = None
+    done_message: str | None = None
     # tylko dla kalendarza
     days_before: int = 1
     at_time: str = "18:00"
@@ -196,15 +214,17 @@ class RuleEngine:
 
     async def _fire(self, rule: Rule) -> None:
         await self.manager.async_add(
-            rule.summary,
+            _tokens(rule.summary, rule.entity_id),
             description=rule.description,
             start="now",
             interval=rule.interval,
             key=rule.key,
             phones=rule.phones,
             speakers=rule.speakers,
-            tts_message=rule.tts_message,
+            tts_message=_tokens(rule.tts_message, rule.entity_id),
             max_reminders=rule.max_reminders,
+            keep_done=rule.keep_done,
+            done_message=_tokens(rule.done_message, rule.entity_id),
             source="rule",
         )
 
@@ -246,7 +266,7 @@ class RuleEngine:
         await self.manager.async_add(
             summary, description=rule.description, start="now", interval=rule.interval,
             key=rule.key, phones=rule.phones, speakers=rule.speakers, tts_message=message,
-            max_reminders=rule.max_reminders, source="rule",
+            max_reminders=rule.max_reminders, keep_done=rule.keep_done, source="rule",
         )
         if rule.auto_close:
             # zamknij po dniu wydarzenia, jeśli nikt nie odhaczył

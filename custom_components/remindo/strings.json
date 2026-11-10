@@ -16,12 +16,15 @@
           "default_interval": "Default reminder interval",
           "default_time": "Time for date-only tasks",
           "phone_snooze": "Snooze from phone by",
-          "click_url": "Open on notification tap"
+          "click_url": "Open on notification tap",
+          "keep_done": "Keep done tasks on the list"
         },
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours (push still sent).",
           "default_interval": "0 = remind once.",
-          "click_url": "HA path, e.g. /lovelace/remindo"
+          "click_url": "HA path, e.g. /lovelace/remindo",
+          "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
+          "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only)."
         }
       }
     },
@@ -46,12 +49,15 @@
           "default_interval": "Default reminder interval",
           "default_time": "Time for date-only tasks",
           "phone_snooze": "Snooze from phone by",
-          "click_url": "Open on notification tap"
+          "click_url": "Open on notification tap",
+          "keep_done": "Keep done tasks on the list"
         },
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours (push still sent).",
           "default_interval": "0 = remind once.",
-          "click_url": "HA path, e.g. /lovelace/remindo"
+          "click_url": "HA path, e.g. /lovelace/remindo",
+          "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
+          "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only)."
         }
       }
     }
@@ -63,7 +69,7 @@
       "fields": {
         "summary": {
           "name": "Summary",
-          "description": "What to do."
+          "description": "Text of the task. Templates allowed, e.g. \"Window open, {{ states('sensor.outside') }}°C outside\" (recalculated at each reminder)."
         },
         "description": {
           "name": "Description",
@@ -108,6 +114,22 @@
         "speakers": {
           "name": "Speakers",
           "description": "Where to speak (omitted = all configured)."
+        },
+        "max_reminders": {
+          "name": "At most times",
+          "description": "Stop reminding after this many reminders."
+        },
+        "remind_until": {
+          "name": "Remind until",
+          "description": "Stop reminding after this time."
+        },
+        "keep_done": {
+          "name": "Keep after done",
+          "description": "Keep the task in Done (default: integration option)."
+        },
+        "done_message": {
+          "name": "Message when resolved",
+          "description": "Sent when the task closes itself (close_by_key / rule). Templates allowed."
         }
       }
     },
@@ -209,7 +231,7 @@
             "mode": "Condition"
           },
           "data_description": {
-            "summary": "E.g. \"Unload the dishwasher\". For calendars the event names are appended."
+            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them)."
           }
         },
         "condition_state": {
@@ -255,13 +277,17 @@
             "max_reminders": "At most times",
             "phones": "Phones (push)",
             "speakers": "Speakers (announcement)",
-            "auto_close": "Close the task when the condition ends"
+            "auto_close": "Close the task when the condition ends",
+            "done_message": "Message when resolved",
+            "keep_done": "Keep on the list after done"
           },
           "data_description": {
             "remind": "Off = remind once.",
             "max_reminders": "Empty = until done.",
             "phones": "None selected = list only.",
-            "auto_close": "For calendars: after the event day."
+            "auto_close": "For calendars: after the event day.",
+            "done_message": "Sent to the same targets when the task closes itself, e.g. \"Garage door closed ✅\". {state} and {name} work here too. Empty = nothing.",
+            "keep_done": "Off = disappears once done."
           }
         }
       },

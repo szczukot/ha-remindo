@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.8.2";
+const VERSION = "0.9.0";
 
 const I18N = {
   en: {
@@ -14,7 +14,7 @@ const I18N = {
     stop: "stop reminding:", stop_never: "never (until ticked off)", stop_count: "after … times", stop_until: "at a specific time",
     repeat: "Repeat", repeat_hint: "after ticking off it comes back at the next due time", where: "Remind on:",
     where_hint: "🔊 speaks only when someone is home and outside quiet hours", cancel: "Cancel", save: "Add",
-    repeat_needs_start: "A recurring task needs a due time",
+    repeat_needs_start: "A recurring task needs a due time", keep: "Keep on the list after done", keep_hint: "off = disappears once ticked off",
     u_min: ["minute", "minutes", "minutes"], u_hour: ["hour", "hours", "hours"], u_day: ["day", "days", "days"],
     u_week: ["week", "weeks", "weeks"], u_month: ["month", "months", "months"], u_year: ["year", "years", "years"],
     description: "Task list with reminders: tick off, snooze, add",
@@ -31,7 +31,7 @@ const I18N = {
     stop: "przestań przypominać:", stop_never: "nigdy (aż odhaczę)", stop_count: "po … razach", stop_until: "o konkretnej porze",
     repeat: "Powtarzaj", repeat_hint: "po odhaczeniu wróci w następnym terminie", where: "Gdzie przypominać:",
     where_hint: "🔊 mówi tylko, gdy ktoś jest w domu i nie trwa cisza nocna", cancel: "Anuluj", save: "Dodaj",
-    repeat_needs_start: "Zadanie cykliczne musi mieć termin",
+    repeat_needs_start: "Zadanie cykliczne musi mieć termin", keep: "Zostaw na liście po wykonaniu", keep_hint: "wyłączone = znika po odhaczeniu",
     u_min: ["minutę", "minuty", "minut"], u_hour: ["godzinę", "godziny", "godzin"], u_day: ["dzień", "dni", "dni"],
     u_week: ["tydzień", "tygodnie", "tygodni"], u_month: ["miesiąc", "miesiące", "miesięcy"], u_year: ["rok", "lata", "lat"],
     description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
@@ -58,7 +58,9 @@ const fmtTime = (iso) => {
   const hm = d.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" });
   if (d.toDateString() === now.toDateString()) return `${t("today")} ${hm}`;
   if (d.toDateString() === tomorrow.toDateString()) return `${t("tomorrow")} ${hm}`;
-  return d.toLocaleDateString(locale(), { day: "numeric", month: "short" }) + ` ${hm}`;
+  const opts = { day: "numeric", month: "short" };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString(locale(), opts) + ` ${hm}`;
 };
 const UNIT = { hourly: "u_hour", daily: "u_day", weekly: "u_week", monthly: "u_month", yearly: "u_year" };
 const repeatLabel = (task) => {
@@ -228,6 +230,10 @@ class RemindoCard extends HTMLElement {
         ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="f-spk" value="${esc(s.id)}" checked /> 🔊 ${esc(s.name)}</label>`).join("")}
       </div>
       <div class="hint" id="f-where-h">${t("where_hint")}</div>
+      <div class="frow" id="f-keep-row">
+        <label><input type="checkbox" id="f-keep" ${this._opts?.keep_done === false ? "" : "checked"} /> ${t("keep")}</label>
+        <span class="hint">${t("keep_hint")}</span>
+      </div>
       <div class="frow end">
         <button data-a="cancel">${t("cancel")}</button>
         <button class="ok" data-a="save">${t("save")}</button>
@@ -250,6 +256,7 @@ class RemindoCard extends HTMLElement {
     const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk") };
     if (interval && $("f-lim").value === "count") data.max_reminders = Math.max(1, Number($("f-lim-n").value || 1));
     if (interval && $("f-lim").value === "until" && $("f-lim-dt").value) data.remind_until = `${$("f-lim-dt").value}:00`;
+    data.keep_done = $("f-keep").checked;
     const rep = $("f-rep-on").checked ? $("f-rep").value : "none";
     if (rep !== "none") {
       if (start === null) { this._error = t("repeat_needs_start"); this._render(); return; }
@@ -306,6 +313,7 @@ class RemindoCard extends HTMLElement {
     $("f-note-h").style.display = $("f-rem").checked ? "none" : "";
     $("f-rem-h").style.display = $("f-rem").checked ? "" : "none";
     for (const id of ["f-where", "f-where-h", "f-lim-row"]) $(id).style.display = $("f-rem").checked ? "" : "none";
+    $("f-keep-row").style.display = $("f-rep-on").checked ? "none" : "";
     $("f-lim-n").style.display = $("f-lim").value === "count" ? "" : "none";
     $("f-lim-dt").style.display = $("f-lim").value === "until" ? "" : "none";
   }
@@ -376,7 +384,8 @@ RemindoCard.styles = `
   #f-sum { width:100%; box-sizing:border-box; }
   .hint { font-size:12px; color: var(--secondary-text-color); }
   .chk { min-width:120px; font-weight:500; }
-  .grp { display:inline-flex; gap:6px; align-items:center; }
+  .grp { display:inline-flex; gap:6px; align-items:center; flex-wrap:wrap; max-width:100%; min-width:0; }
+  input[type=datetime-local] { max-width:100%; min-width:0; box-sizing:border-box; }
   .grp.off { opacity:.4; }
   input[type=number] { width:64px; }
   input[type=checkbox] { width:18px; height:18px; vertical-align:middle; }

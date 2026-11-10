@@ -8,6 +8,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, time, timedelta
 import logging
+import re
 from typing import Any
 import uuid
 
@@ -15,7 +16,9 @@ from homeassistant.const import STATE_HOME, STATE_ON
 from homeassistant.core import CALLBACK_TYPE, Context, Event, HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_track_point_in_time
+from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.storage import Store
+from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
 
 from .rules import RuleEngine
@@ -30,6 +33,7 @@ from .const import (
     CONF_CLICK_URL,
     CONF_DEFAULT_INTERVAL,
     CONF_DEFAULT_TIME,
+    CONF_KEEP_DONE,
     CONF_KEEP_HISTORY,
     CONF_MEDIA_PLAYER,
     CONF_NOTIFY,
@@ -75,6 +79,13 @@ class RemindoError(ValueError):
         self.key = key
         self.placeholders = placeholders
 
+
+
+_DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _is_template(text: str | None) -> bool:
+    return bool(text) and ("{{" in text or "{%" in text)
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -153,6 +164,9 @@ class Task:
     speakers: list[str] | None = None  # None = wszystkie z ustawień
     max_reminders: int | None = None  # maks. liczba przypomnień (None = bez limitu)
     remind_until: str | None = None  # nie przypominaj po tym terminie (ISO)
+    keep_done: bool | None = None  # None = opcja integracji
+    done_message: str | None = None  # wysyłane, gdy zadanie zamknie się samo
+    template: str | None = None  # treść z szablonem, liczona przy każdym przypomnieniu
     status: str = STATUS_OPEN
     active: bool = False  # czy już przypomniało (zadanie „na teraz”)
     reminders: int = 0
@@ -274,7 +288,8 @@ class TaskManager:
         if isinstance(start, str):
             if start.lower() in ("now", "teraz"):
                 return dt_util.now()
-            parsed_dt = dt_util.parse_datetime(start)
+            # sama data ("2026-12-01") → domyślna godzina; parse_datetime dałby północ
+            parsed_dt = None if _DATE_ONLY.match(start.strip()) else dt_util.parse_datetime(start)
             if parsed_dt is not None:
                 start = parsed_dt
             else:
@@ -308,13 +323,19 @@ class TaskManager:
         speakers: list[str] | None = None,
         max_reminders: int | None = None,
         remind_until: Any = None,
+        keep_done: bool | None = None,
+        done_message: str | None = None,
         source: str = "service",
         context: Context | None = None,
     ) -> Task:
         start_dt = self._resolve_start(start)
+        template = summary if _is_template(summary) else None
+        if template:
+            summary = self._render(template)
         if key and (existing := self.find(key=key)):
             # Ten sam klucz już otwarty → nie dublujemy, tylko aktualizujemy treść
             existing.summary = summary
+            existing.template = template
             if description is not None:
                 existing.description = description
             self._save()
@@ -336,6 +357,9 @@ class TaskManager:
             speakers=self._norm(speakers, "media_player."),
             max_reminders=int(max_reminders) if max_reminders else None,
             remind_until=_iso(self._resolve_start(remind_until)) if remind_until else None,
+            keep_done=keep_done,
+            done_message=done_message or None,
+            template=template,
         )
         if task.repeat != REPEAT_NONE and start_dt is None:
             raise RemindoError("repeat_needs_start")
@@ -376,6 +400,8 @@ class TaskManager:
             return
         now = dt_util.now()
         await self._clear_notifications(task)
+        if source == "auto" and task.done_message and task.reminders:
+            await self._send_plain(task, self._render(task.done_message))
         self._fire(event, task, source, context)
         self.history.append(
             {"uid": task.uid, "summary": task.summary, "key": task.key,
@@ -384,12 +410,13 @@ class TaskManager:
         )
         if task.repeat != REPEAT_NONE and task.start:
             # Cykliczne: zostaje na liście, przeskakuje na następny termin
-            nxt = next_occurrence(_dt(task.start), task.repeat, task.repeat_every, now)  # type: ignore[arg-type]
+            due = _dt(task.start)
+            nxt = next_occurrence(due, task.repeat, task.repeat_every, max(now, due))  # type: ignore[arg-type]
             task.start = task.next_reminder = _iso(nxt)
             task.active = False
             task.reminders = task.snoozes = 0
             self._schedule(task)
-        elif status == STATUS_DONE:
+        elif status == STATUS_DONE and self.keep_done(task):
             task.status = STATUS_DONE
             task.closed = now.isoformat()
             task.close_reason = source
@@ -458,6 +485,8 @@ class TaskManager:
         if task is None or task.status != STATUS_OPEN:
             return
         now = dt_util.now()
+        if task.template:
+            task.summary = self._render(task.template)
         task.active = True
         task.reminders += 1
         task.last_reminded = now.isoformat()
@@ -519,10 +548,48 @@ class TaskManager:
             return []
         return self.all_speakers() if task.speakers is None else task.speakers
 
+    def keep_done(self, task: Task) -> bool:
+        return self.options.get(CONF_KEEP_DONE, True) if task.keep_done is None else task.keep_done
+
+    def _render(self, text: str) -> str:
+        """Szablon HA ({{ ... }}); przy błędzie zwykły tekst."""
+        if not _is_template(text):
+            return text
+        try:
+            return str(Template(text, self.hass).async_render(parse_result=False)).strip() or text
+        except TemplateError as err:
+            _LOGGER.warning("Template error in %r: %s", text, err)
+            return text
+
+    @staticmethod
+    def _is_mobile(target: str) -> bool:
+        return target.removeprefix("notify.").startswith("mobile_app_")
+
+    async def _notify_plain(self, target: str, title: str, message: str) -> None:
+        """Telegram, e-mail, SMS…: notify.<usługa> albo encja notify.* (bez przycisków)."""
+        if self.hass.states.get(target) is not None:
+            await self.hass.services.async_call(
+                "notify", "send_message", {"entity_id": target, "title": title, "message": message}, blocking=False
+            )
+        else:
+            await self.hass.services.async_call(
+                "notify", target.removeprefix("notify."), {"title": title, "message": message}, blocking=False
+            )
+
+    async def _send_plain(self, task: Task, message: str) -> None:
+        title = texts.text(self.hass, "title")
+        for target in self.phones_for(task):
+            try:
+                await self._notify_plain(target, title, message)
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Failed to send to %s", target)
+
     def phone_label(self, target: str) -> str:
         """Nazwa telefonu z integracji mobile_app (notify.mobile_app_x → nazwa urządzenia)."""
         from homeassistant.util import slugify  # noqa: PLC0415
 
+        if (state := self.hass.states.get(target)) is not None:
+            return state.name
         service = target.removeprefix("notify.")
         for entry in self.hass.config_entries.async_entries("mobile_app"):
             name = entry.data.get("device_name") or entry.title
@@ -542,6 +609,9 @@ class TaskManager:
         snooze = int(self.options[CONF_PHONE_SNOOZE])
         click = self.options.get(CONF_CLICK_URL) or "/todo?entity_id=todo.remindo"
         for target in self.phones_for(task):
+            if not self._is_mobile(target):
+                await self._notify_plain(target, texts.text(self.hass, "title"), body)
+                continue
             if True:
                 service = target.removeprefix("notify.")
                 await self.hass.services.async_call(
@@ -616,7 +686,7 @@ class TaskManager:
             {
                 "entity_id": tts_entity,
                 "media_player_entity_id": speakers,
-                "message": task.tts_message or task.summary,
+                "message": self._render(task.tts_message) if task.tts_message else task.summary,
                 "cache": True,
             },
             blocking=False,
@@ -626,6 +696,8 @@ class TaskManager:
         if task.reminders == 0:
             return
         for target in sorted(set(self.all_phones()) | set(task.phones or [])):
+            if not self._is_mobile(target):
+                continue
             await self.hass.services.async_call(
                 "notify",
                 target.removeprefix("notify."),

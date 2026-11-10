@@ -11,7 +11,11 @@ A Home Assistant integration that turns "remember to…" into tasks that **keep 
 - 🔁 **Recurring tasks**: every N hours / days / weeks / months / years (e.g. "HRV filter every 3 months").
 - 🤖 **Rules**: a task adds itself when a device reaches a state (dishwasher finished, garage open for 10 min, humidity > 70%) or the day before a calendar event (bin collection). It closes itself when the condition ends.
 - 🗂️ **Lovelace card** shipped with the integration: Now / Scheduled / Notes / Done / Skipped, one-tap snooze, adding tasks by hand.
+- 📣 **Any channel**: the HA mobile app (with buttons) plus Telegram, e-mail, SMS and any other notifier you have in HA (text only).
+- ✅ **Message when resolved**: e.g. "Garage door closed ✅" when a task closes itself.
 - 🌍 English and Polish.
+
+<p align="center"><img src="docs/images/card-en.png" width="460" alt="Remindo card"></p>
 
 ## Installation
 
@@ -32,7 +36,7 @@ When adding the integration (and later under *Configure*) you set:
 
 | Option | Description |
 |---|---|
-| Push notification targets | `notify.mobile_app_*` services that receive the push |
+| Notification channels | the HA app (`notify.mobile_app_*`, with buttons) and any other channel in HA: Telegram, e-mail, SMS, `notify.*` entities (text only) |
 | Persistent notification in HA | also show the bell notification in HA |
 | TTS engine, media players | where announcements are spoken |
 | Screen switch to turn on first | e.g. `switch.<tablet>_screen` from Fully Kiosk |
@@ -40,6 +44,7 @@ When adding the integration (and later under *Configure*) you set:
 | Quiet hours | no spoken announcements (push still arrives) |
 | Default interval, time for date-only tasks, snooze from phone | |
 | Open when the notification is tapped | e.g. `/lovelace/remindo` |
+| Keep done tasks on the list | off = a task disappears once ticked off (it stays in the logbook); can be changed per task and per rule |
 
 ## Card
 
@@ -54,14 +59,11 @@ show_form: true    # "＋ Add task" button
 
 The add form:
 
-```
-☑ Remind  [from now ▾]  every [30] [minutes ▾]   until I tick it off
-          stop reminding: [never ▾ / after … times / at a specific time]
-☐ Repeat                every [5]  [days ▾]      after ticking off it comes back at the next due time
-Remind on: ☑ 📱 phone  ☑ 🔊 tablet
-```
+<p align="center"><img src="docs/images/form-en.png" width="460" alt="Adding a task"></p>
 
-With "Remind" unticked the task is a plain note on the list.
+With "Remind" unticked the task is a plain note on the list. With "Keep on the list after done" unticked the task disappears once ticked off (recurring tasks always stay).
+
+<p align="center"><img src="docs/images/snooze-en.png" width="460" alt="Snoozing to a chosen time"></p>
 
 Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅 pick…** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time.
 
@@ -73,7 +75,17 @@ The card follows the language of the user's profile.
 
 1. **When**: task text, entity, condition (*has state* / *above* / *below* / *calendar event*).
 2. **Condition**: value (list of the entity's states) and "for at least N min"; for a calendar: how many days before and at what time.
-3. **Reminders**: repeat interval, limit, phones, speakers, "close automatically when the condition ends".
+3. **Reminders**: repeat interval, limit, channels, speakers, "close automatically when the condition ends", message when resolved, "keep on the list after done".
+
+**Values in the text, no templates needed.** In the rule text (and the message when resolved) you can write:
+
+| Token | Inserts | Example |
+|---|---|---|
+| `{state}` | the current value with unit | "Humidity {state}, air the bathroom" → "Humidity 78 %, air the bathroom" |
+| `{name}` | the device name | "{name} open too long" → "Garage door open too long" |
+| `{event}` | (calendar) the event names | "Bin collection tomorrow: {event}" |
+
+The value is refreshed at every reminder. If you know HA templates you can also use `{{ ... }}`, e.g. "It's {{ states('sensor.outside_temperature') }}°C outside".
 
 Examples:
 
@@ -88,38 +100,64 @@ Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never trigger
 
 ## Use cases
 
-From the author's home:
+### From the author's home
 
-| Situation | How | Reminders |
-|---|---|---|
-| 🧺 Washing machine finished | rule: `sensor.washer` has state `off` | tablet every 1 min until ticked off |
-| 🍽️ Dishwasher finished | rule: `sensor.dishwasher_operation_state` has state `finished` | every 30 min, closes itself when the door opens |
-| 🗑️ Bin collection | calendar rule: Waste Collection Schedule calendar, 1 day before at 18:00 | "Put the bins out: Paper", push + tablet, every 30 min, at most 8 times |
-
-More ideas:
-
-| Situation | How |
+| Situation | Settings |
 |---|---|
-| 🚪 Garage door open too long | rule: `binary_sensor.garage` has state `on` for 10 min; closes itself when the door closes |
-| 🪟 Window open while it's freezing | above/below rule on a temperature, or an automation with `remindo.add` and `remindo.close_by_key` |
-| 💧 Bathroom humidity | rule: humidity above 70 for 15 min → "Air the bathroom" |
-| 🔋 Sensor battery | rule: battery below 15 → "Replace the door sensor battery" |
-| 🌬️ HRV filter | recurring task every 3 months, date only (reminds at 09:00) |
-| 💊 Medication / vitamins | recurring task daily at 8:00, reminds every 10 min until ticked off |
+| 🧺 Washing machine finished | rule: `sensor.washer` has state `off` → "Unload the washing machine", tablet every 1 min until ticked off; not kept on the list |
+| 🍽️ Dishwasher finished | rule: `sensor.dishwasher_operation_state` has state `finished`, every 30 min; closes itself when the door opens |
+| 🗑️ Bin collection | calendar rule on a Waste Collection Schedule calendar: 1 day before at 18:00 → "Put the bins out: Paper", push + tablet, every 30 min, at most 8 times |
+| 🚩 National holiday flag | task from the card: 11 Nov at 9:00, repeat every 1 year |
+| 🚗 Car insurance | task from the card: 10 Dec, repeat every 1 year, remind every day until ticked off |
+
+### Home and appliances
+
+| Situation | Settings |
+|---|---|
+| 🧺 Dryer finished | like the washer: program state `finished` / plug power below 5 W for 3 min |
+| 🧂 Dishwasher salt / rinse aid | rule on the appliance's sensor (e.g. Home Connect) state `on` → "Refill dishwasher salt" |
+| 🧊 Fridge/freezer left open | rule: door sensor `on` for 2 min → tablet every 1 min, message when closed |
+| 🤖 Robot vacuum stuck | rule: vacuum state `error` → "Rescue {name}" |
+| ☕ Descale the coffee machine | recurring task every 2 months |
+| 🪥 Toothbrush head / water filter | recurring task every 3 months, date only |
 | 🪴 Watering plants | recurring task every 4 days, list only (no reminders) |
-| 🚗 Car inspection, insurance | recurring task every year, date only |
-| 🧊 Fridge/freezer left open | rule: door sensor `on` for 2 min, tablet every 1 min |
-| 🖨️ Toner running low | rule on the toner level below 10% |
-| 📦 Parcel arriving today | by hand from the card: "Pick up the parcel" from 9:00, every 1 h, stop at 18:00 |
+
+### Safety and leaving home
+
+| Situation | Settings |
+|---|---|
+| 🚪 Garage / driveway gate open too long | rule: `on` for 10 min, every 10 min, at most 6 times, message when resolved "{name} closed ✅" |
+| 🛡️ Alarm not armed at night | an automation at 23:00 that calls `remindo.add` when the alarm is `disarmed` |
+| 🪟 Window open while heating/AC runs | rule on the window sensor `on` for 5 min → "Close the window, {name}"; closes itself |
+| 🔑 Front door unlocked | rule on the lock `unlocked` for 15 min |
+
+### Heating, AC, energy
+
+| Situation | Settings |
+|---|---|
+| 🔥 Low boiler pressure | rule: pressure (e.g. from eBUSd) below 1.0 → "Top up the boiler: {state}" |
+| ❄️ AC filters | recurring task every 3 months |
+| 🛠️ Boiler / heat pump service | recurring task every year |
+| 📟 Gas / water meter reading | recurring task every month, on the 1st at 9:00 |
+| 🔋 Low sensor battery | rule: battery below 15 → "Replace the battery: {name} ({state})" |
+| 📱 Wall tablet running low | rule: tablet battery below 20 → "Plug in the tablet" |
+
+### One-offs (by hand from the card)
+
+| Situation | Settings |
+|---|---|
+| 📦 Parcel arriving today | "Pick up the parcel" from 9:00, every 1 h, stop at 18:00 |
+| 📞 Call someone back | +1 h, remind once |
+| 🛒 Buy something on the way | note (no reminders) |
 
 ## Actions (for automations and scripts)
 
 | Action | Fields |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`. Returns `uid`. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key` |
 | `remindo.snooze` | `uid`/`key` + `minutes` or `until` |
-| `remindo.close_by_key` | `key`: closes the task (e.g. the gate was closed) |
+| `remindo.close_by_key` | `key`: closes the task (e.g. the gate was closed); sends `done_message` if set |
 
 ```yaml
 action: remindo.add

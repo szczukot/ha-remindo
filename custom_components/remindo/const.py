@@ -22,6 +22,7 @@ CONF_DEFAULT_TIME = "default_time"
 CONF_PHONE_SNOOZE = "phone_snooze"
 CONF_KEEP_HISTORY = "keep_history"
 CONF_CLICK_URL = "click_url"
+CONF_KEEP_DONE = "keep_done"
 
 DEFAULTS = {
     CONF_NOTIFY: [],
@@ -34,6 +35,7 @@ DEFAULTS = {
     CONF_PHONE_SNOOZE: 10,
     CONF_KEEP_HISTORY: 50,
     CONF_CLICK_URL: "/todo?entity_id=todo.remindo",
+    CONF_KEEP_DONE: True,
 }
 
 # Pola usług
@@ -54,6 +56,8 @@ ATTR_PHONES = "phones"
 ATTR_SPEAKERS = "speakers"
 ATTR_MAX_REMINDERS = "max_reminders"
 ATTR_REMIND_UNTIL = "remind_until"
+ATTR_KEEP_DONE = "keep_done"
+ATTR_DONE_MESSAGE = "done_message"
 
 REPEAT_NONE = "none"
 REPEAT_OPTIONS = [REPEAT_NONE, "hourly", "daily", "weekly", "monthly", "yearly"]

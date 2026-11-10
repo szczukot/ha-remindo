@@ -59,6 +59,23 @@ add:
         entity:
           domain: media_player
           multiple: true
+    max_reminders:
+      selector:
+        number:
+          min: 1
+          max: 1000
+          mode: box
+    remind_until:
+      example: "2026-11-10T22:00:00"
+      selector:
+        text:
+    keep_done:
+      selector:
+        boolean:
+    done_message:
+      example: "Garage door closed ✅"
+      selector:
+        text:
 done:
   fields: &target
     uid:

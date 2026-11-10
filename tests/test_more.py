@@ -407,3 +407,156 @@ async def test_speech_skipped_if_done_while_waiting(hass: HomeAssistant, monkeyp
     await asyncio.sleep(1)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert calls["tts"] == []
+
+
+# ------------------------------------------------------------ 0.9.0 features
+
+
+async def _remind(hass, freezer, seconds=2):
+    freezer.tick(timedelta(seconds=seconds))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+
+async def test_keep_done_off_removes_task(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, _ = await _setup(hass)
+    manager = entry.runtime_data
+    a = (await hass.services.async_call(DOMAIN, "add", {"summary": "Gone", "keep_done": False}, blocking=True, return_response=True))["uid"]
+    b = (await hass.services.async_call(DOMAIN, "add", {"summary": "Stays"}, blocking=True, return_response=True))["uid"]
+    c = (await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Yearly", "start": "2026-11-11", "repeat": "yearly", "keep_done": False},
+        blocking=True, return_response=True))["uid"]
+    for uid in (a, b, c):
+        await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
+    assert a not in manager.tasks
+    assert manager.tasks[b].status == "done"
+    assert manager.tasks[c].status == "open" and manager.tasks[c].start.startswith("2027-11-11")  # recurring stays
+    assert [h["summary"] for h in manager.history if h["result"] == "done"] == ["Gone", "Stays", "Yearly"]
+
+
+async def test_keep_done_option_default(hass: HomeAssistant) -> None:
+    entry, _ = await _setup(hass)
+    hass.config_entries.async_update_entry(entry, options={**OPTS, "keep_done": False})
+    await hass.async_block_till_done()
+    manager = entry.runtime_data
+    uid = (await hass.services.async_call(DOMAIN, "add", {"summary": "X"}, blocking=True, return_response=True))["uid"]
+    await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
+    assert uid not in manager.tasks
+
+
+async def test_done_message_on_auto_close(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    _, calls = await _setup(hass)
+    await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Gate open", "key": "gate", "done_message": "Gate closed ✅", "speakers": []},
+        blocking=True, return_response=True)
+    await _remind(hass, freezer)
+    await hass.services.async_call(DOMAIN, "close_by_key", {"key": "gate"}, blocking=True)
+    await hass.async_block_till_done()
+    assert calls["notify"][-1].data == {"title": "📋 Task", "message": "Gate closed ✅"}
+
+    # not sent when ticked off by hand, nor when it never reminded
+    await hass.services.async_call(
+        DOMAIN, "add", {"summary": "B", "key": "b", "done_message": "nope", "speakers": []}, blocking=True, return_response=True)
+    await _remind(hass, freezer)
+    await hass.services.async_call(DOMAIN, "done", {"key": "b"}, blocking=True)
+    await hass.services.async_call(
+        DOMAIN, "add", {"summary": "C", "key": "c", "start": "2026-12-01", "done_message": "nope"}, blocking=True, return_response=True)
+    await hass.services.async_call(DOMAIN, "close_by_key", {"key": "c"}, blocking=True)
+    await hass.async_block_till_done()
+    assert not [c for c in calls["notify"] if c.data.get("message") == "nope"]
+
+
+async def test_template_summary(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    hass.states.async_set("sensor.outside", "5")
+    uid = (await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Window open, {{ states('sensor.outside') }}°C", "interval": 5, "speakers": []},
+        blocking=True, return_response=True))["uid"]
+    task = entry.runtime_data.tasks[uid]
+    assert task.summary == "Window open, 5°C"
+    await _remind(hass, freezer)
+    hass.states.async_set("sensor.outside", "-2")
+    await _remind(hass, freezer, 5 * 60 + 1)
+    assert task.summary == "Window open, -2°C"
+    assert calls["notify"][-1].data["message"] == "Window open, -2°C"
+    # broken template: plain text, no crash
+    res = await hass.services.async_call(DOMAIN, "add", {"summary": "Bad {{ nope( }}"}, blocking=True, return_response=True)
+    assert entry.runtime_data.tasks[res["uid"]].summary == "Bad {{ nope( }}"
+
+
+async def test_other_notifiers(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    telegram = async_mock_service(hass, "notify", "telegram_home")
+    send_message = async_mock_service(hass, "notify", "send_message")
+    hass.states.async_set("notify.email_me", "unknown", {"friendly_name": "E-mail me"})
+    await hass.services.async_call(
+        DOMAIN, "add",
+        {"summary": "Bins", "phones": ["notify.mobile_app_test", "notify.telegram_home", "notify.email_me"], "speakers": []},
+        blocking=True, return_response=True)
+    await _remind(hass, freezer)
+    assert "actions" in calls["notify"][0].data["data"]  # app: with buttons
+    assert telegram[0].data == {"title": "📋 Task", "message": "Bins"}  # text only
+    assert send_message[0].data == {"entity_id": "notify.email_me", "title": "📋 Task", "message": "Bins"}
+    assert entry.runtime_data.phone_label("notify.email_me") == "E-mail me"
+    # clearing goes only to the app
+    await hass.services.async_call(DOMAIN, "done", {"key": None} if False else {"uid": next(iter(entry.runtime_data.tasks))}, blocking=True)
+    await hass.async_block_till_done()
+    assert len(telegram) == 1 and len(send_message) == 1
+
+
+async def test_rule_done_message_and_keep(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    hass.states.async_set("binary_sensor.gate", "off")
+    flow = await hass.config_entries.subentries.async_init((entry.entry_id, "rule"), context={"source": "user"})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Close the gate", "entity_id": "binary_sensor.gate", "mode": "state"})
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": "on", "for_minutes": 0})
+    assert "done_message" in {str(k) for k in flow["data_schema"].schema}
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"remind": True, "interval": 10, "auto_close": True, "done_message": "Gate closed ✅", "keep_done": False, "speakers": []})
+    assert flow["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    manager = entry.runtime_data
+    hass.states.async_set("binary_sensor.gate", "on")
+    await hass.async_block_till_done()
+    await _remind(hass, freezer)
+    assert [t.summary for t in manager.open_tasks()] == ["Close the gate"]
+    hass.states.async_set("binary_sensor.gate", "off")
+    await hass.async_block_till_done()
+    assert manager.open_tasks() == [] and manager.tasks == {}  # closed and not kept
+    assert calls["notify"][-1].data["message"] == "Gate closed ✅"
+
+
+async def test_date_only_uses_default_time_and_early_done(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """"Flag on 11 Nov every year": date only → 09:00; ticking off early moves to next year."""
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, _ = await _setup(hass)
+    uid = (await hass.services.async_call(
+        DOMAIN, "add", {"summary": "Hang the flag", "start": "2026-11-11", "repeat": "yearly"},
+        blocking=True, return_response=True))["uid"]
+    task = entry.runtime_data.tasks[uid]
+    assert task.start == "2026-11-11T09:00:00+01:00"
+    await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
+    assert task.start == "2027-11-11T09:00:00+01:00"
+
+
+async def test_rule_simple_tokens(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """{state} and {name} work without knowing templates and update at each reminder."""
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await _setup(hass)
+    attrs = {"unit_of_measurement": "%", "friendly_name": "Bathroom humidity"}
+    hass.states.async_set("sensor.hum", "60", attrs)
+    await _add_rule(hass, entry, {"summary": "Air the bathroom: {name} {state}", "entity_id": "sensor.hum", "mode": "above", "value": 70})
+    hass.states.async_set("sensor.hum", "75", attrs)
+    await hass.async_block_till_done()
+    await _remind(hass, freezer)
+    task = entry.runtime_data.open_tasks()[0]
+    assert task.summary == "Air the bathroom: Bathroom humidity 75 %"
+    hass.states.async_set("sensor.hum", "82", attrs)
+    await _remind(hass, freezer, 30 * 60 + 1)
+    assert task.summary == "Air the bathroom: Bathroom humidity 82 %"
