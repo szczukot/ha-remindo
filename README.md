@@ -38,7 +38,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Obecność | np. `group.domownicy`; głos tylko gdy ktoś jest w domu |
 | Cisza nocna | bez komunikatów głosowych (push nadal przychodzi) |
 | Domyślny interwał, godzina dla zadań z samą datą, odłożenie z telefonu | |
-| Po kliknięciu powiadomienia otwórz | np. `/dashboard-tablet/zadania` |
+| Po kliknięciu powiadomienia otwórz | np. `/lovelace/remindo` |
 
 ## Karta
 

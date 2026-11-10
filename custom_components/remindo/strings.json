@@ -21,7 +21,7 @@
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours (push still sent).",
           "default_interval": "0 = remind once.",
-          "click_url": "HA path, e.g. /dashboard-tablet/zadania"
+          "click_url": "HA path, e.g. /lovelace/remindo"
         }
       }
     },
@@ -51,7 +51,7 @@
         "data_description": {
           "quiet_start": "No spoken announcements during quiet hours (push still sent).",
           "default_interval": "0 = remind once.",
-          "click_url": "HA path, e.g. /dashboard-tablet/zadania"
+          "click_url": "HA path, e.g. /lovelace/remindo"
         }
       }
     }

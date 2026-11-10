@@ -21,7 +21,7 @@
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
           "default_interval": "0 = przypomnij tylko raz.",
-          "click_url": "Ścieżka w HA, np. /dashboard-tablet/zadania"
+          "click_url": "Ścieżka w HA, np. /lovelace/remindo"
         }
       }
     },
@@ -51,7 +51,7 @@
         "data_description": {
           "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
           "default_interval": "0 = przypomnij tylko raz.",
-          "click_url": "Ścieżka w HA, np. /dashboard-tablet/zadania"
+          "click_url": "Ścieżka w HA, np. /lovelace/remindo"
         }
       }
     }
