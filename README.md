@@ -86,6 +86,32 @@ Examples:
 
 Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never triggers a rule.
 
+## Use cases
+
+From the author's home:
+
+| Situation | How | Reminders |
+|---|---|---|
+| 🧺 Washing machine finished | rule: `sensor.washer` has state `off` | tablet every 1 min until ticked off |
+| 🍽️ Dishwasher finished | rule: `sensor.dishwasher_operation_state` has state `finished` | every 30 min, closes itself when the door opens |
+| 🗑️ Bin collection | calendar rule: Waste Collection Schedule calendar, 1 day before at 18:00 | "Put the bins out: Paper", push + tablet, every 30 min, at most 8 times |
+
+More ideas:
+
+| Situation | How |
+|---|---|
+| 🚪 Garage door open too long | rule: `binary_sensor.garage` has state `on` for 10 min; closes itself when the door closes |
+| 🪟 Window open while it's freezing | above/below rule on a temperature, or an automation with `remindo.add` and `remindo.close_by_key` |
+| 💧 Bathroom humidity | rule: humidity above 70 for 15 min → "Air the bathroom" |
+| 🔋 Sensor battery | rule: battery below 15 → "Replace the door sensor battery" |
+| 🌬️ HRV filter | recurring task every 3 months, date only (reminds at 09:00) |
+| 💊 Medication / vitamins | recurring task daily at 8:00, reminds every 10 min until ticked off |
+| 🪴 Watering plants | recurring task every 4 days, list only (no reminders) |
+| 🚗 Car inspection, insurance | recurring task every year, date only |
+| 🧊 Fridge/freezer left open | rule: door sensor `on` for 2 min, tablet every 1 min |
+| 🖨️ Toner running low | rule on the toner level below 10% |
+| 📦 Parcel arriving today | by hand from the card: "Pick up the parcel" from 9:00, every 1 h, stop at 18:00 |
+
 ## Actions (for automations and scripts)
 
 | Action | Fields |

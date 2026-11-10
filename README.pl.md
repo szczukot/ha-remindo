@@ -85,6 +85,32 @@ Przykłady:
 
 Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie wyzwala reguły.
 
+## Przykłady zastosowań
+
+Prosto z domu autora:
+
+| Sytuacja | Jak | Przypomnienia |
+|---|---|---|
+| 🧺 Pralka skończyła prać | reguła: `sensor.pralka` ma stan `off` | tablet co 1 min, aż odhaczysz |
+| 🍽️ Zmywarka skończyła | reguła: `sensor.zmywarka_…_operation_state` ma stan `finished` | co 30 min, zamyka się samo po otwarciu drzwi |
+| 🗑️ Wywóz śmieci | reguła kalendarzowa: kalendarz z Waste Collection Schedule, 1 dzień przed o 18:00 | „Wystaw śmieci: Papier i tektura”, push + tablet, co 30 min, maks. 8 razy |
+
+Inne pomysły:
+
+| Sytuacja | Jak |
+|---|---|
+| 🚪 Brama garażowa otwarta za długo | reguła: `binary_sensor.brama` ma stan `on` przez 10 min; zamyka się sama po zamknięciu bramy |
+| 🪟 Okno otwarte, a na dworze mróz | reguła „powyżej/poniżej” na temperaturze albo automatyzacja z `remindo.add` i `remindo.close_by_key` |
+| 💧 Wilgotność w łazience | reguła: wilgotność powyżej 70 przez 15 min → „Przewietrz łazienkę” |
+| 🔋 Bateria w czujniku | reguła: bateria poniżej 15 → „Wymień baterię w czujniku drzwi” |
+| 🌬️ Filtr rekuperatora | zadanie cykliczne co 3 miesiące, z samą datą (przypomina o 09:00) |
+| 💊 Leki / witaminy | zadanie cykliczne codziennie o 8:00, przypomina co 10 min, aż odhaczysz |
+| 🪴 Podlewanie kwiatów | zadanie cykliczne co 4 dni, tylko na listę (bez przypominania) |
+| 🚗 Przegląd auta, OC | zadanie cykliczne co rok, z samą datą |
+| 🧊 Lodówka/zamrażarka otwarta | reguła: czujnik drzwi `on` przez 2 min, tablet co 1 min |
+| 🖨️ Kończy się toner | reguła na stanie tonera poniżej 10% |
+| 📦 Kurier ma dziś przyjść | ręcznie z karty: „Odbierz paczkę” od 9:00, co 1 h, przestań o 18:00 |
+
 ## Usługi (do automatyzacji i skryptów)
 
 | Usługa | Pola |
