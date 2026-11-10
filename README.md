@@ -190,6 +190,25 @@ Reminders that were due while Home Assistant was down are sent about 30 seconds 
 - `sensor.remindo_active`: how many tasks are reminding right now (attribute `tasks` with their names),
 - events `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, described in the logbook.
 
+### Your own reaction to a reminder
+
+Remindo sends notifications and speaks; anything else is up to you. Every event carries `uid`, `summary`, `key` and `source` (`remindo_reminded` also `count`), so a normal automation can react to it: show a page on a wall tablet, flash a light, play a chime.
+
+```yaml
+alias: Remindo - show the task list on the wall tablet
+triggers:
+  - trigger: event
+    event_type: remindo_reminded
+actions:
+  - action: fully_kiosk.load_url        # or browser_mod.navigate, light.turn_on, …
+    target:
+      device_id: YOUR_TABLET
+    data:
+      url: http://homeassistant.local:8123/lovelace/remindo
+```
+
+To react to one task only, add a condition on the text, e.g. `{{ 'dishwasher' in trigger.event.data.summary | lower }}`.
+
 ## Language
 
 Configuration screens, actions, error messages, push notifications and the logbook are available in English and Polish. Push, logbook and the To-do description use the language set in *Settings → System → General*; the card uses the user's profile language.

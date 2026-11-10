@@ -190,6 +190,25 @@ Przypomnienia, które wypadły, gdy Home Assistant był wyłączony, przychodzą
 - `sensor.remindo_active`: ile zadań przypomina teraz (atrybut `tasks` z nazwami),
 - zdarzenia `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, opisane w dzienniku.
 
+### Własna reakcja na przypomnienie
+
+Remindo wysyła powiadomienia i mówi; resztę robisz po swojemu. Każde zdarzenie niesie `uid`, `summary`, `key` i `source` (`remindo_reminded` także `count`), więc zwykła automatyzacja może na nie zareagować: pokazać stronę na tablecie, mignąć światłem, zagrać dźwięk.
+
+```yaml
+alias: Remindo - pokaż listę zadań na tablecie
+triggers:
+  - trigger: event
+    event_type: remindo_reminded
+actions:
+  - action: fully_kiosk.load_url        # albo browser_mod.navigate, light.turn_on, …
+    target:
+      device_id: TWOJ_TABLET
+    data:
+      url: http://homeassistant.local:8123/lovelace/remindo
+```
+
+Żeby reagować tylko na jedno zadanie, dodaj warunek na treść, np. `{{ 'zmywark' in trigger.event.data.summary | lower }}`.
+
 ## Język
 
 Ekrany konfiguracji, usługi, komunikaty błędów, powiadomienia push i dziennik są po polsku i po angielsku. Push, dziennik i opis w liście To-do idą w języku ustawionym w *Ustawienia → System → Ogólne*; karta w języku profilu użytkownika.
