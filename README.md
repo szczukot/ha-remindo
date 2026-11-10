@@ -67,7 +67,7 @@ With "Remind" unticked the task is a plain note on the list. With "Keep on the l
 
 <p align="center"><img src="docs/images/snooze-en.png" width="460" alt="Snoozing to a chosen time"></p>
 
-Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit, **✕** won't do. Tasks that are reminding right now also get the quick snooze buttons. On a recurring task **✕** only skips this date; to remove the task for good, open **✎** and choose **Delete**. A task ticked off or skipped by mistake can be brought back: open *Done* or *Skipped* and press **↩** (it reminds again right away); **🗑** removes it.
+Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit, **✕** won't do (kept under *Skipped*, so it can be restored), **🗑** delete without a trace (press twice). Tasks that are reminding right now also get the quick snooze buttons. On a recurring task **✕** only skips this date, and **🗑** removes the task with all its future dates. A task ticked off or skipped by mistake can be brought back: open *Done* or *Skipped* and press **↩** (it reminds again right away); **🗑** removes it from the list.
 
 <p align="center"><img src="docs/images/edit-en.png" width="460" alt="Editing a task"></p>
 

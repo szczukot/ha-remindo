@@ -1,13 +1,13 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.10.4";
+const VERSION = "0.10.5";
 
 const I18N = {
   en: {
     title: "Tasks", today: "today", tomorrow: "tomorrow", just_now: "just now", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago",
     now: "now", now_again: "now · again {t}", now_no_more: "now · no more reminders", dismissed_ago: "skipped {t}", snoozed_until: "snoozed until ",
     done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n} min", then_every: "then every {n} min again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} min again", snoozed_n: "snoozed {n}×",
-    max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications", ha_only: "notification in HA only", restore: "Restore (open it again)", del_title: "Delete",
-    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} min again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_due: "Due:", e_due_hint: "empty = a note without reminders", e_every: "remind every", e_once: "0 = once", del: "🗑 Delete", del_confirm: "Really delete?", e_save: "Save",
+    max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications", ha_only: "notification in HA only", restore: "Restore (open it again)", del_title: "Delete (no trace, cannot be restored)", del_title_rec: "Delete with all future dates",
+    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} min again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_due: "Due:", e_due_hint: "empty = a note without reminders", e_every: "remind every", e_once: "0 = once", del: "Delete", del_confirm: "Really delete?", e_save: "Save",
     sec_now: "Now", sec_planned: "Scheduled", sec_notes: "Notes", sec_done: "Done", sec_dismissed: "Skipped", empty: "Nothing to do 🎉",
     add: "＋ Add task", what: "What needs doing?", remind: "Remind", from_now: "from now", in_1h: "in 1 h", tonight: "today 19:00",
     pick: "pick a time…", every: "every", until_done: "until I tick it off", note_hint: "no reminders — just a note on the list",
@@ -23,8 +23,8 @@ const I18N = {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
     now: "teraz", now_again: "teraz · znowu {t}", now_no_more: "teraz · już nie przypomina", dismissed_ago: "odrzucone {t}", snoozed_until: "odłożone do ",
     done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n} min", then_every: "potem znowu co {n} min", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n} min", snoozed_n: "odłożone {n}×",
-    max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień", ha_only: "tylko powiadomienie w HA", restore: "Przywróć (otwórz ponownie)", del_title: "Usuń",
-    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n} min", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_due: "Termin:", e_due_hint: "puste = notatka bez przypomnień", e_every: "przypominaj co", e_once: "0 = raz", del: "🗑 Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
+    max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień", ha_only: "tylko powiadomienie w HA", restore: "Przywróć (otwórz ponownie)", del_title: "Usuń (bez śladu, nie da się przywrócić)", del_title_rec: "Usuń razem ze wszystkimi kolejnymi terminami",
+    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n} min", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_due: "Termin:", e_due_hint: "puste = notatka bez przypomnień", e_every: "przypominaj co", e_once: "0 = raz", del: "Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
     sec_now: "Teraz", sec_planned: "Zaplanowane", sec_notes: "Notatki", sec_done: "Zrobione", sec_dismissed: "Odrzucone", empty: "Nic do zrobienia 🎉",
     add: "＋ Dodaj zadanie", what: "Co trzeba zrobić?", remind: "Przypominaj", from_now: "od teraz", in_1h: "za 1 h", tonight: "dziś 19:00",
     pick: "wybierz termin…", every: "co", until_done: "dopóki nie odhaczę", note_hint: "bez przypomnień — zwykła notatka na liście",
@@ -86,6 +86,8 @@ const toIso = (value) => new Date(value).toISOString();
 const tomorrowDate = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
 const IDLE_CLOSE_MS = 5 * 60 * 1000;
+// an icon instead of the 🗑 emoji, which some systems (Windows) draw almost invisible
+const TRASH = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z"/></svg>`;
 
 class RemindoCard extends HTMLElement {
   setConfig(config) {
@@ -101,11 +103,12 @@ class RemindoCard extends HTMLElement {
     this._hass = hass;
     const lang = pickLang(hass);
     if (lang !== LANG) { LANG = lang; this._forceRender = !this._formOpen; this._render(); }
-    if (first || !this._unsub) this._subscribe();
+    // not while a retry is waiting: hass changes many times a second
+    if (!this._unsub && !this._retry) this._subscribe();
   }
 
   connectedCallback() {
-    if (this._hass && !this._unsub) this._subscribe();
+    if (this._hass && !this._unsub && !this._retry) this._subscribe();
     this._tick = setInterval(() => { this._closeIdle(); this._render(); }, 60000);
   }
 
@@ -118,7 +121,7 @@ class RemindoCard extends HTMLElement {
   }
   disconnectedCallback() {
     clearInterval(this._tick);
-    clearTimeout(this._retry);
+    clearTimeout(this._retry); this._retry = null;
     if (this._unsub) { this._unsub.then((u) => u && u()).catch(() => {}); this._unsub = null; }
   }
 
@@ -134,7 +137,7 @@ class RemindoCard extends HTMLElement {
         if (!this.isConnected) return null;
         this._error = err.message || String(err); this._render();
         clearTimeout(this._retry);
-        this._retry = setTimeout(() => this._subscribe(), 15000);
+        this._retry = setTimeout(() => { this._retry = null; this._subscribe(); }, 15000);
         return null;
       });
     this._unsub = sub;
@@ -184,7 +187,7 @@ class RemindoCard extends HTMLElement {
     const btns = closed ? `
       <div class="btns">
         <button data-a="reopen" data-uid="${task.uid}" title="${t("restore")}">↩</button>
-        <button class="no" data-a="delete" data-uid="${task.uid}" title="${t("del_title")}">🗑</button>
+        <button class="no" data-a="delete" data-uid="${task.uid}" title="${t("del_title")}">${TRASH}</button>
       </div>` : `
       <div class="btns">
         <button class="ok" data-a="done" data-uid="${task.uid}" title="${t("btn_done")}">✓</button>
@@ -195,6 +198,7 @@ class RemindoCard extends HTMLElement {
         ${kind !== "notes" ? `<button data-a="pick" data-uid="${task.uid}" title="${t("btn_pick_hint")}">${t("btn_pick")}</button>` : ""}
         <button data-a="edit" data-uid="${task.uid}" title="${t("edit")}">✎</button>
         <button class="no" data-a="dismiss" data-uid="${task.uid}" title="${t(recurring ? "btn_skip_once" : "btn_dismiss")}">✕</button>
+        <button class="no" data-a="delete" data-uid="${task.uid}" title="${t(recurring ? "del_title_rec" : "del_title")}">${TRASH}</button>
       </div>`;
     return `<div class="task ${kind}">
       <div class="txt"><div class="sum">${esc(task.summary)}</div>
@@ -221,7 +225,7 @@ class RemindoCard extends HTMLElement {
         ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="e-spk" value="${esc(s.id)}" ${task.tts === false ? "" : checked(task.speakers, s.id)} /> 🔊 ${esc(s.name)}</label>`).join("")}
       </div>
       <div class="frow">
-        <button class="no" data-a="delete" data-uid="${task.uid}">${t("del")}</button>
+        <button class="no" data-a="delete" data-uid="${task.uid}">${TRASH} ${t("del")}</button>
         <span class="spacer"></span>
         <button data-a="edit-cancel">${t("cancel")}</button>
         <button class="ok" data-a="edit-save" data-uid="${task.uid}">${t("e_save")}</button>
@@ -466,6 +470,7 @@ RemindoCard.styles = `
   button:hover { background: var(--secondary-background-color); }
   button.ok { background: var(--success-color, #43a047); border-color: transparent; color:#fff; min-width:44px; }
   button.no { color: var(--error-color, #db4437); min-width:44px; }
+  .ico { width:20px; height:20px; vertical-align:middle; }
   .empty { padding:16px 0; text-align:center; color: var(--secondary-text-color); }
   .add-btn { width:100%; margin-top:12px; }
   .form { margin-top:12px; display:flex; flex-direction:column; gap:8px; }

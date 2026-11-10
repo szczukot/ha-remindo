@@ -67,7 +67,7 @@ Odznaczone „Przypominaj” = zwykła notatka na liście. Odznaczone „Zostaw 
 
 <p align="center"><img src="docs/images/snooze-pl.png" width="460" alt="Odkładanie na wybrany termin"></p>
 
-Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym terminie, **✎** zmień, **✕** nie robię. Zadania, które właśnie przypominają, mają też szybkie odkładanie. Przy zadaniu cyklicznym **✕** tylko pomija ten termin; żeby usunąć je na stałe, otwórz **✎** i wybierz **Usuń**. Zadanie odhaczone albo odrzucone przez pomyłkę da się przywrócić: rozwiń *Zrobione* albo *Odrzucone* i naciśnij **↩** (od razu znowu przypomina); **🗑** je usuwa.
+Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym terminie, **✎** zmień, **✕** nie robię (trafia do *Odrzuconych*, da się przywrócić), **🗑** usuń bez śladu (kliknij dwa razy). Zadania, które właśnie przypominają, mają też szybkie odkładanie. Przy zadaniu cyklicznym **✕** tylko pomija ten termin, a **🗑** usuwa zadanie razem ze wszystkimi kolejnymi terminami. Zadanie odhaczone albo odrzucone przez pomyłkę da się przywrócić: rozwiń *Zrobione* albo *Odrzucone* i naciśnij **↩** (od razu znowu przypomina); **🗑** usuwa je z listy.
 
 <p align="center"><img src="docs/images/edit-pl.png" width="460" alt="Zmiana zadania"></p>
 

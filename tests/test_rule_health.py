@@ -1,7 +1,7 @@
 """Rules that change or disappear, and rules that can never work."""
 
 from freezegun.api import FrozenDateTimeFactory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Context, HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import issue_registry as ir
 
@@ -112,3 +112,73 @@ async def test_repairs_warn_about_broken_rules(hass: HomeAssistant) -> None:
     hass.config_entries.async_remove_subentry(entry, rule)
     await hass.async_block_till_done()
     assert issues.async_get_issue(DOMAIN, f"rule_{rule}") is None
+
+
+async def test_condition_ended_while_not_watching(hass: HomeAssistant) -> None:
+    """The gate was closed while Home Assistant restarted: the task closes by itself at start."""
+    entry, calls = await setup_integration(hass)
+    hass.states.async_set("binary_sensor.gate", "off")
+    await add_rule(hass, entry, {"summary": "Close the gate", "entity_id": "binary_sensor.gate", "value": "on"})
+    hass.states.async_set("binary_sensor.gate", "on")
+    await hass.async_block_till_done()
+    assert len(entry.runtime_data.open_tasks()) == 1
+    await hass.config_entries.async_unload(entry.entry_id)
+    hass.states.async_set("binary_sensor.gate", "off")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.runtime_data.open_tasks() == []
+    # still open while the condition holds
+    hass.states.async_set("binary_sensor.gate", "on")
+    await hass.async_block_till_done()
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert len(entry.runtime_data.open_tasks()) == 1
+
+
+async def test_user_text_is_never_a_template(hass: HomeAssistant, hass_read_only_user) -> None:
+    """A user who may not run templates renames a rule's task: the tablet says it literally."""
+    entry, calls = await setup_integration(hass)
+    hass.states.async_set("binary_sensor.gate", "off")
+    await add_rule(hass, entry, {"summary": "Close the gate", "entity_id": "binary_sensor.gate", "value": "on"})
+    hass.states.async_set("binary_sensor.gate", "on")
+    await hass.async_block_till_done()
+    task = entry.runtime_data.open_tasks()[0]
+    await hass.services.async_call(
+        DOMAIN, "update", {"uid": task.uid, "summary": "{{ 6 * 7 }}"}, blocking=True,
+        context=Context(user_id=hass_read_only_user.id),
+    )
+    assert await entry.runtime_data._speak(task, ["media_player.tablet"]) == "{{ 6 * 7 }}"
+    # the rule's own spoken text still is a template
+    task.tts_message = "{{ 6 * 7 }}"
+    assert await entry.runtime_data._speak(task, ["media_player.tablet"]) == "42"
+
+
+async def test_moving_a_reminding_task_clears_the_phone(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    entry, calls = await setup_integration(hass)
+    uid = await add_task(hass, summary="Unload the washer")
+    await tick(hass, freezer, seconds=1)
+    assert entry.runtime_data.find(uid).active
+    calls["notify"].clear()
+    await hass.services.async_call(DOMAIN, "update", {"uid": uid, "start": "2030-01-01 10:00:00"}, blocking=True)
+    assert [c.data["message"] for c in calls["notify"]] == ["clear_notification"]
+
+
+async def test_own_rule_like_key_is_kept(hass: HomeAssistant) -> None:
+    """An automation's key "rule_garage" is not a deleted rule."""
+    entry, _ = await setup_integration(hass)
+    await add_task(hass, summary="Mine", key="rule_garage")
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert [t.summary for t in entry.runtime_data.open_tasks()] == ["Mine"]
+
+
+async def test_rule_moved_from_calendar_to_sensor(hass: HomeAssistant) -> None:
+    entry, _ = await setup_integration(hass)
+    hass.states.async_set("calendar.bins", "off")
+    hass.states.async_set("binary_sensor.gate", "off")
+    rule = await add_rule(hass, entry, {"summary": "Bins", "entity_id": "calendar.bins", "days_before": 1, "at_time": "18:00"})
+    flow = await entry.start_subentry_reconfigure_flow(hass, rule)
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Gate", "entity_id": "binary_sensor.gate", "mode": "calendar"}
+    )
+    assert flow["step_id"] == "condition_state"

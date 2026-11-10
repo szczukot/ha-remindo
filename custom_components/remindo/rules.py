@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -39,6 +40,7 @@ MODE_BELOW = "below"  # number below a limit
 MODE_CALENDAR = "calendar"  # calendar event in N days
 MODES = [MODE_STATE, MODE_ABOVE, MODE_BELOW, MODE_CALENDAR]
 _IGNORED = (STATE_UNAVAILABLE, STATE_UNKNOWN, None)
+_RULE_ID = re.compile(r"[0-9A-Z]{26}")  # config subentry id
 
 # After a restart entities need a moment before their state can be trusted.
 STARTUP_DELAY = 60  # s
@@ -183,7 +185,9 @@ class RuleEngine:
         for key in keys:
             if key.startswith("rule_"):
                 rule_id = key.removeprefix("rule_").split("_", 1)[0]
-                if rule_id not in self.rules:
+                # only keys made by a rule (its id is a ULID); "rule_garage" from an
+                # automation is not ours to close
+                if _RULE_ID.fullmatch(rule_id) and rule_id not in self.rules:
                     orphans.add(key)
         return orphans
 
@@ -235,6 +239,10 @@ class RuleEngine:
         current = rule.matches(self.hass.states.get(rule.entity_id))
         if current is not None:
             self._last[rule.id] = current
+        if current is False and rule.auto_close and self.manager.find(key=rule.key):
+            # the condition ended while nobody was watching (Home Assistant restarting,
+            # the rule just changed): the task is no longer needed
+            self.hass.async_create_task(self._close(rule))
         if deadline := self._deadlines.get(rule.id):
             # a countdown was running when Home Assistant stopped or the settings changed
             if current is False:

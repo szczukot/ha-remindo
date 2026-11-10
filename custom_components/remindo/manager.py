@@ -414,6 +414,7 @@ class TaskManager:
     async def async_update(self, task: Task, changes: dict[str, Any]) -> Task:
         """Change fields of a task. A key present in `changes` is applied; None clears it."""
         now = dt_util.now()
+        was_active = task.active
         if summary := changes.get("summary"):
             if summary != task.summary:
                 task.summary = summary
@@ -450,6 +451,9 @@ class TaskManager:
             task.keep_done = changes["keep_done"]
         if "notify_data" in changes:
             task.notify_data = dict(changes["notify_data"]) if changes["notify_data"] else None
+        if was_active and not task.active:
+            # moved to a later time: the notification with buttons is out of date
+            await self._clear_notifications(task)
         self._schedule(task)
         self._save()
         return task
@@ -867,9 +871,9 @@ class TaskManager:
             return None
         if screen := self.options.get(CONF_SCREEN_SWITCH):
             await self._call("switch", "turn_on", {"entity_id": screen}, blocking=True)
-        message = task.tts_message or task.summary
-        if task.templates:
-            message = self._render(message)
+        # only the spoken text from the rule / automation is a template; the summary was
+        # rendered already, and may have been edited by someone who must not run templates
+        message = self._render(task.tts_message) if task.templates and task.tts_message else task.tts_message or task.summary
         spoken = await self._call(
             "tts",
             "speak",

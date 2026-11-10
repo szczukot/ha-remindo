@@ -198,6 +198,9 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             entity_id = user_input["entity_id"]
             if entity_id.startswith("calendar."):
                 user_input["mode"] = "calendar"
+            elif user_input["mode"] == "calendar" and str(self._data.get("entity_id", "")).startswith("calendar."):
+                # the rule was for a calendar and now watches something else
+                user_input["mode"] = "state"
             exists = self.hass.states.get(entity_id) is not None or er.async_get(self.hass).async_get(entity_id) is not None
             if problem := rule_problem(user_input["mode"], entity_id, self.hass.states.get(entity_id), exists):
                 errors["entity_id" if problem == "rule_entity_missing" else "mode"] = problem
