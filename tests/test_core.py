@@ -244,7 +244,7 @@ async def test_ws_survives_reload(hass: HomeAssistant, hass_ws_client) -> None:
     assert [t["summary"] for t in msg["event"]["tasks"]] == ["After reload"]
     await hass.services.async_call(DOMAIN, "dismiss", {"uid": res["uid"]}, blocking=True)
     msg = await asyncio.wait_for(client.receive_json(), 2)
-    assert msg["event"]["tasks"] == []
+    assert [t["status"] for t in msg["event"]["tasks"]] == ["dismissed"]
 
 
 async def test_reminder_limits(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:

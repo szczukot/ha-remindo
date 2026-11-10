@@ -37,7 +37,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Opcja | Opis |
 |---|---|
 | Kanały powiadomień | aplikacja HA (`notify.mobile_app_*`, z przyciskami) oraz każdy inny kanał z HA: Telegram, e-mail, SMS, encje `notify.*` (sam tekst) |
-| Powiadomienie w HA | dodatkowo dzwoneczek w HA |
+| Powiadomienie w HA | dodatkowo dzwoneczek w HA, przy każdym przypomnieniu (także dla zadań bez wybranego telefonu i głośnika) |
 | Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
 | Włącz ekran tabletu | np. `switch.<tablet>_screen` z Fully Kiosk |
 | Obecność | np. `group.domownicy`; głos tylko gdy ktoś jest w domu |
@@ -67,7 +67,7 @@ Odznaczone „Przypominaj” = zwykła notatka na liście. Odznaczone „Zostaw 
 
 <p align="center"><img src="docs/images/snooze-pl.png" width="460" alt="Odkładanie na wybrany termin"></p>
 
-Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym terminie, **✎** zmień, **✕** nie robię. Zadania, które właśnie przypominają, mają też szybkie odkładanie. Przy zadaniu cyklicznym **✕** tylko pomija ten termin; żeby usunąć je na stałe, otwórz **✎** i wybierz **Usuń**.
+Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym terminie, **✎** zmień, **✕** nie robię. Zadania, które właśnie przypominają, mają też szybkie odkładanie. Przy zadaniu cyklicznym **✕** tylko pomija ten termin; żeby usunąć je na stałe, otwórz **✎** i wybierz **Usuń**. Zadanie odhaczone albo odrzucone przez pomyłkę da się przywrócić: rozwiń *Zrobione* albo *Odrzucone* i naciśnij **↩** (od razu znowu przypomina); **🗑** je usuwa.
 
 <p align="center"><img src="docs/images/edit-pl.png" width="460" alt="Zmiana zadania"></p>
 
@@ -167,6 +167,7 @@ Odliczanie „przez co najmniej N min” przetrwa restart Home Assistant. Sprawd
 | `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
 | `remindo.update` | `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
 | `remindo.done`, `remindo.dismiss` | `uid` albo `key`. Zadanie cykliczne obie przesuwają na następny termin. |
+| `remindo.reopen` | `uid`: otwiera ponownie zadanie zrobione albo odrzucone; zadanie z terminem od razu znowu przypomina |
 | `remindo.delete` | `uid` albo `key`: usuwa zadanie na stałe, także cykliczne |
 | `remindo.snooze` | `uid`/`key` + `minutes` albo `until` |
 | `remindo.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła); wysyła `done_message`, jeśli był |

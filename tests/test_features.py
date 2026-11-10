@@ -229,7 +229,7 @@ async def test_phone_done_and_dismiss(hass: HomeAssistant, freezer: FrozenDateTi
     await hass.async_block_till_done()
     tasks = entry.runtime_data.tasks
     assert tasks[a].status == "done"
-    assert b not in tasks  # dismissed tasks leave the list and go to history
+    assert tasks[b].status == "dismissed"  # kept, so the card can restore it
     assert entry.runtime_data.history[-1]["result"] == "dismissed"
     assert done[0].data["source"] == "phone" and dismissed[0].data["source"] == "phone"
     cleared = [c for c in calls["notify"] if c.data["message"] == "clear_notification"]

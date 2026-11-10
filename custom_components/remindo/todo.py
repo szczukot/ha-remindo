@@ -82,8 +82,9 @@ class RemindoTodoList(TodoListEntity):
 
     @property
     def todo_items(self) -> list[TodoItem]:
+        # dismissed tasks are kept only so the card can restore them
         tasks = sorted(
-            self._manager.tasks.values(),
+            (t for t in self._manager.tasks.values() if t.status in (STATUS_OPEN, STATUS_DONE)),
             key=lambda t: (t.status != STATUS_OPEN, t.next_reminder or t.start or "9999", t.created),
         )
         return [self._to_item(t) for t in tasks]
@@ -116,13 +117,14 @@ class RemindoTodoList(TodoListEntity):
         if item.status == TodoItemStatus.COMPLETED and task.status == STATUS_OPEN:
             await self._manager.async_done(task, "todo")
             return
+        # the due time as the To-do card showed it (before a reopen changes it)
+        current = self._to_item(task).due
         if item.status == TodoItemStatus.NEEDS_ACTION and task.status == STATUS_DONE:
             await self._manager.async_reopen(task)
         changes: dict = {
             "summary": item.summary,
             "description": self._clean_description(item.description),
         }
-        current = self._to_item(task).due
         if task.status == STATUS_OPEN and _minute(item.due) != _minute(current):
             if item.due is not None or not task.recurring:
                 changes["start"] = item.due

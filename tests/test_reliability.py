@@ -283,7 +283,7 @@ async def test_unticked_calendar_task_expires_even_after_reload(hass: HomeAssist
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     manager = entry.runtime_data
-    assert task.uid not in manager.tasks
+    assert manager.tasks[task.uid].status == "dismissed"
     expired = [h for h in manager.history if h["uid"] == task.uid]
     assert [(h["result"], h["source"]) for h in expired] == [("dismissed", "expired")]
 
@@ -412,3 +412,142 @@ async def test_broken_stored_task_is_skipped(hass: HomeAssistant, hass_storage) 
     entry, _ = await setup_integration(hass)
     assert list(entry.runtime_data.tasks) == ["ok1"]
     assert entry.runtime_data.tasks["ok1"].next_reminder is None
+
+
+# ------------------------------------------------- second review (0.10.2)
+
+
+async def test_stale_phone_button_does_not_skip_a_recurring_task(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """Two people tap "Done" (or yesterday's notification is tapped): only one date is closed."""
+    freezer.move_to("2026-11-10 08:00:00+01:00")
+    entry, calls = await setup_integration(hass)
+    uid = await add_task(hass, summary="Pills", start="2026-11-10T08:00:00", repeat="daily", speakers=[])
+    task = entry.runtime_data.tasks[uid]
+    await tick(hass, freezer, seconds=2)
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"REMINDO_DONE_{uid}"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"REMINDO_DONE_{uid}"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"REMINDO_DISMISS_{uid}"})
+    await hass.async_block_till_done()
+    assert task.start == "2026-11-11T08:00:00+01:00"
+    assert len(entry.runtime_data.history) == 1
+    # the stale notification itself is removed from the phone
+    assert calls["notify"][-1].data == {"message": "clear_notification", "data": {"tag": f"remindo_{uid}"}}
+
+
+async def test_rule_firing_again_wakes_a_silent_task(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """The washer finishes again while the old task is snoozed for days: remind now."""
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await setup_integration(hass)
+    hass.states.async_set("sensor.washer", "on")
+    await add_rule(hass, entry, {"summary": "Unload", "entity_id": "sensor.washer", "value": "off", "auto_close": False})
+    manager = entry.runtime_data
+    hass.states.async_set("sensor.washer", "off")
+    await hass.async_block_till_done()
+    await tick(hass, freezer, seconds=2)
+    task = manager.open_tasks()[0]
+    await hass.services.async_call(DOMAIN, "snooze", {"uid": task.uid, "until": "2026-11-12T09:00:00"}, blocking=True)
+
+    hass.states.async_set("sensor.washer", "on")
+    hass.states.async_set("sensor.washer", "off")
+    await hass.async_block_till_done()
+    await tick(hass, freezer, seconds=2)
+    assert len(manager.open_tasks()) == 1 and task.active and task.reminders == 1 and task.snoozes == 0
+
+    # while it is reminding, another cycle changes nothing
+    before = task.next_reminder
+    hass.states.async_set("sensor.washer", "on")
+    hass.states.async_set("sensor.washer", "off")
+    await hass.async_block_till_done()
+    assert task.next_reminder == before and task.reminders == 1
+
+
+async def test_rule_edit_keeps_all_channels_selected(hass: HomeAssistant) -> None:
+    """A rule made before any phone was configured means "all": editing it later must show them ticked."""
+    entry, _ = await setup_integration(hass, notify_targets=[], media_player=[])
+    hass.states.async_set("binary_sensor.gate", "off")
+    sub = await add_rule(hass, entry, {"summary": "Gate", "entity_id": "binary_sensor.gate", "value": "on"})
+    assert entry.subentries[sub].data["phones"] is None and entry.subentries[sub].data["speakers"] is None
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, "notify_targets": ["notify.mobile_app_test"], "media_player": ["media_player.tablet"]}
+    )
+    await hass.async_block_till_done()
+    flow = await entry.start_subentry_reconfigure_flow(hass, sub)
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Gate", "entity_id": "binary_sensor.gate", "mode": "state"})
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": "on", "for_minutes": 0})
+    shown = {str(k): k for k in flow["data_schema"].schema}
+    for field, expected in (("phones", ["notify.mobile_app_test"]), ("speakers", ["media_player.tablet"])):
+        assert shown[field].default() == expected
+        assert "suggested_value" not in (shown[field].description or {})
+
+
+async def test_reopen_restarts_reminders(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """Un-ticking in the To-do card, or "Restore" on the card: the task reminds again."""
+    freezer.move_to("2026-11-09 15:00:00+01:00")
+    entry, calls = await setup_integration(hass)
+    manager = entry.runtime_data
+    a = await add_task(hass, summary="Done by mistake", interval=5, speakers=[])
+    b = await add_task(hass, summary="Skipped by mistake", interval=5, speakers=[])
+    await tick(hass, freezer, seconds=2)
+    await hass.services.async_call(DOMAIN, "done", {"uid": a}, blocking=True)
+    await hass.services.async_call(DOMAIN, "dismiss", {"uid": b}, blocking=True)
+    assert manager.tasks[b].status == "dismissed"
+    # a dismissed task is not a to-do item, but it is still sent to the card
+    items = await hass.services.async_call("todo", "get_items", {}, target=TODO, blocking=True, return_response=True)
+    assert [i["summary"] for i in items["todo.remindo"]["items"]] == ["Done by mistake"]
+
+    pushes = len([c for c in calls["notify"] if "actions" in c.data.get("data", {})])
+    await hass.services.async_call("todo", "update_item", {"item": a, "status": "needs_action"}, target=TODO, blocking=True)
+    await hass.services.async_call(DOMAIN, "reopen", {"uid": b}, blocking=True)
+    await tick(hass, freezer, seconds=2)
+    assert manager.tasks[a].active and manager.tasks[b].active
+    assert len([c for c in calls["notify"] if "actions" in c.data.get("data", {})]) == pushes + 2
+
+
+async def test_only_recent_dismissed_tasks_are_kept(hass: HomeAssistant) -> None:
+    from custom_components.remindo.manager import KEEP_DISMISSED
+
+    entry, _ = await setup_integration(hass)
+    for n in range(KEEP_DISMISSED + 3):
+        uid = await add_task(hass, summary=f"T{n}", start=None)
+        await hass.services.async_call(DOMAIN, "dismiss", {"uid": uid}, blocking=True)
+    assert len(entry.runtime_data.tasks) == KEEP_DISMISSED
+
+
+async def test_restored_expired_task_stays(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-12 17:59:50+01:00")
+    entry, _ = await setup_integration(hass)
+    _calendar(hass, ["Paper"])
+    await add_rule(hass, entry, {"summary": "Bins", "entity_id": "calendar.waste", "days_before": 0, "at_time": "18:00:00"})
+    await tick(hass, freezer, seconds=11)
+    manager = entry.runtime_data
+    task = manager.open_tasks()[0]
+    await tick(hass, freezer, hours=6, seconds=1)  # past midnight: expired
+    assert task.status == "dismissed"
+    await hass.services.async_call(DOMAIN, "reopen", {"uid": task.uid}, blocking=True)
+    await tick(hass, freezer, minutes=5)
+    assert task.status == "open" and task.expires is None and task.active
+
+
+async def test_moving_the_due_time_moves_the_stop_time(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-09 07:00:00+01:00")
+    entry, _ = await setup_integration(hass)
+    uid = await add_task(hass, summary="Pills", start="2026-11-09T08:00:00", repeat="daily", remind_until="2026-11-09T09:00:00")
+    task = entry.runtime_data.tasks[uid]
+    await hass.services.async_call(DOMAIN, "update", {"uid": uid, "start": "2026-11-09T20:00:00"}, blocking=True)
+    assert task.remind_until == "2026-11-09T21:00:00+01:00"
+    # unless the stop time is set in the same call
+    await hass.services.async_call(
+        DOMAIN, "update", {"uid": uid, "start": "2026-11-09T10:00:00", "remind_until": "2026-11-09T12:00:00"}, blocking=True)
+    assert task.remind_until == "2026-11-09T12:00:00+01:00"
+
+
+async def test_card_is_told_about_the_ha_notification(hass: HomeAssistant, hass_ws_client) -> None:
+    """ "No channel" still means a notification in HA when that option is on: the card says so."""
+    await setup_integration(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "remindo/subscribe"})
+    await client.receive_json()
+    msg = await client.receive_json()
+    assert msg["event"]["options"]["persistent"] is True
+    assert "dismissed" not in msg["event"]

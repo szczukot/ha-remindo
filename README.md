@@ -37,7 +37,7 @@ When adding the integration (and later under *Configure*) you set:
 | Option | Description |
 |---|---|
 | Notification channels | the HA app (`notify.mobile_app_*`, with buttons) and any other channel in HA: Telegram, e-mail, SMS, `notify.*` entities (text only) |
-| Persistent notification in HA | also show the bell notification in HA |
+| Persistent notification in HA | also show the bell notification in HA, for every reminder (also for tasks with no phone and no speaker selected) |
 | TTS engine, media players | where announcements are spoken |
 | Screen switch to turn on first | e.g. `switch.<tablet>_screen` from Fully Kiosk |
 | Presence entity | e.g. a group of people; speech only when someone is home |
@@ -67,7 +67,7 @@ With "Remind" unticked the task is a plain note on the list. With "Keep on the l
 
 <p align="center"><img src="docs/images/snooze-en.png" width="460" alt="Snoozing to a chosen time"></p>
 
-Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit, **✕** won't do. Tasks that are reminding right now also get the quick snooze buttons. On a recurring task **✕** only skips this date; to remove the task for good, open **✎** and choose **Delete**.
+Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit, **✕** won't do. Tasks that are reminding right now also get the quick snooze buttons. On a recurring task **✕** only skips this date; to remove the task for good, open **✎** and choose **Delete**. A task ticked off or skipped by mistake can be brought back: open *Done* or *Skipped* and press **↩** (it reminds again right away); **🗑** removes it.
 
 <p align="center"><img src="docs/images/edit-en.png" width="460" alt="Editing a task"></p>
 
@@ -167,6 +167,7 @@ A "for at least N min" countdown survives a restart of Home Assistant. A calenda
 | `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
 | `remindo.update` | `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Only the fields you send change; `null` clears a field. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time. |
+| `remindo.reopen` | `uid`: opens a done or skipped task again; a task with a due time reminds again right away |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |
 | `remindo.snooze` | `uid`/`key` + `minutes` or `until` |
 | `remindo.close_by_key` | `key`: closes the task (e.g. the gate was closed); sends `done_message` if set |

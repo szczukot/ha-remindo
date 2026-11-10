@@ -71,6 +71,9 @@ SPEAK_START_MAX = 5.0  # s, max wait for our own message to start playing
 SPEAK_CHARS_PER_SECOND = 12  # to estimate the length of a message spoken over music
 _BUSY = ("playing", "buffering")
 
+# Dismissed tasks stay restorable; only the most recent ones are kept.
+KEEP_DISMISSED = 20
+
 # Reminders that were due while Home Assistant was down are sent this long after start.
 MISSED_DELAY = timedelta(seconds=30)
 
@@ -250,10 +253,11 @@ class TaskManager:
     def _save(self) -> None:
         """Trim old entries, write the store and tell entities and cards."""
         keep = int(self.options.get(CONF_KEEP_HISTORY, 50))
-        done = [t for t in self.tasks.values() if t.status == STATUS_DONE]
-        done.sort(key=lambda t: t.closed or "", reverse=True)
-        for old in done[keep:]:
-            self.tasks.pop(old.uid, None)
+        for status, limit in ((STATUS_DONE, keep), (STATUS_DISMISSED, KEEP_DISMISSED)):
+            closed = [t for t in self.tasks.values() if t.status == status]
+            closed.sort(key=lambda t: t.closed or "", reverse=True)
+            for old in closed[limit:]:
+                self.tasks.pop(old.uid, None)
         self.history = self.history[-keep * 4 :]
         self.async_schedule_save()
         async_dispatcher_send(self.hass, SIGNAL_UPDATED)
@@ -336,10 +340,16 @@ class TaskManager:
         done_message: str | None = None,
         notify_data: dict[str, Any] | None = None,
         templates: bool = False,
+        restart: bool = False,
         source: str = "service",
         context: Context | None = None,
     ) -> Task:
-        """Add a task. `templates` allows HA templates in the texts (trusted callers only)."""
+        """Add a task.
+
+        `templates` allows HA templates in the texts (trusted callers only).
+        `restart`: if a task with this key is open but no longer reminding (snoozed, or its
+        limit is used up), start reminding again; used when a rule's condition occurs anew.
+        """
         start_dt = self._resolve_start(start)
         template = summary if templates and _is_template(summary) else None
         if template:
@@ -353,6 +363,10 @@ class TaskManager:
             if expires is not None:
                 existing.expires = _iso(expires)
                 self._schedule_expiry(existing)
+            if restart and existing.start and (not existing.active or not existing.next_reminder):
+                existing.next_reminder = _iso(dt_util.now())
+                existing.reminders = existing.snoozes = 0
+                self._schedule(existing)
             self._save()
             return existing
         if (repeat or REPEAT_NONE) != REPEAT_NONE and start_dt is None:
@@ -401,6 +415,10 @@ class TaskManager:
             start_dt = self._resolve_start(changes["start"])
             if task.repeat != REPEAT_NONE and start_dt is None:
                 raise RemindoError("repeat_needs_start")
+            old_start, until = _dt(task.start), _dt(task.remind_until)
+            if start_dt and old_start and until and "remind_until" not in changes:
+                # "stop reminding at" moves together with the due time
+                task.remind_until = _iso(until + (start_dt - old_start))
             task.start = task.next_reminder = _iso(start_dt)
             task.active = bool(start_dt and start_dt <= now and task.active)
         if "interval" in changes and changes["interval"] is not None:
@@ -464,21 +482,34 @@ class TaskManager:
             task.active = False
             task.reminders = task.snoozes = 0
             self._schedule(task)
-        elif status == STATUS_DONE and self.keep_done(task):
-            task.status = STATUS_DONE
-            task.closed = now.isoformat()
-            task.next_reminder = None
-            self._cancel(task.uid)
-        else:
+        elif status == STATUS_DONE and not self.keep_done(task):
             self._cancel(task.uid)
             self.tasks.pop(task.uid, None)
+        else:
+            # done, or dismissed (kept so it can be restored)
+            task.status = status
+            task.closed = now.isoformat()
+            task.next_reminder = None
+            task.active = False
+            self._cancel(task.uid)
         self._save()
 
     async def async_reopen(self, task: Task) -> None:
-        if task.status == STATUS_DONE:
-            task.status = STATUS_OPEN
-            task.closed = None
-            self._save()
+        """Open a done or dismissed task again; a task with a due time reminds again right away."""
+        if task.status == STATUS_OPEN:
+            return
+        now = dt_util.now()
+        task.status = STATUS_OPEN
+        task.closed = None
+        task.active = False
+        task.reminders = task.snoozes = 0
+        if task.start:
+            task.next_reminder = _iso(now)
+        if (expires := _dt(task.expires)) and expires <= now:
+            task.expires = None  # restored after its date passed: keep it until handled
+        self._schedule(task)
+        self._schedule_expiry(task)
+        self._save()
 
     async def async_snooze(
         self,
@@ -798,8 +829,8 @@ class TaskManager:
         )
         return message if spoken else None
 
-    async def _clear_notifications(self, task: Task) -> None:
-        if task.reminders == 0:
+    async def _clear_notifications(self, task: Task, *, force: bool = False) -> None:
+        if task.reminders == 0 and not force:
             return
         for target in sorted(set(self.all_phones()) | set(task.phones or [])):
             if self._is_mobile(target):
@@ -821,6 +852,11 @@ class TaskManager:
             return
         task = self.tasks.get(uid)
         if task is None:
+            return
+        if task.status != STATUS_OPEN or not task.active:
+            # a stale notification (already handled on another phone, or yesterday's
+            # occurrence of a recurring task): remove it, do not touch the task
+            await self._clear_notifications(task, force=True)
             return
         if kind == ACTION_DONE:
             await self.async_done(task, "phone", event.context)

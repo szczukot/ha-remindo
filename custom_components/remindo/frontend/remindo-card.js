@@ -1,12 +1,12 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.10.1";
+const VERSION = "0.10.2";
 
 const I18N = {
   en: {
     title: "Tasks", today: "today", tomorrow: "tomorrow", just_now: "just now", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago",
     now: "now", now_again: "now · again {t}", now_no_more: "now · no more reminders", dismissed_ago: "skipped {t}", snoozed_until: "snoozed until ",
     done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n} min", then_every: "then every {n} min again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} min again", snoozed_n: "snoozed {n}×",
-    max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications",
+    max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications", ha_only: "notification in HA only", restore: "Restore (open it again)", del_title: "Delete",
     btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} min again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_due: "Due:", e_due_hint: "empty = a note without reminders", e_every: "remind every", e_once: "0 = once", del: "🗑 Delete", del_confirm: "Really delete?", e_save: "Save",
     sec_now: "Now", sec_planned: "Scheduled", sec_notes: "Notes", sec_done: "Done", sec_dismissed: "Skipped", empty: "Nothing to do 🎉",
     add: "＋ Add task", what: "What needs doing?", remind: "Remind", from_now: "from now", in_1h: "in 1 h", tonight: "today 19:00",
@@ -23,7 +23,7 @@ const I18N = {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
     now: "teraz", now_again: "teraz · znowu {t}", now_no_more: "teraz · już nie przypomina", dismissed_ago: "odrzucone {t}", snoozed_until: "odłożone do ",
     done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n} min", then_every: "potem znowu co {n} min", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n} min", snoozed_n: "odłożone {n}×",
-    max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień",
+    max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień", ha_only: "tylko powiadomienie w HA", restore: "Przywróć (otwórz ponownie)", del_title: "Usuń",
     btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n} min", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_due: "Termin:", e_due_hint: "puste = notatka bez przypomnień", e_every: "przypominaj co", e_once: "0 = raz", del: "🗑 Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
     sec_now: "Teraz", sec_planned: "Zaplanowane", sec_notes: "Notatki", sec_done: "Zrobione", sec_dismissed: "Odrzucone", empty: "Nic do zrobienia 🎉",
     add: "＋ Dodaj zadanie", what: "Co trzeba zrobić?", remind: "Przypominaj", from_now: "od teraz", in_1h: "za 1 h", tonight: "dziś 19:00",
@@ -85,6 +85,8 @@ const localIso = (d) =>
 const toIso = (value) => new Date(value).toISOString();
 const tomorrowDate = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
+const IDLE_CLOSE_MS = 5 * 60 * 1000;
+
 class RemindoCard extends HTMLElement {
   setConfig(config) {
     this._config = { show_done: true, show_form: true, ...config };
@@ -102,7 +104,18 @@ class RemindoCard extends HTMLElement {
     if (first || !this._unsub) this._subscribe();
   }
 
-  connectedCallback() { if (this._hass && !this._unsub) this._subscribe(); this._tick = setInterval(() => this._render(), 60000); }
+  connectedCallback() {
+    if (this._hass && !this._unsub) this._subscribe();
+    this._tick = setInterval(() => { this._closeIdle(); this._render(); }, 60000);
+  }
+
+  // The list is not redrawn while a form is open (that would wipe what is being typed).
+  // A form somebody walked away from is closed, so a wall tablet never shows a frozen list.
+  _closeIdle() {
+    if (!(this._formOpen || this._pick || this._edit)) return;
+    if (Date.now() - (this._touched || 0) < IDLE_CLOSE_MS) return;
+    this._formOpen = false; this._pick = null; this._edit = null; this._forceRender = true;
+  }
   disconnectedCallback() {
     clearInterval(this._tick);
     if (this._unsub) { this._unsub.then((u) => u()).catch(() => {}); this._unsub = null; }
@@ -111,7 +124,7 @@ class RemindoCard extends HTMLElement {
   _subscribe() {
     if (!this._hass || this._unsub) return;
     this._unsub = this._hass.connection
-      .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._dismissed = msg.dismissed || []; this._opts = msg.options || {}; this._error = null; this._render(); },
+      .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._opts = msg.options || {}; this._error = null; this._render(); },
         { type: "remindo/subscribe" })
       .catch((err) => { this._error = err.message || String(err); this._unsub = null; this._render(); setTimeout(() => this._subscribe(), 15000); });
   }
@@ -132,6 +145,7 @@ class RemindoCard extends HTMLElement {
       planned: open.filter((t) => !t.active && t.start).sort(by("next_reminder")),
       notes: open.filter((t) => !t.start).sort(by("created")),
       done: this._tasks.filter((t) => t.status === "done").sort((a, b) => (b.closed || "").localeCompare(a.closed || "")).slice(0, 5),
+      dismissed: this._tasks.filter((t) => t.status === "dismissed").sort((a, b) => (b.closed || "").localeCompare(a.closed || "")).slice(0, 10),
     };
   }
 
@@ -139,23 +153,28 @@ class RemindoCard extends HTMLElement {
     // Most important: when. The rest in small print.
     let when = "";
     if (kind === "now") when = task.next_reminder ? t("now_again", { t: new Date(task.next_reminder).toDateString() === new Date().toDateString() ? hm(task.next_reminder) : fmtTime(task.next_reminder) }) : (task.interval ? t("now_no_more") : t("now"));
-    else if (kind === "dismissed") when = t("dismissed_ago", { t: ago(task.at) });
+    else if (kind === "dismissed") when = t("dismissed_ago", { t: ago(task.closed) });
     else if (kind === "planned") when = (task.snoozes && task.last_reminded ? t("snoozed_until") : "") + fmtTime(task.next_reminder || task.start);
     else if (kind === "done") when = t("done_ago", { t: ago(task.closed) });
+    const closed = kind === "done" || kind === "dismissed";
     const meta = [];
     if (kind === "now") meta.push(t("reminding_since", { t: ago(task.last_reminded) }));
-    if (task.interval && kind !== "done" && kind !== "notes") meta.push(t(kind === "planned" ? "then_every" : "every_min", { n: task.interval }));
-    if (task.repeat && task.repeat !== "none") meta.push(`🔁 ${repeatLabel(task)}`);
-    if (task.snoozes) meta.push(t("snoozed_n", { n: task.snoozes }));
-    if (task.max_reminders && kind !== "done") meta.push(t("max_n", { n: task.max_reminders, m: task.reminders || 0 }));
-    if (task.remind_until && kind !== "done") meta.push(t("until", { t: fmtTime(task.remind_until) }));
-    if (kind !== "done" && kind !== "notes") {
+    if (task.interval && !closed && kind !== "notes") meta.push(t(kind === "planned" ? "then_every" : "every_min", { n: task.interval }));
+    if (!closed && task.repeat && task.repeat !== "none") meta.push(`🔁 ${repeatLabel(task)}`);
+    if (!closed && task.snoozes) meta.push(t("snoozed_n", { n: task.snoozes }));
+    if (task.max_reminders && !closed) meta.push(t("max_n", { n: task.max_reminders, m: task.reminders || 0 }));
+    if (task.remind_until && !closed) meta.push(t("until", { t: fmtTime(task.remind_until) }));
+    if (!closed && kind !== "notes") {
       const where = [...(task.phone_labels || []).map((n) => `📱 ${n}`), ...(task.speaker_labels || []).map((n) => `🔊 ${n}`)];
-      meta.push(where.length ? where.join(", ") : t("no_notify"));
+      meta.push(where.length ? where.join(", ") : t(this._opts?.persistent ? "ha_only" : "no_notify"));
     }
     const recurring = task.repeat && task.repeat !== "none";
     const hint = (when) => t(task.interval ? "snooze_hint_then" : "snooze_hint", { t: when, n: task.interval });
-    const btns = kind === "done" || kind === "dismissed" ? "" : `
+    const btns = closed ? `
+      <div class="btns">
+        <button data-a="reopen" data-uid="${task.uid}" title="${t("restore")}">↩</button>
+        <button class="no" data-a="delete-yes" data-uid="${task.uid}" title="${t("del_title")}">🗑</button>
+      </div>` : `
       <div class="btns">
         <button class="ok" data-a="done" data-uid="${task.uid}" title="${t("btn_done")}">✓</button>
         ${kind === "now" ? `
@@ -320,6 +339,7 @@ class RemindoCard extends HTMLElement {
     const uid = b.dataset.uid;
     switch (b.dataset.a) {
       case "done": return this._call("done", { uid });
+      case "reopen": return this._call("reopen", { uid });
       case "dismiss": return this._call("dismiss", { uid });
       case "snooze": return this._call("snooze", { uid, minutes: Number(b.dataset.min) });
       // a bare date: the server applies the configured default time
@@ -395,11 +415,13 @@ class RemindoCard extends HTMLElement {
         ${this._section(t("sec_notes"), g.notes, "notes")}
         ${empty ? `<div class="empty">${t("empty")}</div>` : ""}
         ${this._config.show_done ? this._section(t("sec_done"), g.done, "done") : ""}
-        ${this._config.show_done ? this._section(t("sec_dismissed"), [...(this._dismissed || [])].reverse().slice(0, 10), "dismissed") : ""}
+        ${this._config.show_done ? this._section(t("sec_dismissed"), g.dismissed, "dismissed") : ""}
         ${this._form()}
       </ha-card>`;
-    this.shadowRoot.querySelector("ha-card").onclick = (e) => this._onClick(e);
-    this.shadowRoot.querySelector("ha-card").onchange = (e) => this._onChange(e);
+    const card = this.shadowRoot.querySelector("ha-card");
+    card.onclick = (e) => { this._touched = Date.now(); this._onClick(e); };
+    card.onchange = (e) => { this._touched = Date.now(); this._onChange(e); };
+    card.oninput = () => { this._touched = Date.now(); };
     const sum = this.shadowRoot.getElementById("f-sum");
     if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(); }; this._unit(); }
     const edit = this.shadowRoot.getElementById("e-sum");

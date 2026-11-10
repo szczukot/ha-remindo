@@ -28,7 +28,8 @@
           "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
           "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
-          "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu."
+          "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
+          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika."
         }
       }
     },
@@ -65,7 +66,8 @@
           "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
           "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
-          "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu."
+          "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
+          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika."
         }
       }
     }
@@ -272,6 +274,20 @@
           "description": "Dodatkowe dane powiadomienia w aplikacji HA (ikona, Android Auto, priorytet…)."
         }
       }
+    },
+    "reopen": {
+      "name": "Przywróć",
+      "description": "Otwiera ponownie zadanie zrobione albo odrzucone. Zadanie z terminem od razu znowu przypomina.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Identyfikator zadania."
+        },
+        "key": {
+          "name": "Klucz",
+          "description": "Klucz nadany przy dodawaniu (np. brama)."
+        }
+      }
     }
   },
   "selector": {
@@ -366,7 +382,7 @@
           "data_description": {
             "remind": "Wyłączone = przypomni tylko raz.",
             "max_reminders": "Puste = aż odhaczysz.",
-            "phones": "Nic nie zaznaczone = bez powiadomień, zadanie tylko na liście.",
+            "phones": "Nic nie zaznaczone = bez pusha dla tej reguły. Zadanie nadal jest na liście i pokaże się jako powiadomienie w HA, jeśli ta opcja jest włączona w ustawieniach integracji.",
             "auto_close": "Np. brama zamknięta, zmywarka otwarta. Przy kalendarzu: po dniu wydarzenia.",
             "done_message": "Wysyłany na te same kanały, gdy zadanie zamknie się samo, np. „Brama zamknięta ✅”. Tu też działa {state} i {name}. Puste = nic.",
             "keep_done": "Wyłączone = znika po wykonaniu.",

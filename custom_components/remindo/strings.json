@@ -28,7 +28,8 @@
           "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
           "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
-          "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task."
+          "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
+          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task."
         }
       }
     },
@@ -65,7 +66,8 @@
           "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
           "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
-          "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task."
+          "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
+          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task."
         }
       }
     }
@@ -272,6 +274,20 @@
           "description": "Extra data for the HA app notification (icon, Android Auto, priority…)."
         }
       }
+    },
+    "reopen": {
+      "name": "Reopen",
+      "description": "Opens a done or dismissed task again. A task with a due time reminds again right away.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Task id."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Key given when adding (e.g. gate)."
+        }
+      }
     }
   },
   "selector": {
@@ -366,7 +382,7 @@
           "data_description": {
             "remind": "Off = remind once.",
             "max_reminders": "Empty = until done.",
-            "phones": "None selected = list only.",
+            "phones": "None selected = no push for this rule. The task is still on the list, and shows as a notification in HA if that option is on in the integration settings.",
             "auto_close": "For calendars: after the event day.",
             "done_message": "Sent to the same targets when the task closes itself, e.g. \"Garage door closed ✅\". {state} and {name} work here too. Empty = nothing.",
             "keep_done": "Off = disappears once done.",

@@ -53,6 +53,7 @@ from .const import (
     CONF_DEFAULT_INTERVAL,
     CONF_DEFAULT_TIME,
     CONF_KEEP_DONE,
+    CONF_PERSISTENT,
     DOMAIN,
     REPEAT_NONE,
     REPEAT_OPTIONS,
@@ -272,6 +273,10 @@ def _register_services(hass: HomeAssistant) -> None:
             context=call.context,
         )
 
+    async def reopen(call: ServiceCall) -> None:
+        manager = _manager(hass)
+        await manager.async_reopen(_target(manager, call.data))
+
     async def delete(call: ServiceCall) -> None:
         manager = _manager(hass)
         await manager.async_delete(_target(manager, call.data))
@@ -286,6 +291,7 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, "done", done, TARGET_SCHEMA)
     hass.services.async_register(DOMAIN, "dismiss", dismiss, TARGET_SCHEMA)
     hass.services.async_register(DOMAIN, "snooze", snooze, SNOOZE_SCHEMA)
+    hass.services.async_register(DOMAIN, "reopen", reopen, TARGET_SCHEMA)
     hass.services.async_register(DOMAIN, "delete", delete, TARGET_SCHEMA)
     hass.services.async_register(DOMAIN, "close_by_key", close_by_key, CLOSE_SCHEMA)
 
@@ -305,8 +311,8 @@ async def ws_subscribe(
         manager = _manager(hass)
         return {
             "tasks": [manager.serialize(t) for t in manager.tasks.values()],
-            "dismissed": [h for h in manager.history if h.get("result") == "dismissed"][-20:],
             "options": {
+                "persistent": bool(manager.options.get(CONF_PERSISTENT)),
                 "default_interval": manager.options.get(CONF_DEFAULT_INTERVAL),
                 "default_time": manager.options.get(CONF_DEFAULT_TIME),
                 "keep_done": manager.options.get(CONF_KEEP_DONE, True),

@@ -175,7 +175,9 @@ class RuleSubentryFlow(ConfigSubentryFlow):
         return await self.async_step_trigger(user_input)
 
     def _suggest(self, schema: dict) -> vol.Schema:
-        return self.add_suggested_values_to_schema(vol.Schema(schema), self._data)
+        # a stored None means "not set": let the field's default show instead
+        known = {k: v for k, v in self._data.items() if v is not None}
+        return self.add_suggested_values_to_schema(vol.Schema(schema), known)
 
     async def async_step_trigger(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
@@ -292,12 +294,15 @@ class RuleSubentryFlow(ConfigSubentryFlow):
                 selector.NumberSelectorConfig(min=1, max=1000, mode=selector.NumberSelectorMode.BOX)
             ),
         }
+        # None = "all configured" (the rule was made before any channel existed)
+        chosen_phones = self._data.get("phones")
+        chosen_speakers = self._data.get("speakers")
         if phones:
-            schema[vol.Optional("phones", default=self._data.get("phones", phones))] = selector.SelectSelector(
+            schema[vol.Optional("phones", default=phones if chosen_phones is None else chosen_phones)] = selector.SelectSelector(
                 selector.SelectSelectorConfig(options=labels(phones, "notify"), multiple=True)
             )
         if speakers:
-            schema[vol.Optional("speakers", default=self._data.get("speakers", speakers))] = selector.SelectSelector(
+            schema[vol.Optional("speakers", default=speakers if chosen_speakers is None else chosen_speakers)] = selector.SelectSelector(
                 selector.SelectSelectorConfig(options=labels(speakers, "media_player"), multiple=True)
             )
             schema[vol.Optional("tts_message")] = selector.TextSelector()

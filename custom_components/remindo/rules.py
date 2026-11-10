@@ -249,6 +249,7 @@ class RuleEngine:
             done_message=_tokens(rule.done_message, rule.entity_id),
             notify_data=rule.notify_data,
             templates=True,  # rule texts are written by an administrator
+            restart=True,
             source="rule",
         )
 
@@ -324,5 +325,6 @@ class RuleEngine:
             # nobody ticked it off: drop the task once the event day is over
             expires=day + timedelta(days=1) if rule.auto_close else None,
             templates=False,  # event names come from outside: never run them as templates
+            restart=True,
             source="rule",
         )

@@ -90,6 +90,8 @@ done:
         text:
 dismiss:
   fields: *target
+reopen:
+  fields: *target
 delete:
   fields: *target
 update:
