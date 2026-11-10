@@ -1,31 +1,29 @@
-"""Logika zadań: magazyn, harmonogram przypomnień, powiadomienia."""
+"""Task logic: storage, reminder schedule, notifications."""
 
 from __future__ import annotations
 
 import asyncio
 import calendar
+import logging
+import re
+import uuid
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, time, timedelta
-import logging
-import re
 from typing import Any
-import uuid
 
 from homeassistant.const import STATE_HOME, STATE_ON
 from homeassistant.core import CALLBACK_TYPE, Context, Event, HomeAssistant, callback
+from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_track_point_in_time
-from homeassistant.exceptions import TemplateError
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
-
-from .rules import RuleEngine
+from homeassistant.util import slugify
 
 from . import texts
 from .const import (
-    LEGACY_DOMAIN,
     ACTION_DISMISS,
     ACTION_DONE,
     ACTION_PREFIX,
@@ -41,12 +39,12 @@ from .const import (
     CONF_PHONE_SNOOZE,
     CONF_PRESENCE,
     CONF_QUIET_END,
+    CONF_QUIET_PUSH,
     CONF_QUIET_START,
     CONF_SCREEN_SWITCH,
     CONF_TTS_DEFAULT,
     CONF_TTS_ENTITY,
     DEFAULTS,
-    DOMAIN,
     EVENT_CREATED,
     EVENT_DISMISSED,
     EVENT_DONE,
@@ -60,15 +58,22 @@ from .const import (
     STORAGE_KEY,
     STORAGE_VERSION,
 )
+from .rules import RuleEngine
 
 _LOGGER = logging.getLogger(__name__)
 
 # Announcement queue: wait a moment (other automations reacting to the same
 # change may speak too), then until the speakers are quiet, one message at a time.
 SPEAK_SETTLE = 3.0  # s
-SPEAK_WAIT_MAX = 60.0  # s, max wait for a busy speaker
+SPEAK_WAIT_MAX = 20.0  # s, max wait for a busy speaker (longer = music, not an announcement)
 SPEAK_START_MAX = 5.0  # s, max wait for our own message to start playing
+SPEAK_CHARS_PER_SECOND = 12  # to estimate the length of a message spoken over music
 _BUSY = ("playing", "buffering")
+
+# Reminders that were due while Home Assistant was down are sent this long after start.
+MISSED_DELAY = timedelta(seconds=30)
+
+_DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class RemindoError(ValueError):
@@ -78,10 +83,6 @@ class RemindoError(ValueError):
         super().__init__(key)
         self.key = key
         self.placeholders = placeholders
-
-
-
-_DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def _is_template(text: str | None) -> bool:
@@ -107,7 +108,7 @@ def _parse_time(value: str | time | None, fallback: str) -> time:
 
 
 def add_months(value: datetime, months: int) -> datetime:
-    """Dodaje miesiące, przycinając dzień do końca miesiąca (31.01 + 1 → 28/29.02)."""
+    """Add months, clamping the day to the end of the month (31 Jan + 1 → 28/29 Feb)."""
     month_index = value.month - 1 + months
     year = value.year + month_index // 12
     month = month_index % 12 + 1
@@ -116,7 +117,7 @@ def add_months(value: datetime, months: int) -> datetime:
 
 
 def next_occurrence(base: datetime, repeat: str, every: int, after: datetime) -> datetime:
-    """Pierwsze wystąpienie po after, liczone od terminu base co every jednostek."""
+    """First occurrence after `after`, counted from `base` in steps of `every` units."""
     every = max(1, int(every or 1))
     base = dt_util.as_local(base)
     step = 0
@@ -124,7 +125,7 @@ def next_occurrence(base: datetime, repeat: str, every: int, after: datetime) ->
     while candidate <= after:
         step += every
         if repeat == "hourly":
-            # Co N godzin: bez przestawiania godziny
+            # Every N hours: real elapsed time, the wall-clock hour is not preserved
             candidate = base + timedelta(hours=step)
             continue
         if repeat == "daily":
@@ -137,7 +138,7 @@ def next_occurrence(base: datetime, repeat: str, every: int, after: datetime) ->
             candidate = add_months(base, 12 * step)
         else:
             return base
-        # Przeliczenie godziny w strefie lokalnej (zmiana czasu letni/zimowy)
+        # Keep the local wall-clock time across daylight-saving changes
         candidate = dt_util.as_local(candidate).replace(
             hour=base.hour, minute=base.minute, second=base.second
         )
@@ -146,35 +147,36 @@ def next_occurrence(base: datetime, repeat: str, every: int, after: datetime) ->
 
 @dataclass
 class Task:
-    """Jedno zadanie."""
+    """A single task."""
 
     uid: str
     summary: str
     description: str | None = None
-    start: str | None = None  # od kiedy przypominać (ISO); None = notatka
-    next_reminder: str | None = None  # najbliższe przypomnienie (ISO)
-    interval: int = 30  # co ile minut ponawiać (0 = raz)
+    start: str | None = None  # remind from (ISO); None = a note without reminders
+    next_reminder: str | None = None  # next reminder (ISO)
+    interval: int = 30  # minutes between reminders (0 = remind once)
     key: str | None = None
     repeat: str = REPEAT_NONE
     repeat_every: int = 1
     tts: bool = True
     push: bool = True
     tts_message: str | None = None
-    phones: list[str] | None = None  # None = wszystkie z ustawień
-    speakers: list[str] | None = None  # None = wszystkie z ustawień
-    max_reminders: int | None = None  # maks. liczba przypomnień (None = bez limitu)
-    remind_until: str | None = None  # nie przypominaj po tym terminie (ISO)
-    keep_done: bool | None = None  # None = opcja integracji
-    done_message: str | None = None  # wysyłane, gdy zadanie zamknie się samo
-    template: str | None = None  # treść z szablonem, liczona przy każdym przypomnieniu
+    phones: list[str] | None = None  # None = all configured
+    speakers: list[str] | None = None  # None = all configured
+    max_reminders: int | None = None  # None = no limit
+    remind_until: str | None = None  # no reminders after this time (ISO)
+    expires: str | None = None  # drop the task at this time if still open (ISO)
+    keep_done: bool | None = None  # None = integration option
+    done_message: str | None = None  # sent when the task closes itself
+    templates: bool = False  # texts come from a trusted source and may be HA templates
+    template: str | None = None  # summary template, rendered at every reminder
     status: str = STATUS_OPEN
-    active: bool = False  # czy już przypomniało (zadanie „na teraz”)
+    active: bool = False  # already reminded (shown under "Now")
     reminders: int = 0
     snoozes: int = 0
     created: str = field(default_factory=lambda: dt_util.now().isoformat())
     last_reminded: str | None = None
     closed: str | None = None
-    close_reason: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Task:
@@ -184,14 +186,13 @@ class Task:
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
-    def repeat_label(self, hass: HomeAssistant | None = None) -> str | None:
-        if self.repeat == REPEAT_NONE:
-            return None
-        return texts.repeat_label(hass, self.repeat, self.repeat_every)
+    @property
+    def recurring(self) -> bool:
+        return self.repeat != REPEAT_NONE and bool(self.start)
 
 
 class TaskManager:
-    """Trzyma zadania, planuje przypomnienia i obsługuje akcje."""
+    """Holds the tasks, schedules reminders and handles actions."""
 
     def __init__(self, hass: HomeAssistant, options: dict[str, Any]) -> None:
         self.hass = hass
@@ -200,47 +201,59 @@ class TaskManager:
         self.tasks: dict[str, Task] = {}
         self.history: list[dict[str, Any]] = []
         self._timers: dict[str, CALLBACK_TYPE] = {}
+        self._expiry_timers: dict[str, CALLBACK_TYPE] = {}
         self._listeners: list[Callable[[], None]] = []
         self.rules = RuleEngine(self)
-        self._legacy_rules: list[dict[str, Any]] = []
         self._speak_lock = asyncio.Lock()
+        self._speaking: set[asyncio.Task[None]] = set()
+        self._warned: set[str] = set()
 
-    # ------------------------------------------------------------------ magazyn
+    # ------------------------------------------------------------------ storage
     async def async_load(self) -> None:
-        data = await self._store.async_load()
-        if data is None:
-            # Pierwsze uruchomienie po zmianie nazwy: przejmij dane starej integracji „zadania”
-            legacy: Store[dict[str, Any]] = Store(self.hass, STORAGE_VERSION, LEGACY_DOMAIN)
-            data = await legacy.async_load()
-            if data:
-                _LOGGER.info("Remindo: imported %s tasks from the legacy 'zadania' integration", len(data.get("tasks", [])))
-        data = data or {}
-        self.tasks = {t["uid"]: Task.from_dict(t) for t in data.get("tasks", [])}
+        data = await self._store.async_load() or {}
+        self.tasks = {}
+        for raw in data.get("tasks", []):
+            try:
+                task = Task.from_dict(raw)
+            except TypeError:
+                _LOGGER.warning("Skipping invalid stored task: %s", raw)
+                continue
+            self.tasks[task.uid] = task
         self.history = data.get("history", [])
-        self._legacy_rules: list[dict[str, Any]] = data.get("rules", [])
+        self.rules.restore(data.get("rule_state") or {})
         now = dt_util.now()
         for task in self.tasks.values():
             if task.status == STATUS_OPEN and task.next_reminder:
-                # Przypomnienia „przegapione” w czasie restartu: od razu
-                if _dt(task.next_reminder) < now:  # type: ignore[operator]
-                    task.next_reminder = _iso(now + timedelta(seconds=30))
+                when = _dt(task.next_reminder)
+                if when is None:
+                    task.next_reminder = None
+                elif when < now:
+                    task.next_reminder = _iso(now + MISSED_DELAY)
             self._schedule(task)
+            self._schedule_expiry(task)
+
+    def _data(self) -> dict[str, Any]:
+        return {
+            "tasks": [t.as_dict() for t in self.tasks.values()],
+            "history": self.history,
+            "rule_state": self.rules.state(),
+        }
+
+    @callback
+    def async_schedule_save(self) -> None:
+        """Write the store soon, without notifying listeners."""
+        self._store.async_delay_save(self._data, 1)
 
     @callback
     def _save(self) -> None:
+        """Trim old entries, write the store and tell entities and cards."""
         keep = int(self.options.get(CONF_KEEP_HISTORY, 50))
         done = [t for t in self.tasks.values() if t.status == STATUS_DONE]
         done.sort(key=lambda t: t.closed or "", reverse=True)
         for old in done[keep:]:
             self.tasks.pop(old.uid, None)
         self.history = self.history[-keep * 4 :]
-        self._store.async_delay_save(
-            lambda: {
-                "tasks": [t.as_dict() for t in self.tasks.values()],
-                "history": self.history,
-            },
-            1,
-        )
+        self.async_schedule_save()
         async_dispatcher_send(self.hass, SIGNAL_UPDATED)
         for listener in list(self._listeners):
             listener()
@@ -251,23 +264,16 @@ class TaskManager:
         return lambda: self._listeners.remove(listener)
 
     async def async_unload(self) -> None:
-        for cancel in self._timers.values():
+        for cancel in (*self._timers.values(), *self._expiry_timers.values()):
             cancel()
         self._timers.clear()
+        self._expiry_timers.clear()
+        for speaking in list(self._speaking):
+            speaking.cancel()
         self.rules.stop()
-        await self._store.async_save(
-            {"tasks": [t.as_dict() for t in self.tasks.values()], "history": self.history}
-        )
+        await self._store.async_save(self._data())
 
-    # -------------------------------------------------------------------- reguły
-    def take_legacy_rules(self) -> list[dict[str, Any]]:
-        """Reguły zapisane przez starsze wersje — do przeniesienia do ustawień integracji."""
-        rules, self._legacy_rules = self._legacy_rules, []
-        if rules:
-            self._save()
-        return rules
-
-    # ---------------------------------------------------------------- wyszukiwanie
+    # ------------------------------------------------------------------- lookup
     def open_tasks(self) -> list[Task]:
         return [t for t in self.tasks.values() if t.status == STATUS_OPEN]
 
@@ -280,15 +286,15 @@ class TaskManager:
                     return task
         return None
 
-    # ------------------------------------------------------------------ akcje
+    # ------------------------------------------------------------------ actions
     def _resolve_start(self, start: Any) -> datetime | None:
-        """Datetime / date / 'now' / None → datetime lokalny (data bez godziny → domyślna godzina)."""
+        """Datetime / date / 'now' / None → local datetime (a bare date gets the default time)."""
         if start in (None, ""):
             return None
         if isinstance(start, str):
-            if start.lower() in ("now", "teraz"):
+            if start.lower() == "now":
                 return dt_util.now()
-            # sama data ("2026-12-01") → domyślna godzina; parse_datetime dałby północ
+            # a bare date ("2026-12-01") → default time; parse_datetime would give midnight
             parsed_dt = None if _DATE_ONLY.match(start.strip()) else dt_util.parse_datetime(start)
             if parsed_dt is not None:
                 start = parsed_dt
@@ -323,23 +329,31 @@ class TaskManager:
         speakers: list[str] | None = None,
         max_reminders: int | None = None,
         remind_until: Any = None,
+        expires: datetime | None = None,
         keep_done: bool | None = None,
         done_message: str | None = None,
+        templates: bool = False,
         source: str = "service",
         context: Context | None = None,
     ) -> Task:
+        """Add a task. `templates` allows HA templates in the texts (trusted callers only)."""
         start_dt = self._resolve_start(start)
-        template = summary if _is_template(summary) else None
+        template = summary if templates and _is_template(summary) else None
         if template:
             summary = self._render(template)
         if key and (existing := self.find(key=key)):
-            # Ten sam klucz już otwarty → nie dublujemy, tylko aktualizujemy treść
+            # The same key is already open → update the text instead of adding a duplicate
             existing.summary = summary
             existing.template = template
             if description is not None:
                 existing.description = description
+            if expires is not None:
+                existing.expires = _iso(expires)
+                self._schedule_expiry(existing)
             self._save()
             return existing
+        if (repeat or REPEAT_NONE) != REPEAT_NONE and start_dt is None:
+            raise RemindoError("repeat_needs_start")
         task = Task(
             uid=uuid.uuid4().hex[:12],
             summary=summary,
@@ -357,28 +371,52 @@ class TaskManager:
             speakers=self._norm(speakers, "media_player."),
             max_reminders=int(max_reminders) if max_reminders else None,
             remind_until=_iso(self._resolve_start(remind_until)) if remind_until else None,
+            expires=_iso(expires),
             keep_done=keep_done,
             done_message=done_message or None,
+            templates=templates,
             template=template,
         )
-        if task.repeat != REPEAT_NONE and start_dt is None:
-            raise RemindoError("repeat_needs_start")
         self.tasks[task.uid] = task
         self._schedule(task)
+        self._schedule_expiry(task)
         self._fire(EVENT_CREATED, task, source, context)
         self._save()
         return task
 
-    async def async_update(self, uid: str, **changes: Any) -> Task:
-        task = self.tasks[uid]
+    async def async_update(self, task: Task, changes: dict[str, Any]) -> Task:
+        """Change fields of a task. A key present in `changes` is applied; None clears it."""
+        now = dt_util.now()
+        if summary := changes.get("summary"):
+            if summary != task.summary:
+                task.summary = summary
+                task.template = None  # edited by hand: no longer follows the template
+        if "description" in changes:
+            task.description = changes["description"] or None
         if "start" in changes:
-            start_dt = self._resolve_start(changes.pop("start"))
-            task.start = _iso(start_dt)
-            task.next_reminder = _iso(start_dt)
-            task.active = bool(start_dt and start_dt <= dt_util.now() and task.active)
-        for name, value in changes.items():
-            if hasattr(task, name) and value is not None:
-                setattr(task, name, value)
+            start_dt = self._resolve_start(changes["start"])
+            if task.repeat != REPEAT_NONE and start_dt is None:
+                raise RemindoError("repeat_needs_start")
+            task.start = task.next_reminder = _iso(start_dt)
+            task.active = bool(start_dt and start_dt <= now and task.active)
+        if "interval" in changes and changes["interval"] is not None:
+            task.interval = max(0, int(changes["interval"]))
+            if task.active:
+                # already reminding: the new rhythm starts now
+                task.next_reminder = _iso(now + timedelta(minutes=task.interval)) if task.interval else None
+        if "phones" in changes:
+            task.phones = self._norm(changes["phones"], "notify.")
+            task.push = True
+        if "speakers" in changes:
+            task.speakers = self._norm(changes["speakers"], "media_player.")
+            task.tts = True
+        if "max_reminders" in changes:
+            task.max_reminders = int(changes["max_reminders"]) if changes["max_reminders"] else None
+        if "remind_until" in changes:
+            until = changes["remind_until"]
+            task.remind_until = _iso(self._resolve_start(until)) if until else None
+        if "keep_done" in changes:
+            task.keep_done = changes["keep_done"]
         self._schedule(task)
         self._save()
         return task
@@ -401,17 +439,21 @@ class TaskManager:
         now = dt_util.now()
         await self._clear_notifications(task)
         if source == "auto" and task.done_message and task.reminders:
-            await self._send_plain(task, self._render(task.done_message))
+            message = self._render(task.done_message) if task.templates else task.done_message
+            await self._send_plain(task, message)
         self._fire(event, task, source, context)
         self.history.append(
             {"uid": task.uid, "summary": task.summary, "key": task.key,
              "result": status, "at": now.isoformat(), "source": source,
              "reminders": task.reminders, "snoozes": task.snoozes}
         )
-        if task.repeat != REPEAT_NONE and task.start:
-            # Cykliczne: zostaje na liście, przeskakuje na następny termin
+        if task.recurring:
+            # Recurring: stays on the list and moves to the next due time
             due = _dt(task.start)
             nxt = next_occurrence(due, task.repeat, task.repeat_every, max(now, due))  # type: ignore[arg-type]
+            if until := _dt(task.remind_until):
+                # "stop reminding at" moves together with the due time
+                task.remind_until = _iso(nxt + (until - due))  # type: ignore[operator]
             task.start = task.next_reminder = _iso(nxt)
             task.active = False
             task.reminders = task.snoozes = 0
@@ -419,9 +461,8 @@ class TaskManager:
         elif status == STATUS_DONE and self.keep_done(task):
             task.status = STATUS_DONE
             task.closed = now.isoformat()
-            task.close_reason = source
             task.next_reminder = None
-            self._schedule(task)
+            self._cancel(task.uid)
         else:
             self._cancel(task.uid)
             self.tasks.pop(task.uid, None)
@@ -430,7 +471,7 @@ class TaskManager:
     async def async_reopen(self, task: Task) -> None:
         if task.status == STATUS_DONE:
             task.status = STATUS_OPEN
-            task.closed = task.close_reason = None
+            task.closed = None
             self._save()
 
     async def async_snooze(
@@ -442,6 +483,8 @@ class TaskManager:
         source: str = "service",
         context: Context | None = None,
     ) -> None:
+        if task.status != STATUS_OPEN:
+            return
         if until:
             when = self._resolve_start(until)
         else:
@@ -449,42 +492,73 @@ class TaskManager:
         await self._clear_notifications(task)
         task.next_reminder = _iso(when)
         task.snoozes += 1
-        task.active = False  # odłożone schodzi z „Teraz” do „Zaplanowane”
+        task.active = False  # snoozed: moves from "Now" to "Scheduled"
         self._schedule(task)
         self._fire(EVENT_SNOOZED, task, source, context, until=_iso(when))
         self._save()
 
     async def async_delete(self, task: Task) -> None:
+        """Remove a task for good (also a recurring one), without a history entry."""
         self._cancel(task.uid)
         await self._clear_notifications(task)
         self.tasks.pop(task.uid, None)
         self._save()
 
-    # -------------------------------------------------------------- harmonogram
+    # ----------------------------------------------------------------- schedule
     @callback
     def _cancel(self, uid: str) -> None:
-        if cancel := self._timers.pop(uid, None):
-            cancel()
+        """Stop all timers of a task."""
+        for timers in (self._timers, self._expiry_timers):
+            if cancel := timers.pop(uid, None):
+                cancel()
 
     @callback
     def _schedule(self, task: Task) -> None:
-        self._cancel(task.uid)
-        if task.status != STATUS_OPEN or not task.next_reminder:
+        """(Re)arm the reminder timer."""
+        uid = task.uid
+        if cancel := self._timers.pop(uid, None):
+            cancel()
+        if task.status != STATUS_OPEN or (when := _dt(task.next_reminder)) is None:
             return
-        when = _dt(task.next_reminder)
 
         @callback
         def _fire_reminder(_now: datetime) -> None:
-            self._timers.pop(task.uid, None)
-            self.hass.async_create_task(self._async_remind(task.uid))
+            self._timers.pop(uid, None)
+            self.hass.async_create_task(self._async_remind(uid))
 
-        self._timers[task.uid] = async_track_point_in_time(self.hass, _fire_reminder, when)  # type: ignore[arg-type]
+        self._timers[uid] = async_track_point_in_time(self.hass, _fire_reminder, when)
+
+    @callback
+    def _schedule_expiry(self, task: Task) -> None:
+        """(Re)arm the timer that drops a task nobody ticked off."""
+        uid = task.uid
+        if cancel := self._expiry_timers.pop(uid, None):
+            cancel()
+        if task.status != STATUS_OPEN or (expires := _dt(task.expires)) is None:
+            return
+
+        @callback
+        def _expire(_now: datetime) -> None:
+            self._expiry_timers.pop(uid, None)
+            if (current := self.tasks.get(uid)) is not None:
+                self.hass.async_create_task(self.async_dismiss(current, "expired"))
+
+        self._expiry_timers[uid] = async_track_point_in_time(self.hass, _expire, expires)
 
     async def _async_remind(self, uid: str) -> None:
         task = self.tasks.get(uid)
         if task is None or task.status != STATUS_OPEN:
             return
         now = dt_util.now()
+        if (expires := _dt(task.expires)) and expires <= now:
+            await self.async_dismiss(task, "expired")
+            return
+        if self.options.get(CONF_QUIET_PUSH) and self.is_quiet(now):
+            # quiet hours also for push: the reminder waits until they end
+            task.next_reminder = _iso(self._quiet_end(now))
+            self._schedule(task)
+            self._save()
+            return
         if task.template:
             task.summary = self._render(task.template)
         task.active = True
@@ -492,36 +566,51 @@ class TaskManager:
         task.last_reminded = now.isoformat()
         nxt = now + timedelta(minutes=task.interval) if task.interval > 0 else None
         if nxt and task.max_reminders and task.reminders >= task.max_reminders:
-            nxt = None  # wykorzystano limit przypomnień
-        if nxt and task.remind_until and nxt > _dt(task.remind_until):  # type: ignore[operator]
-            nxt = None  # minął termin przypominania
+            nxt = None  # reminder limit used up
+        if nxt and (until := _dt(task.remind_until)) and nxt > until:
+            nxt = None  # past the "stop reminding at" time
         task.next_reminder = _iso(nxt)
         self._schedule(task)
         self._fire(EVENT_REMINDED, task, "schedule", None, count=task.reminders)
         self._save()
-        try:
-            await self._send_notifications(task)
-        except Exception:  # noqa: BLE001 - powiadomienie nie może zatrzymać harmonogramu
-            _LOGGER.exception("Failed to send reminder for task %s", task.summary)
+        await self._send_notifications(task)
 
-    # ------------------------------------------------------------- powiadomienia
+    # ------------------------------------------------------------ notifications
+    def _quiet_times(self) -> tuple[time, time]:
+        return (
+            _parse_time(self.options.get(CONF_QUIET_START), "22:00:00"),
+            _parse_time(self.options.get(CONF_QUIET_END), "07:00:00"),
+        )
+
     def is_quiet(self, now: datetime | None = None) -> bool:
-        now = now or dt_util.now()
-        start = _parse_time(self.options.get(CONF_QUIET_START), "22:00:00")
-        end = _parse_time(self.options.get(CONF_QUIET_END), "07:00:00")
-        current = now.time()
+        start, end = self._quiet_times()
+        current = (now or dt_util.now()).time()
         if start == end:
             return False
         if start < end:
             return start <= current < end
         return current >= start or current < end
 
+    def _quiet_end(self, now: datetime) -> datetime:
+        """The next moment the quiet hours end."""
+        end = self._quiet_times()[1]
+        candidate = now.replace(hour=end.hour, minute=end.minute, second=0, microsecond=0)
+        return candidate if candidate > now else candidate + timedelta(days=1)
+
     def someone_home(self) -> bool:
         entity = self.options.get(CONF_PRESENCE)
         if not entity:
             return True
         state = self.hass.states.get(entity)
-        return state is not None and state.state in (STATE_HOME, STATE_ON)
+        if state is None:
+            return False
+        if entity.startswith("zone."):
+            # the state of a zone is the number of people in it
+            try:
+                return float(state.state) > 0
+            except ValueError:
+                return False
+        return state.state in (STATE_HOME, STATE_ON)
 
     @staticmethod
     def _norm(values: list[str] | str | None, prefix: str) -> list[str] | None:
@@ -532,7 +621,7 @@ class TaskManager:
         return [v if v.startswith(prefix) else prefix + v for v in values]
 
     def all_phones(self) -> list[str]:
-        return [t if t.startswith("notify.") else f"notify.{t}" for t in self.options.get(CONF_NOTIFY) or []]
+        return self._norm(self.options.get(CONF_NOTIFY) or [], "notify.") or []
 
     def all_speakers(self) -> list[str]:
         value = self.options.get(CONF_MEDIA_PLAYER) or []
@@ -552,7 +641,7 @@ class TaskManager:
         return self.options.get(CONF_KEEP_DONE, True) if task.keep_done is None else task.keep_done
 
     def _render(self, text: str) -> str:
-        """Szablon HA ({{ ... }}); przy błędzie zwykły tekst."""
+        """Render an HA template ({{ ... }}); on error return the plain text."""
         if not _is_template(text):
             return text
         try:
@@ -561,33 +650,36 @@ class TaskManager:
             _LOGGER.warning("Template error in %r: %s", text, err)
             return text
 
+    async def _call(self, domain: str, service: str, data: dict[str, Any], *, blocking: bool = False) -> bool:
+        """Call a service; a broken target (e.g. a phone that no longer exists) must not stop the rest."""
+        try:
+            await self.hass.services.async_call(domain, service, data, blocking=blocking)
+        except Exception as err:  # noqa: BLE001
+            name = f"{domain}.{service}"
+            if name not in self._warned:
+                self._warned.add(name)
+                _LOGGER.warning("Remindo could not call %s (check the integration settings): %s", name, err)
+            return False
+        return True
+
     @staticmethod
     def _is_mobile(target: str) -> bool:
         return target.removeprefix("notify.").startswith("mobile_app_")
 
     async def _notify_plain(self, target: str, title: str, message: str) -> None:
-        """Telegram, e-mail, SMS…: notify.<usługa> albo encja notify.* (bez przycisków)."""
+        """Telegram, e-mail, SMS…: a notify.<service> or a notify.* entity (no buttons)."""
         if self.hass.states.get(target) is not None:
-            await self.hass.services.async_call(
-                "notify", "send_message", {"entity_id": target, "title": title, "message": message}, blocking=False
-            )
+            await self._call("notify", "send_message", {"entity_id": target, "title": title, "message": message})
         else:
-            await self.hass.services.async_call(
-                "notify", target.removeprefix("notify."), {"title": title, "message": message}, blocking=False
-            )
+            await self._call("notify", target.removeprefix("notify."), {"title": title, "message": message})
 
     async def _send_plain(self, task: Task, message: str) -> None:
         title = texts.text(self.hass, "title")
         for target in self.phones_for(task):
-            try:
-                await self._notify_plain(target, title, message)
-            except Exception:  # noqa: BLE001
-                _LOGGER.exception("Failed to send to %s", target)
+            await self._notify_plain(target, title, message)
 
     def phone_label(self, target: str) -> str:
-        """Nazwa telefonu z integracji mobile_app (notify.mobile_app_x → nazwa urządzenia)."""
-        from homeassistant.util import slugify  # noqa: PLC0415
-
+        """Readable name of a channel (notify.mobile_app_x → the device name)."""
         if (state := self.hass.states.get(target)) is not None:
             return state.name
         service = target.removeprefix("notify.")
@@ -605,46 +697,47 @@ class TaskManager:
         return f"remindo_{task.uid}"
 
     async def _send_notifications(self, task: Task) -> None:
+        title = texts.text(self.hass, "title")
         body = task.summary if not task.description else f"{task.summary}\n{task.description}"
         snooze = int(self.options[CONF_PHONE_SNOOZE])
-        click = self.options.get(CONF_CLICK_URL) or "/todo?entity_id=todo.remindo"
+        click = self.options.get(CONF_CLICK_URL) or DEFAULTS[CONF_CLICK_URL]
         for target in self.phones_for(task):
             if not self._is_mobile(target):
-                await self._notify_plain(target, texts.text(self.hass, "title"), body)
+                await self._notify_plain(target, title, body)
                 continue
-            if True:
-                service = target.removeprefix("notify.")
-                await self.hass.services.async_call(
-                    "notify",
-                    service,
-                    {
-                        "title": texts.text(self.hass, "title"),
-                        "message": body,
-                        "data": {
-                            "tag": self._tag(task),
-                            "group": "remindo",
-                            "sticky": "true",
-                            "clickAction": click,
-                            "url": click,
-                            "actions": [
-                                {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": texts.text(self.hass, "done")},
-                                {"action": f"{ACTION_PREFIX}_{ACTION_SNOOZE}_{task.uid}", "title": texts.text(self.hass, "snooze", minutes=snooze)},
-                                {"action": f"{ACTION_PREFIX}_{ACTION_DISMISS}_{task.uid}", "title": texts.text(self.hass, "dismiss")},
-                            ],
-                        },
+            await self._call(
+                "notify",
+                target.removeprefix("notify."),
+                {
+                    "title": title,
+                    "message": body,
+                    "data": {
+                        "tag": self._tag(task),
+                        "group": "remindo",
+                        "sticky": "true",
+                        "clickAction": click,
+                        "url": click,
+                        "actions": [
+                            {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": texts.text(self.hass, "done")},
+                            {"action": f"{ACTION_PREFIX}_{ACTION_SNOOZE}_{task.uid}", "title": texts.text(self.hass, "snooze", minutes=snooze)},
+                            {"action": f"{ACTION_PREFIX}_{ACTION_DISMISS}_{task.uid}", "title": texts.text(self.hass, "dismiss")},
+                        ],
                     },
-                    blocking=False,
-                )
+                },
+            )
         if self.options.get(CONF_PERSISTENT):
-            await self.hass.services.async_call(
+            await self._call(
                 "persistent_notification",
                 "create",
-                {"title": texts.text(self.hass, "title"), "message": body, "notification_id": self._tag(task)},
-                blocking=False,
+                {"title": title, "message": body, "notification_id": self._tag(task)},
             )
         speakers = self.speakers_for(task)
         if speakers and not self.is_quiet() and self.someone_home():
-            self.hass.async_create_background_task(self._speak_queued(task.uid, speakers), "remindo speak")
+            speaking = self.hass.async_create_background_task(
+                self._speak_queued(task.uid, speakers), "remindo speak"
+            )
+            self._speaking.add(speaking)
+            speaking.add_done_callback(self._speaking.discard)
 
     def _busy(self, speakers: list[str]) -> bool:
         return any((st := self.hass.states.get(e)) is not None and st.state in _BUSY for e in speakers)
@@ -661,56 +754,52 @@ class TaskManager:
         async with self._speak_lock:
             if SPEAK_SETTLE:
                 await asyncio.sleep(SPEAK_SETTLE)
-            if not await self._wait(lambda: not self._busy(speakers), SPEAK_WAIT_MAX):
-                _LOGGER.debug("Speakers %s still busy, speaking anyway", speakers)
+            quiet = await self._wait(lambda: not self._busy(speakers), SPEAK_WAIT_MAX)
             task = self.tasks.get(uid)
             # the task may have been ticked off while waiting
             if task is None or task.status != STATUS_OPEN or not task.active:
                 return
-            await self._speak(task, speakers)
-            # hold the queue until our own message has played
-            if await self._wait(lambda: self._busy(speakers), SPEAK_START_MAX):
-                await self._wait(lambda: not self._busy(speakers), SPEAK_WAIT_MAX)
+            message = await self._speak(task, speakers)
+            if not message:
+                return
+            if quiet:
+                # hold the queue until our own message has played
+                if await self._wait(lambda: self._busy(speakers), SPEAK_START_MAX):
+                    await self._wait(lambda: not self._busy(speakers), SPEAK_WAIT_MAX)
+            else:
+                # the speaker plays something long (music): we spoke over it and cannot
+                # see when our message ends, so estimate it
+                await asyncio.sleep(min(SPEAK_WAIT_MAX, SPEAK_START_MAX + len(message) / SPEAK_CHARS_PER_SECOND))
 
-    async def _speak(self, task: Task, speakers: list[str]) -> None:
+    async def _speak(self, task: Task, speakers: list[str]) -> str | None:
+        """Say the task on the speakers; returns the message, or None if nothing was said."""
         tts_entity = self.options.get(CONF_TTS_ENTITY)
         if not tts_entity or not speakers:
-            return
+            return None
         if screen := self.options.get(CONF_SCREEN_SWITCH):
-            await self.hass.services.async_call(
-                "switch", "turn_on", {"entity_id": screen}, blocking=True
-            )
-        await self.hass.services.async_call(
+            await self._call("switch", "turn_on", {"entity_id": screen}, blocking=True)
+        message = task.tts_message or task.summary
+        if task.templates:
+            message = self._render(message)
+        spoken = await self._call(
             "tts",
             "speak",
-            {
-                "entity_id": tts_entity,
-                "media_player_entity_id": speakers,
-                "message": self._render(task.tts_message) if task.tts_message else task.summary,
-                "cache": True,
-            },
-            blocking=False,
+            {"entity_id": tts_entity, "media_player_entity_id": speakers, "message": message, "cache": True},
         )
+        return message if spoken else None
 
     async def _clear_notifications(self, task: Task) -> None:
         if task.reminders == 0:
             return
         for target in sorted(set(self.all_phones()) | set(task.phones or [])):
-            if not self._is_mobile(target):
-                continue
-            await self.hass.services.async_call(
-                "notify",
-                target.removeprefix("notify."),
-                {"message": "clear_notification", "data": {"tag": self._tag(task)}},
-                blocking=False,
-            )
+            if self._is_mobile(target):
+                await self._call(
+                    "notify",
+                    target.removeprefix("notify."),
+                    {"message": "clear_notification", "data": {"tag": self._tag(task)}},
+                )
         if self.options.get(CONF_PERSISTENT):
-            await self.hass.services.async_call(
-                "persistent_notification",
-                "dismiss",
-                {"notification_id": self._tag(task)},
-                blocking=False,
-            )
+            await self._call("persistent_notification", "dismiss", {"notification_id": self._tag(task)})
 
     async def async_handle_phone_action(self, event: Event) -> None:
         action: str = event.data.get("action", "")
@@ -732,7 +821,7 @@ class TaskManager:
         elif kind == ACTION_DISMISS:
             await self.async_dismiss(task, "phone", event.context)
 
-    # ------------------------------------------------------------------ zdarzenia
+    # ------------------------------------------------------------------- events
     @callback
     def _fire(
         self, event: str, task: Task, source: str, context: Context | None, **extra: Any
@@ -744,8 +833,8 @@ class TaskManager:
         )
 
     def serialize(self, task: Task) -> dict[str, Any]:
+        """Task as sent to the card."""
         data = task.as_dict()
-        data["repeat_label"] = task.repeat_label(self.hass)
         data["phone_labels"] = [self.phone_label(p) for p in self.phones_for(task)]
         data["speaker_labels"] = [self.speaker_label(s) for s in self.speakers_for(task)]
         return data

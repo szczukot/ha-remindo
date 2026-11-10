@@ -1,4 +1,4 @@
-"""Sensor z liczbą aktywnych zadań."""
+"""Sensor with the number of tasks that are reminding right now."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ async def async_setup_entry(
 
 
 class ActiveTasksSensor(SensorEntity):
-    """Ile zadań już przypomina (do zrobienia teraz)."""
+    """How many tasks are due and reminding."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "active"

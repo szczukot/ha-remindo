@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.9.0";
+const VERSION = "0.10.0";
 
 const I18N = {
   en: {
@@ -7,7 +7,7 @@ const I18N = {
     now: "now", now_again: "now · again {t}", now_no_more: "now · no more reminders", dismissed_ago: "skipped {t}", snoozed_until: "snoozed until ",
     done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n} min", then_every: "then every {n} min again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} min again", snoozed_n: "snoozed {n}×",
     max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications",
-    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} min again", btn_pick: "📅 pick…", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip",
+    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} min again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_due: "Due:", e_due_hint: "empty = a note without reminders", e_every: "remind every", e_once: "0 = once", del: "🗑 Delete", del_confirm: "Really delete?", e_save: "Save",
     sec_now: "Now", sec_planned: "Scheduled", sec_notes: "Notes", sec_done: "Done", sec_dismissed: "Skipped", empty: "Nothing to do 🎉",
     add: "＋ Add task", what: "What needs doing?", remind: "Remind", from_now: "from now", in_1h: "in 1 h", tonight: "today 19:00",
     pick: "pick a time…", every: "every", until_done: "until I tick it off", note_hint: "no reminders — just a note on the list",
@@ -24,7 +24,7 @@ const I18N = {
     now: "teraz", now_again: "teraz · znowu {t}", now_no_more: "teraz · już nie przypomina", dismissed_ago: "odrzucone {t}", snoozed_until: "odłożone do ",
     done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n} min", then_every: "potem znowu co {n} min", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n} min", snoozed_n: "odłożone {n}×",
     max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień",
-    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n} min", btn_pick: "📅 wybierz…", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię",
+    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n} min", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_due: "Termin:", e_due_hint: "puste = notatka bez przypomnień", e_every: "przypominaj co", e_once: "0 = raz", del: "🗑 Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
     sec_now: "Teraz", sec_planned: "Zaplanowane", sec_notes: "Notatki", sec_done: "Zrobione", sec_dismissed: "Odrzucone", empty: "Nic do zrobienia 🎉",
     add: "＋ Dodaj zadanie", what: "Co trzeba zrobić?", remind: "Przypominaj", from_now: "od teraz", in_1h: "za 1 h", tonight: "dziś 19:00",
     pick: "wybierz termin…", every: "co", until_done: "dopóki nie odhaczę", note_hint: "bez przypomnień — zwykła notatka na liście",
@@ -81,6 +81,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const pad = (n) => String(n).padStart(2, "0");
 const localIso = (d) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+// what the user picks is their own wall-clock time: send it as an absolute moment
+const toIso = (value) => new Date(value).toISOString();
 const tomorrowDate = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
 class RemindoCard extends HTMLElement {
@@ -151,22 +153,68 @@ class RemindoCard extends HTMLElement {
       const where = [...(task.phone_labels || []).map((n) => `📱 ${n}`), ...(task.speaker_labels || []).map((n) => `🔊 ${n}`)];
       meta.push(where.length ? where.join(", ") : t("no_notify"));
     }
+    const recurring = task.repeat && task.repeat !== "none";
     const hint = (when) => t(task.interval ? "snooze_hint_then" : "snooze_hint", { t: when, n: task.interval });
     const btns = kind === "done" || kind === "dismissed" ? "" : `
       <div class="btns">
         <button class="ok" data-a="done" data-uid="${task.uid}" title="${t("btn_done")}">✓</button>
-        ${kind !== "notes" ? `
+        ${kind === "now" ? `
         <button data-a="snooze" data-min="10" data-uid="${task.uid}" title="${hint("10 min")}">+10 min</button>
         <button data-a="snooze" data-min="60" data-uid="${task.uid}" title="${hint("1 h")}">+1 h</button>
-        <button data-a="tomorrow" data-uid="${task.uid}" title="${t(task.interval ? "btn_tomorrow_hint_then" : "btn_tomorrow_hint", { t: this._morning(), n: task.interval })}">${t("btn_tomorrow", { t: this._morning() })}</button>
-        <button data-a="pick" data-uid="${task.uid}" title="${t("btn_pick_hint")}">${t("btn_pick")}</button>` : ""}
-        <button class="no" data-a="dismiss" data-uid="${task.uid}" title="${t("btn_dismiss")}">✕</button>
+        <button data-a="tomorrow" data-uid="${task.uid}" title="${t(task.interval ? "btn_tomorrow_hint_then" : "btn_tomorrow_hint", { t: this._morning(), n: task.interval })}">${t("btn_tomorrow", { t: this._morning() })}</button>` : ""}
+        ${kind !== "notes" ? `<button data-a="pick" data-uid="${task.uid}" title="${t("btn_pick_hint")}">${t("btn_pick")}</button>` : ""}
+        <button data-a="edit" data-uid="${task.uid}" title="${t("edit")}">✎</button>
+        <button class="no" data-a="dismiss" data-uid="${task.uid}" title="${t(recurring ? "btn_skip_once" : "btn_dismiss")}">✕</button>
       </div>`;
     return `<div class="task ${kind}">
       <div class="txt"><div class="sum">${esc(task.summary)}</div>
         ${when ? `<div class="when">${esc(when)}</div>` : ""}
         ${task.description ? `<div class="desc">${esc(task.description)}</div>` : ""}
-        <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}</div>`;
+        <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}${this._edit === task.uid ? this._editor(task) : ""}</div>`;
+  }
+
+  _editor(task) {
+    const due = task.next_reminder || task.start;
+    const hours = task.interval && task.interval % 60 === 0;
+    const checked = (list, id) => (list == null || list.includes(id) ? "checked" : "");
+    return `<div class="editor">
+      <input id="e-sum" value="${esc(task.summary)}" />
+      <div class="frow"><span>${t("e_due")}</span>
+        <input id="e-dt" type="datetime-local" value="${due ? localIso(new Date(due)).slice(0, 16) : ""}" data-was="${due ? localIso(new Date(due)).slice(0, 16) : ""}" />
+        ${task.repeat && task.repeat !== "none" ? "" : `<span class="hint">${t("e_due_hint")}</span>`}</div>
+      <div class="frow"><span>${t("e_every")}</span>
+        <input id="e-int" type="number" min="0" value="${hours ? task.interval / 60 : task.interval || 0}" />
+        <select id="e-int-u"><option value="1"${hours ? "" : " selected"}>min</option><option value="60"${hours ? " selected" : ""}>h</option></select>
+        <span class="hint">${t("e_once")}</span></div>
+      <div class="frow where"><span>${t("where")}</span>
+        ${(this._opts?.phones || []).map((p) => `<label><input type="checkbox" class="e-phone" value="${esc(p.id)}" ${task.push === false ? "" : checked(task.phones, p.id)} /> 📱 ${esc(p.name)}</label>`).join("")}
+        ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="e-spk" value="${esc(s.id)}" ${task.tts === false ? "" : checked(task.speakers, s.id)} /> 🔊 ${esc(s.name)}</label>`).join("")}
+      </div>
+      <div class="frow">
+        <button class="no" data-a="delete" data-uid="${task.uid}">${t("del")}</button>
+        <span class="spacer"></span>
+        <button data-a="edit-cancel">${t("cancel")}</button>
+        <button class="ok" data-a="edit-save" data-uid="${task.uid}">${t("e_save")}</button>
+      </div></div>`;
+  }
+
+  _saveEdit(uid) {
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const task = this._tasks.find((x) => x.uid === uid);
+    const summary = $("e-sum").value.trim();
+    if (!task || !summary) { $("e-sum").focus(); return; }
+    const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
+    const data = { uid, summary };
+    // channels are sent only when changed, so "all configured" keeps following the settings
+    const was = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.defaultChecked).map((c) => c.value);
+    if (String(pick(".e-phone")) !== String(was(".e-phone"))) data.phones = pick(".e-phone");
+    if (String(pick(".e-spk")) !== String(was(".e-spk"))) data.speakers = pick(".e-spk");
+    const interval = Math.max(0, Number($("e-int").value || 0)) * Number($("e-int-u").value);
+    if (interval !== task.interval) data.interval = interval;
+    // only a changed due time is sent, so saving other fields never moves the reminder
+    if ($("e-dt").value !== $("e-dt").dataset.was) data.start = $("e-dt").value ? toIso($("e-dt").value) : null;
+    this._edit = null;
+    this._call("update", data);
   }
 
   _morning() {
@@ -204,7 +252,7 @@ class RemindoCard extends HTMLElement {
         <span class="grp" id="f-rem-g"><select id="f-when">
           <option value="now">${t("from_now")}</option>
           <option value="1h">${t("in_1h")}</option>
-          <option value="evening">${t("tonight")}</option>
+          ${new Date().getHours() < 19 ? `<option value="evening">${t("tonight")}</option>` : ""}
           <option value="custom">${t("pick")}</option>
         </select>
         <input id="f-dt" type="datetime-local" style="display:none" />
@@ -247,15 +295,15 @@ class RemindoCard extends HTMLElement {
     const when = $("f-when").value;
     const d = new Date();
     let start = "now";
-    if (when === "1h") start = localIso(new Date(Date.now() + 3600e3));
-    else if (when === "evening") { d.setHours(19, 0, 0, 0); start = localIso(d); }
-    else if (when === "custom") start = $("f-dt").value ? `${$("f-dt").value}:00` : "now";
+    if (when === "1h") start = toIso(Date.now() + 3600e3);
+    else if (when === "evening") { d.setHours(19, 0, 0, 0); start = toIso(d); }
+    else if (when === "custom") start = $("f-dt").value ? toIso($("f-dt").value) : "now";
     if (!$("f-rem").checked) start = null;
     const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
     const interval = $("f-rem").checked ? Math.max(1, Number($("f-int").value || 1)) * Number($("f-int-u").value) : 0;
     const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk") };
     if (interval && $("f-lim").value === "count") data.max_reminders = Math.max(1, Number($("f-lim-n").value || 1));
-    if (interval && $("f-lim").value === "until" && $("f-lim-dt").value) data.remind_until = `${$("f-lim-dt").value}:00`;
+    if (interval && $("f-lim").value === "until" && $("f-lim-dt").value) data.remind_until = toIso($("f-lim-dt").value);
     data.keep_done = $("f-keep").checked;
     const rep = $("f-rep-on").checked ? $("f-rep").value : "none";
     if (rep !== "none") {
@@ -274,16 +322,24 @@ class RemindoCard extends HTMLElement {
       case "done": return this._call("done", { uid });
       case "dismiss": return this._call("dismiss", { uid });
       case "snooze": return this._call("snooze", { uid, minutes: Number(b.dataset.min) });
-      case "tomorrow": return this._call("snooze", { uid, until: `${tomorrowDate()}T${this._morning()}:00` });
-      case "pick": this._pick = this._pick === uid ? null : uid; this._forceRender = true; this._render();
+      // a bare date: the server applies the configured default time
+      case "tomorrow": return this._call("snooze", { uid, until: tomorrowDate() });
+      case "pick": this._pick = this._pick === uid ? null : uid; this._edit = null; this._forceRender = true; this._render();
         return this.shadowRoot.getElementById("p-dt")?.focus();
       case "pick-cancel": this._pick = null; this._forceRender = true; return this._render();
       case "pick-ok": {
         const v = this.shadowRoot.getElementById("p-dt")?.value;
         if (!v || new Date(v) <= new Date()) { this._error = t("pick_past"); this._forceRender = true; return this._render(); }
         this._pick = null;
-        return this._call("snooze", { uid, until: `${v}:00` });
+        return this._call("snooze", { uid, until: toIso(v) });
       }
+      case "edit": this._edit = this._edit === uid ? null : uid; this._pick = null; this._forceRender = true; this._render();
+        return this.shadowRoot.getElementById("e-sum")?.focus();
+      case "edit-cancel": this._edit = null; this._forceRender = true; return this._render();
+      case "edit-save": return this._saveEdit(uid);
+      // two clicks to delete: the first one only asks
+      case "delete": b.textContent = t("del_confirm"); b.dataset.a = "delete-yes"; return;
+      case "delete-yes": this._edit = null; return this._call("delete", { uid });
       case "form": this._formOpen = true; this._render(); this._unit(); return this.shadowRoot.getElementById("f-sum")?.focus();
       case "cancel": this._formOpen = false; this._forceRender = true; return this._render();
       case "save": return this._save();
@@ -325,6 +381,7 @@ class RemindoCard extends HTMLElement {
     if (this._formOpen && this.shadowRoot.querySelector(".form") && !this._forceRender) return;
     // Do not close the date picker while the user is choosing
     if (this._pick && this.shadowRoot.getElementById("p-dt") && !this._forceRender) return;
+    if (this._edit && this.shadowRoot.getElementById("e-sum") && !this._forceRender) return;
     this._forceRender = false;
     const g = this._groups();
     const empty = !g.now.length && !g.planned.length && !g.notes.length;
@@ -345,6 +402,8 @@ class RemindoCard extends HTMLElement {
     this.shadowRoot.querySelector("ha-card").onchange = (e) => this._onChange(e);
     const sum = this.shadowRoot.getElementById("f-sum");
     if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(); }; this._unit(); }
+    const edit = this.shadowRoot.getElementById("e-sum");
+    if (edit) edit.onkeydown = (e) => { if (e.key === "Enter") this._saveEdit(this._edit); };
   }
 }
 
@@ -389,6 +448,9 @@ RemindoCard.styles = `
   .grp.off { opacity:.4; }
   input[type=number] { width:64px; }
   input[type=checkbox] { width:18px; height:18px; vertical-align:middle; }
+  .editor { flex-basis:100%; display:flex; flex-direction:column; gap:8px; padding-top:8px; }
+  .editor #e-sum { width:100%; box-sizing:border-box; }
+  .spacer { flex:1; }
   .picker { flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-top:6px; }
   .picker span { font-size:13px; color: var(--secondary-text-color); }
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }

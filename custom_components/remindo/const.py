@@ -1,13 +1,12 @@
-"""Stałe integracji Remindo."""
+"""Constants for the Remindo integration."""
 
 from __future__ import annotations
 
 DOMAIN = "remindo"
-LEGACY_DOMAIN = "zadania"  # stara nazwa (wersje < 0.7)
 STORAGE_VERSION = 1
 STORAGE_KEY = DOMAIN
 
-# Opcje (config entry options)
+# Options (config entry options)
 CONF_NOTIFY = "notify_targets"
 CONF_PERSISTENT = "persistent_notification"
 CONF_TTS_ENTITY = "tts_entity"
@@ -23,6 +22,7 @@ CONF_PHONE_SNOOZE = "phone_snooze"
 CONF_KEEP_HISTORY = "keep_history"
 CONF_CLICK_URL = "click_url"
 CONF_KEEP_DONE = "keep_done"
+CONF_QUIET_PUSH = "quiet_push"
 
 DEFAULTS = {
     CONF_NOTIFY: [],
@@ -36,9 +36,10 @@ DEFAULTS = {
     CONF_KEEP_HISTORY: 50,
     CONF_CLICK_URL: "/todo?entity_id=todo.remindo",
     CONF_KEEP_DONE: True,
+    CONF_QUIET_PUSH: False,
 }
 
-# Pola usług
+# Service fields
 ATTR_UID = "uid"
 ATTR_KEY = "key"
 ATTR_SUMMARY = "summary"
@@ -66,13 +67,12 @@ STATUS_OPEN = "open"
 STATUS_DONE = "done"
 STATUS_DISMISSED = "dismissed"
 
-# Zdarzenia
+# Events
 EVENT_CREATED = "remindo_created"
 EVENT_REMINDED = "remindo_reminded"
 EVENT_DONE = "remindo_done"
 EVENT_SNOOZED = "remindo_snoozed"
 EVENT_DISMISSED = "remindo_dismissed"
-EVENTS = [EVENT_CREATED, EVENT_REMINDED, EVENT_DONE, EVENT_SNOOZED, EVENT_DISMISSED]
 
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 

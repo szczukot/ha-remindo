@@ -1,3 +1,10 @@
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+select = ["F", "E9", "B", "UP", "I"]
+ignore = ["B904"]

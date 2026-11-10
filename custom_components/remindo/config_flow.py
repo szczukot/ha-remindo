@@ -1,11 +1,10 @@
-"""Konfiguracja z UI."""
+"""Config flow: integration options and rules (subentries)."""
 
 from __future__ import annotations
 
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -28,6 +27,7 @@ from .const import (
     CONF_PHONE_SNOOZE,
     CONF_PRESENCE,
     CONF_QUIET_END,
+    CONF_QUIET_PUSH,
     CONF_QUIET_START,
     CONF_SCREEN_SWITCH,
     CONF_TTS_DEFAULT,
@@ -35,7 +35,7 @@ from .const import (
     DEFAULTS,
     DOMAIN,
 )
-
+from .rules import MODES
 
 # shown literally in the form help texts
 _TOKENS = {"state": "{state}", "name": "{name}", "event": "{event}"}
@@ -44,7 +44,7 @@ _NOT_TARGETS = {"send_message", "persistent_notification", "notify"}
 
 
 def _notify_services(hass: HomeAssistant) -> list[str]:
-    """Aplikacja HA (z przyciskami) najpierw, potem inne kanały: Telegram, e-mail, SMS, encje notify.*."""
+    """The HA app (with buttons) first, then other channels: Telegram, e-mail, SMS, notify.* entities."""
     services = hass.services.async_services().get("notify", {})
     mobile = sorted(f"notify.{name}" for name in services if name.startswith("mobile_app_"))
     other = sorted(
@@ -92,6 +92,7 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_PHONE_SNOOZE, default=values[CONF_PHONE_SNOOZE]): selector.NumberSelector(
                 selector.NumberSelectorConfig(min=1, max=1440, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
             ),
+            vol.Optional(CONF_QUIET_PUSH, default=values[CONF_QUIET_PUSH]): selector.BooleanSelector(),
             vol.Optional(CONF_CLICK_URL, default=values[CONF_CLICK_URL]): selector.TextSelector(),
             vol.Optional(CONF_KEEP_DONE, default=values[CONF_KEEP_DONE]): selector.BooleanSelector(),
         }
@@ -109,7 +110,7 @@ def _clean(data: dict[str, Any]) -> dict[str, Any]:
 
 
 class RemindoConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Pierwsza konfiguracja."""
+    """First set-up."""
 
     VERSION = 1
 
@@ -128,12 +129,12 @@ class RemindoConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_supported_subentry_types(
         cls, config_entry: ConfigEntry
     ) -> dict[str, type[ConfigSubentryFlow]]:
-        """Reguły dodaje się na stronie integracji: „＋ Dodaj regułę”."""
+        """Rules are added on the integration page: "＋ Add rule"."""
         return {RULE: RuleSubentryFlow}
 
 
 class RemindoOptionsFlow(OptionsFlow):
-    """Zmiana ustawień."""
+    """Change the settings."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -143,10 +144,9 @@ class RemindoOptionsFlow(OptionsFlow):
         )
 
 
-# ---------------------------------------------------------------------- reguły
+# ----------------------------------------------------------------------- rules
 
 RULE = "rule"
-_MODES = ["state", "above", "below", "calendar"]
 
 
 def _num(value: Any, default: Any = None) -> Any:
@@ -157,16 +157,16 @@ def _num(value: Any, default: Any = None) -> Any:
 
 
 class RuleSubentryFlow(ConfigSubentryFlow):
-    """Reguła: gdy encja spełni warunek, dodaj zadanie. Trzy kroki."""
+    """A rule: when an entity meets a condition, add a task. Three steps."""
 
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
 
-    # --- dodawanie
+    # --- adding
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         return await self.async_step_trigger(user_input)
 
-    # --- edycja
+    # --- editing
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if not self._data:
             self._data = dict(self._get_reconfigure_subentry().data)
@@ -185,7 +185,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             vol.Required("summary"): selector.TextSelector(),
             vol.Required("entity_id"): selector.EntitySelector(),
             vol.Required("mode", default=self._data.get("mode", "state")): selector.SelectSelector(
-                selector.SelectSelectorConfig(options=_MODES, translation_key="rule_mode",
+                selector.SelectSelectorConfig(options=MODES, translation_key="rule_mode",
                                               mode=selector.SelectSelectorMode.LIST)
             ),
         }
@@ -258,9 +258,13 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             data["interval"] = int(data.get("interval") or 0) if data.get("remind", True) else 0
             data["max_reminders"] = int(data["max_reminders"]) if data.get("max_reminders") else None
             data.pop("remind", None)
-            data.setdefault("phones", [])
-            data.setdefault("speakers", [])
-            data["enabled"] = True
+            # a field left empty is not sent at all: clear it instead of keeping the old value
+            for key in ("max_reminders", "done_message"):
+                if key not in user_input:
+                    data[key] = None
+            # no channel configured yet → None = "all configured" once there are some
+            data["phones"] = user_input.get("phones", []) if phones else None
+            data["speakers"] = user_input.get("speakers", []) if speakers else None
             title = data["summary"]
             if self.source == "reconfigure":
                 return self.async_update_and_abort(

@@ -1,28 +1,26 @@
 """Config flow, translations, language, errors, To-do entity, restart."""
 
 import json
+import re
 from datetime import timedelta
 from pathlib import Path
-import re
 
-from freezegun.api import FrozenDateTimeFactory
 import pytest
+from freezegun.api import FrozenDateTimeFactory
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.exceptions import ServiceValidationError
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
     async_capture_events,
     async_fire_time_changed,
     async_mock_service,
 )
 
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.exceptions import ServiceValidationError
-from homeassistant.util import dt as dt_util
-
 from custom_components.remindo import texts
 from custom_components.remindo.const import DOMAIN
 
-from .test_remindo import OPTS, _add_rule, _setup
+from .common import OPTS, add_rule, setup_integration
 
 COMPONENT = Path(__file__).parent.parent / "custom_components" / DOMAIN
 
@@ -49,7 +47,7 @@ async def test_config_flow_creates_entry(hass: HomeAssistant) -> None:
 
 
 async def test_options_flow_updates_and_reloads(hass: HomeAssistant) -> None:
-    entry, _ = await _setup(hass)
+    entry, _ = await setup_integration(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
     result = await hass.config_entries.options.async_configure(
@@ -62,9 +60,9 @@ async def test_options_flow_updates_and_reloads(hass: HomeAssistant) -> None:
 
 
 async def test_rule_reconfigure(hass: HomeAssistant) -> None:
-    entry, _ = await _setup(hass)
+    entry, _ = await setup_integration(hass)
     hass.states.async_set("sensor.washer", "run")
-    sub_id = await _add_rule(hass, entry, {"summary": "Hang laundry", "entity_id": "sensor.washer", "value": "finished"})
+    sub_id = await add_rule(hass, entry, {"summary": "Hang laundry", "entity_id": "sensor.washer", "value": "finished"})
     flow = await entry.start_subentry_reconfigure_flow(hass, sub_id)
     assert flow["step_id"] == "trigger"
     flow = await hass.config_entries.subentries.async_configure(
@@ -159,7 +157,7 @@ async def test_push_follows_language(
 ) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
     hass.config.language = lang
-    _, calls = await _setup(hass)
+    _, calls = await setup_integration(hass)
     await hass.services.async_call(DOMAIN, "add", {"summary": "X", "speakers": []}, blocking=True)
     freezer.tick(timedelta(seconds=2))
     async_fire_time_changed(hass)
@@ -188,7 +186,7 @@ async def test_logbook_description(hass: HomeAssistant) -> None:
 
 
 async def test_service_errors_are_translated(hass: HomeAssistant) -> None:
-    await _setup(hass)
+    await setup_integration(hass)
     with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(DOMAIN, "done", {"uid": "nope"}, blocking=True)
     assert err.value.translation_key == "task_not_found"
@@ -204,7 +202,7 @@ async def test_service_errors_are_translated(hass: HomeAssistant) -> None:
 
 
 async def test_service_unavailable_after_unload(hass: HomeAssistant) -> None:
-    entry, _ = await _setup(hass)
+    entry, _ = await setup_integration(hass)
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     with pytest.raises(ServiceValidationError) as err:
@@ -217,7 +215,7 @@ async def test_service_unavailable_after_unload(hass: HomeAssistant) -> None:
 
 async def test_phone_done_and_dismiss(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     done = async_capture_events(hass, "remindo_done")
     dismissed = async_capture_events(hass, "remindo_dismissed")
     a = (await hass.services.async_call(DOMAIN, "add", {"summary": "A"}, blocking=True, return_response=True))["uid"]
@@ -240,7 +238,7 @@ async def test_phone_done_and_dismiss(hass: HomeAssistant, freezer: FrozenDateTi
 
 async def test_click_url_in_push(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    _, calls = await _setup(hass)
+    _, calls = await setup_integration(hass)
     await hass.services.async_call(DOMAIN, "add", {"summary": "X", "speakers": []}, blocking=True)
     freezer.tick(timedelta(seconds=2))
     async_fire_time_changed(hass)
@@ -252,7 +250,7 @@ async def test_click_url_in_push(hass: HomeAssistant, freezer: FrozenDateTimeFac
 
 async def test_todo_entity_roundtrip(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, _ = await _setup(hass)
+    entry, _ = await setup_integration(hass)
     manager = entry.runtime_data
     await hass.services.async_call(
         "todo", "add_item", {"item": "Water plants", "due_datetime": "2026-11-10 08:00:00"},
@@ -284,7 +282,7 @@ async def test_todo_entity_roundtrip(hass: HomeAssistant, freezer: FrozenDateTim
 async def test_todo_shows_repeat_in_description(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
     hass.config.language = "en"
-    await _setup(hass)
+    await setup_integration(hass)
     await hass.services.async_call(
         DOMAIN, "add", {"summary": "Filter", "start": "2026-12-01", "repeat": "monthly", "repeat_every": 3, "description": "HRV"},
         blocking=True, return_response=True,
@@ -303,7 +301,7 @@ async def test_tasks_survive_restart_and_missed_reminder_fires(
     hass: HomeAssistant, freezer: FrozenDateTimeFactory
 ) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     res = await hass.services.async_call(
         DOMAIN, "add", {"summary": "Later", "start": "2026-11-09T16:00:00", "speakers": []},
         blocking=True, return_response=True,
@@ -328,7 +326,7 @@ async def test_tasks_survive_restart_and_missed_reminder_fires(
 
 async def test_snooze_until_picked_time(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     uid = (await hass.services.async_call(DOMAIN, "add", {"summary": "X", "speakers": []}, blocking=True, return_response=True))["uid"]
     # card "tomorrow 09:00" and the date picker both send a local date-time
     await hass.services.async_call(DOMAIN, "snooze", {"uid": uid, "until": "2026-11-10T09:00:00"}, blocking=True)
@@ -339,7 +337,7 @@ async def test_snooze_until_picked_time(hass: HomeAssistant, freezer: FrozenDate
 
 
 async def test_card_gets_default_time(hass: HomeAssistant, hass_ws_client) -> None:
-    await _setup(hass)
+    await setup_integration(hass)
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "remindo/subscribe"})
     await client.receive_json()
@@ -350,7 +348,7 @@ async def test_card_gets_default_time(hass: HomeAssistant, hass_ws_client) -> No
 async def test_snooze_then_interval_resumes(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     """+1 h on a task reminding every 5 min: one reminder in an hour, then every 5 min again."""
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     uid = (await hass.services.async_call(DOMAIN, "add", {"summary": "X", "interval": 5, "speakers": []}, blocking=True, return_response=True))["uid"]
     task = entry.runtime_data.tasks[uid]
 
@@ -377,7 +375,7 @@ async def test_speech_waits_for_busy_speaker(hass: HomeAssistant, monkeypatch) -
     from custom_components.remindo import manager as mgr
 
     monkeypatch.setattr(mgr, "SPEAK_WAIT_MAX", 5)
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     hass.states.async_set("media_player.tablet", "playing")
     await hass.services.async_call(DOMAIN, "add", {"summary": "Washer"}, blocking=True, return_response=True)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=2))
@@ -397,7 +395,7 @@ async def test_speech_skipped_if_done_while_waiting(hass: HomeAssistant, monkeyp
     from custom_components.remindo import manager as mgr
 
     monkeypatch.setattr(mgr, "SPEAK_WAIT_MAX", 5)
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     hass.states.async_set("media_player.tablet", "playing")
     uid = (await hass.services.async_call(DOMAIN, "add", {"summary": "Washer"}, blocking=True, return_response=True))["uid"]
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=2))
@@ -420,7 +418,7 @@ async def _remind(hass, freezer, seconds=2):
 
 async def test_keep_done_off_removes_task(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, _ = await _setup(hass)
+    entry, _ = await setup_integration(hass)
     manager = entry.runtime_data
     a = (await hass.services.async_call(DOMAIN, "add", {"summary": "Gone", "keep_done": False}, blocking=True, return_response=True))["uid"]
     b = (await hass.services.async_call(DOMAIN, "add", {"summary": "Stays"}, blocking=True, return_response=True))["uid"]
@@ -436,7 +434,7 @@ async def test_keep_done_off_removes_task(hass: HomeAssistant, freezer: FrozenDa
 
 
 async def test_keep_done_option_default(hass: HomeAssistant) -> None:
-    entry, _ = await _setup(hass)
+    entry, _ = await setup_integration(hass)
     hass.config_entries.async_update_entry(entry, options={**OPTS, "keep_done": False})
     await hass.async_block_till_done()
     manager = entry.runtime_data
@@ -447,7 +445,7 @@ async def test_keep_done_option_default(hass: HomeAssistant) -> None:
 
 async def test_done_message_on_auto_close(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    _, calls = await _setup(hass)
+    _, calls = await setup_integration(hass)
     await hass.services.async_call(
         DOMAIN, "add", {"summary": "Gate open", "key": "gate", "done_message": "Gate closed ✅", "speakers": []},
         blocking=True, return_response=True)
@@ -470,7 +468,7 @@ async def test_done_message_on_auto_close(hass: HomeAssistant, freezer: FrozenDa
 
 async def test_template_summary(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     hass.states.async_set("sensor.outside", "5")
     uid = (await hass.services.async_call(
         DOMAIN, "add", {"summary": "Window open, {{ states('sensor.outside') }}°C", "interval": 5, "speakers": []},
@@ -489,7 +487,7 @@ async def test_template_summary(hass: HomeAssistant, freezer: FrozenDateTimeFact
 
 async def test_other_notifiers(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     telegram = async_mock_service(hass, "notify", "telegram_home")
     send_message = async_mock_service(hass, "notify", "send_message")
     hass.states.async_set("notify.email_me", "unknown", {"friendly_name": "E-mail me"})
@@ -503,14 +501,14 @@ async def test_other_notifiers(hass: HomeAssistant, freezer: FrozenDateTimeFacto
     assert send_message[0].data == {"entity_id": "notify.email_me", "title": "📋 Task", "message": "Bins"}
     assert entry.runtime_data.phone_label("notify.email_me") == "E-mail me"
     # clearing goes only to the app
-    await hass.services.async_call(DOMAIN, "done", {"key": None} if False else {"uid": next(iter(entry.runtime_data.tasks))}, blocking=True)
+    await hass.services.async_call(DOMAIN, "done", {"uid": next(iter(entry.runtime_data.tasks))}, blocking=True)
     await hass.async_block_till_done()
     assert len(telegram) == 1 and len(send_message) == 1
 
 
 async def test_rule_done_message_and_keep(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     hass.states.async_set("binary_sensor.gate", "off")
     flow = await hass.config_entries.subentries.async_init((entry.entry_id, "rule"), context={"source": "user"})
     flow = await hass.config_entries.subentries.async_configure(
@@ -535,7 +533,7 @@ async def test_rule_done_message_and_keep(hass: HomeAssistant, freezer: FrozenDa
 async def test_date_only_uses_default_time_and_early_done(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     """"Flag on 11 Nov every year": date only → 09:00; ticking off early moves to next year."""
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, _ = await _setup(hass)
+    entry, _ = await setup_integration(hass)
     uid = (await hass.services.async_call(
         DOMAIN, "add", {"summary": "Hang the flag", "start": "2026-11-11", "repeat": "yearly"},
         blocking=True, return_response=True))["uid"]
@@ -548,10 +546,10 @@ async def test_date_only_uses_default_time_and_early_done(hass: HomeAssistant, f
 async def test_rule_simple_tokens(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     """{state} and {name} work without knowing templates and update at each reminder."""
     freezer.move_to("2026-11-09 15:00:00+01:00")
-    entry, calls = await _setup(hass)
+    entry, calls = await setup_integration(hass)
     attrs = {"unit_of_measurement": "%", "friendly_name": "Bathroom humidity"}
     hass.states.async_set("sensor.hum", "60", attrs)
-    await _add_rule(hass, entry, {"summary": "Air the bathroom: {name} {state}", "entity_id": "sensor.hum", "mode": "above", "value": 70})
+    await add_rule(hass, entry, {"summary": "Air the bathroom: {name} {state}", "entity_id": "sensor.hum", "mode": "above", "value": 70})
     hass.states.async_set("sensor.hum", "75", attrs)
     await hass.async_block_till_done()
     await _remind(hass, freezer)

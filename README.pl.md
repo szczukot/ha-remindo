@@ -41,7 +41,8 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
 | Włącz ekran tabletu | np. `switch.<tablet>_screen` z Fully Kiosk |
 | Obecność | np. `group.domownicy`; głos tylko gdy ktoś jest w domu |
-| Cisza nocna | bez komunikatów głosowych (push nadal przychodzi) |
+| Cisza nocna | bez komunikatów głosowych; push nadal przychodzi |
+| Cisza nocna także dla push | włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca |
 | Domyślny interwał, godzina dla zadań z samą datą, odłożenie z telefonu | |
 | Po kliknięciu powiadomienia otwórz | np. `/lovelace/remindo` |
 | Zostawiaj wykonane zadania na liście | wyłączone = zadanie znika po odhaczeniu (zostaje w dzienniku); można to zmienić dla każdego zadania i reguły |
@@ -65,7 +66,13 @@ Odznaczone „Przypominaj” = zwykła notatka na liście. Odznaczone „Zostaw 
 
 <p align="center"><img src="docs/images/snooze-pl.png" width="460" alt="Odkładanie na wybrany termin"></p>
 
-Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅 wybierz…** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie.
+Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym terminie, **✎** zmień, **✕** nie robię. Zadania, które właśnie przypominają, mają też szybkie odkładanie. Przy zadaniu cyklicznym **✕** tylko pomija ten termin; żeby usunąć je na stałe, otwórz **✎** i wybierz **Usuń**.
+
+<p align="center"><img src="docs/images/edit-pl.png" width="460" alt="Zmiana zadania"></p>
+
+**✎** pozwala zmienić treść, termin, odstęp przypomnień i miejsce przypominania.
+
+Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie.
 
 Karta wyświetla się w języku profilu użytkownika.
 
@@ -85,7 +92,7 @@ Karta wyświetla się w języku profilu użytkownika.
 | `{name}` | nazwę urządzenia | „{name} otwarte za długo” → „Brama garażowa otwarte za długo” |
 | `{event}` | (kalendarz) nazwy wydarzeń | „Jutro wywóz: {event}” |
 
-Wartość odświeża się przy każdym przypomnieniu. Kto zna szablony HA, może też użyć `{{ ... }}`, np. „Na dworze {{ states('sensor.temperatura_zewn') }}°C”.
+Wartość odświeża się przy każdym przypomnieniu. Kto zna szablony HA, może też użyć `{{ ... }}` (w regułach oraz w `remindo.add` wywołanym z automatyzacji albo przez administratora; tekst wpisany przez innych użytkowników albo pochodzący z kalendarza nigdy nie jest wykonywany jako szablon), np. „Na dworze {{ states('sensor.temperatura_zewn') }}°C”.
 
 Przykłady:
 
@@ -96,7 +103,9 @@ Przykłady:
 | Wystaw śmietnik | `calendar.odpady`, 1 dzień przed, 18:00 → „Wystaw śmietnik: Papier, Szkło” (albo wstaw `{event}` w treść, żeby nazwa wydarzenia trafiła w konkretne miejsce) |
 | Przewietrz łazienkę | `sensor.wilgotnosc_lazienka` powyżej 70 przez 15 min |
 
-Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie wyzwala reguły.
+Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) samo nigdy nie wyzwala reguły, ale też nie ukrywa prawdziwej zmiany: „pracuje → niedostępna → skończyła” nadal się liczy.
+
+Odliczanie „przez co najmniej N min” przetrwa restart Home Assistant. Sprawdzenie kalendarza, które przepadło, bo Home Assistant nie działał, wykona się po starcie. Zadanie z kalendarza, którego nikt nie odhaczył, znika po dniu wydarzenia.
 
 ## Przykłady zastosowań
 
@@ -155,7 +164,9 @@ Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie w
 | Usługa | Pola |
 |---|---|
 | `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
-| `remindo.done`, `remindo.dismiss` | `uid` albo `key` |
+| `remindo.update` | `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
+| `remindo.done`, `remindo.dismiss` | `uid` albo `key`. Zadanie cykliczne obie przesuwają na następny termin. |
+| `remindo.delete` | `uid` albo `key`: usuwa zadanie na stałe, także cykliczne |
 | `remindo.snooze` | `uid`/`key` + `minutes` albo `until` |
 | `remindo.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła); wysyła `done_message`, jeśli był |
 
@@ -185,11 +196,11 @@ Ekrany konfiguracji, usługi, komunikaty błędów, powiadomienia push i dzienni
 ## Rozwój
 
 ```bash
-pip install -r requirements_test.txt
+pip install -r requirements_test.txt   # Python 3.14
 pytest
 ```
 
-Przy każdym pushu GitHub uruchamia testy, hassfest i walidację repozytorium. Wydanie powstaje samo po wypchnięciu tagu `vX.Y.Z` (musi zgadzać się z `version` w `manifest.json`).
+Przy każdym pushu GitHub uruchamia testy, ruff, hassfest i walidację repozytorium. Wydanie powstaje samo po wypchnięciu tagu `vX.Y.Z` (musi zgadzać się z `version` w `manifest.json`).
 
 ## Licencja
 

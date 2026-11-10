@@ -1,4 +1,4 @@
-"""Encja To-do dla zadań."""
+"""To-do list entity for the tasks."""
 
 from __future__ import annotations
 
@@ -15,12 +15,13 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, STATUS_DONE, STATUS_OPEN
+from . import texts
+from .const import STATUS_DONE, STATUS_OPEN
 from .manager import Task, TaskManager
 
 
 def _minute(value: date | datetime | None) -> str | None:
-    """Porównanie terminów z dokładnością do minuty."""
+    """Compare due times to the minute."""
     if value is None:
         return None
     if isinstance(value, datetime):
@@ -36,7 +37,7 @@ async def async_setup_entry(
 
 
 class RemindoTodoList(TodoListEntity):
-    """Lista zadań z przypomnieniami."""
+    """The list of tasks with reminders."""
 
     _attr_has_entity_name = True
     _attr_icon = "mdi:clipboard-check-outline"
@@ -66,7 +67,9 @@ class RemindoTodoList(TodoListEntity):
         due_raw = task.next_reminder or task.start
         due = dt_util.as_local(dt_util.parse_datetime(due_raw)) if due_raw else None
         description = task.description
-        if label := task.repeat_label(self.hass):
+        if task.recurring:
+            # shown in the description, because a to-do item has no field for it
+            label = texts.repeat_label(self.hass, task.repeat, task.repeat_every)
             description = f"🔁 {label}" + (f"\n{description}" if description else "")
         return TodoItem(
             uid=task.uid,
@@ -91,6 +94,7 @@ class RemindoTodoList(TodoListEntity):
 
     @staticmethod
     def _clean_description(text: str | None) -> str | None:
+        """Strip the repeat line added by _to_item."""
         if text and text.startswith("🔁"):
             text = text.split("\n", 1)[1] if "\n" in text else ""
         return text or None
@@ -101,6 +105,7 @@ class RemindoTodoList(TodoListEntity):
             item.summary or "",
             description=self._clean_description(item.description),
             start=start,
+            templates=False,  # text typed by any user: never run it as a template
             source="todo",
         )
 
@@ -119,13 +124,15 @@ class RemindoTodoList(TodoListEntity):
         }
         current = self._to_item(task).due
         if task.status == STATUS_OPEN and _minute(item.due) != _minute(current):
-            changes["start"] = item.due
-        await self._manager.async_update(task.uid, **changes)
+            if item.due is not None or not task.recurring:
+                changes["start"] = item.due
+        await self._manager.async_update(task, changes)
 
     async def async_delete_todo_items(self, uids: list[str]) -> None:
         for uid in uids:
             if task := self._manager.tasks.get(uid):
-                if task.status == STATUS_OPEN:
+                if task.status == STATUS_OPEN and not task.recurring:
                     await self._manager.async_dismiss(task, "todo")
                 else:
+                    # done tasks, and recurring ones (dismissing would only skip one date)
                     await self._manager.async_delete(task)

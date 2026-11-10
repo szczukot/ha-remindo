@@ -17,14 +17,16 @@
           "default_time": "Time for date-only tasks",
           "phone_snooze": "Snooze from phone by",
           "click_url": "Open on notification tap",
-          "keep_done": "Keep done tasks on the list"
+          "keep_done": "Keep done tasks on the list",
+          "quiet_push": "Quiet hours also for push notifications"
         },
         "data_description": {
-          "quiet_start": "No spoken announcements during quiet hours (push still sent).",
+          "quiet_start": "No spoken announcements during quiet hours. Push is still sent unless the option below is on.",
           "default_interval": "0 = remind once.",
           "click_url": "HA path, e.g. /lovelace/remindo",
           "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
-          "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only)."
+          "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
+          "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end."
         }
       }
     },
@@ -50,14 +52,16 @@
           "default_time": "Time for date-only tasks",
           "phone_snooze": "Snooze from phone by",
           "click_url": "Open on notification tap",
-          "keep_done": "Keep done tasks on the list"
+          "keep_done": "Keep done tasks on the list",
+          "quiet_push": "Quiet hours also for push notifications"
         },
         "data_description": {
-          "quiet_start": "No spoken announcements during quiet hours (push still sent).",
+          "quiet_start": "No spoken announcements during quiet hours. Push is still sent unless the option below is on.",
           "default_interval": "0 = remind once.",
           "click_url": "HA path, e.g. /lovelace/remindo",
           "keep_done": "Off = a task disappears once done (it stays in the logbook). Recurring tasks always stay. Can be changed per task and per rule.",
-          "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only)."
+          "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
+          "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end."
         }
       }
     }
@@ -149,7 +153,7 @@
     },
     "dismiss": {
       "name": "Dismiss",
-      "description": "Dismisses the task.",
+      "description": "Drops the task (\"won't do\"). A recurring task only skips this date; use Delete to remove it.",
       "fields": {
         "uid": {
           "name": "UID",
@@ -190,6 +194,70 @@
         "key": {
           "name": "Key",
           "description": "Key given when adding (e.g. gate)."
+        }
+      }
+    },
+    "delete": {
+      "name": "Delete",
+      "description": "Removes a task for good, also a recurring one.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Task id."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Key given when adding (e.g. gate)."
+        }
+      }
+    },
+    "update": {
+      "name": "Update",
+      "description": "Changes a task. Only the fields you send are changed; an empty value clears the field.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Task id."
+        },
+        "key": {
+          "name": "Key",
+          "description": "Key given when adding (e.g. gate)."
+        },
+        "summary": {
+          "name": "Summary",
+          "description": "New text of the task."
+        },
+        "description": {
+          "name": "Description",
+          "description": "Extra info (empty = remove)."
+        },
+        "start": {
+          "name": "Due",
+          "description": "New due time: date and time, or a date only. Empty = a note without reminders."
+        },
+        "interval": {
+          "name": "Interval (min)",
+          "description": "Repeat every N minutes until handled. 0 = once."
+        },
+        "phones": {
+          "name": "Channels",
+          "description": "Where to send the notification (empty list = nowhere; null = all configured)."
+        },
+        "speakers": {
+          "name": "Speakers",
+          "description": "Where to speak (empty list = nowhere; null = all configured)."
+        },
+        "max_reminders": {
+          "name": "At most times",
+          "description": "Stop reminding after this many reminders (empty = no limit)."
+        },
+        "remind_until": {
+          "name": "Remind until",
+          "description": "Stop reminding after this time (empty = no limit)."
+        },
+        "keep_done": {
+          "name": "Keep after done",
+          "description": "Keep the task in Done (null = integration option)."
         }
       }
     }
@@ -299,8 +367,7 @@
   "entity": {
     "sensor": {
       "active": {
-        "name": "Remindo active",
-        "unit_of_measurement": "tasks"
+        "name": "Remindo active"
       }
     }
   },

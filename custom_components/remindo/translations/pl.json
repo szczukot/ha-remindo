@@ -17,14 +17,16 @@
           "default_time": "Godzina dla zadań z samą datą",
           "phone_snooze": "Odłożenie z telefonu o",
           "click_url": "Po kliknięciu powiadomienia otwórz",
-          "keep_done": "Zostawiaj wykonane zadania na liście"
+          "keep_done": "Zostawiaj wykonane zadania na liście",
+          "quiet_push": "Cisza nocna także dla powiadomień push"
         },
         "data_description": {
-          "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
+          "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych. Push nadal przychodzi, chyba że włączysz opcję poniżej.",
           "default_interval": "0 = przypomnij tylko raz.",
           "click_url": "Ścieżka w HA, np. /lovelace/remindo",
           "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
-          "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst)."
+          "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
+          "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca."
         }
       }
     },
@@ -50,14 +52,16 @@
           "default_time": "Godzina dla zadań z samą datą",
           "phone_snooze": "Odłożenie z telefonu o",
           "click_url": "Po kliknięciu powiadomienia otwórz",
-          "keep_done": "Zostawiaj wykonane zadania na liście"
+          "keep_done": "Zostawiaj wykonane zadania na liście",
+          "quiet_push": "Cisza nocna także dla powiadomień push"
         },
         "data_description": {
-          "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych (push nadal przychodzi).",
+          "quiet_start": "W ciszy nocnej nie ma komunikatów głosowych. Push nadal przychodzi, chyba że włączysz opcję poniżej.",
           "default_interval": "0 = przypomnij tylko raz.",
           "click_url": "Ścieżka w HA, np. /lovelace/remindo",
           "keep_done": "Wyłączone = zadanie znika po wykonaniu (zostaje w dzienniku). Cykliczne zostają zawsze. Można zmienić dla zadania i reguły.",
-          "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst)."
+          "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
+          "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca."
         }
       }
     }
@@ -149,7 +153,7 @@
     },
     "dismiss": {
       "name": "Nie robię",
-      "description": "Anuluje zadanie (zostaje w historii).",
+      "description": "Odrzuca zadanie („nie robię”). Zadanie cykliczne tylko pomija ten termin; żeby je usunąć, użyj „Usuń”.",
       "fields": {
         "uid": {
           "name": "UID",
@@ -190,6 +194,70 @@
         "key": {
           "name": "Klucz",
           "description": "Klucz nadany przy dodawaniu (np. brama)."
+        }
+      }
+    },
+    "delete": {
+      "name": "Usuń",
+      "description": "Usuwa zadanie na stałe, także cykliczne.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Identyfikator zadania."
+        },
+        "key": {
+          "name": "Klucz",
+          "description": "Klucz nadany przy dodawaniu (np. brama)."
+        }
+      }
+    },
+    "update": {
+      "name": "Zmień",
+      "description": "Zmienia zadanie. Zmieniane są tylko wysłane pola; pusta wartość czyści pole.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Identyfikator zadania."
+        },
+        "key": {
+          "name": "Klucz",
+          "description": "Klucz nadany przy dodawaniu (np. brama)."
+        },
+        "summary": {
+          "name": "Treść",
+          "description": "Nowa treść zadania."
+        },
+        "description": {
+          "name": "Opis",
+          "description": "Dodatkowe informacje (puste = usuń)."
+        },
+        "start": {
+          "name": "Termin",
+          "description": "Nowy termin: data i godzina albo sama data. Puste = notatka bez przypomnień."
+        },
+        "interval": {
+          "name": "Co ile minut",
+          "description": "Co ile minut ponawiać, dopóki nie zareagujesz. 0 = raz."
+        },
+        "phones": {
+          "name": "Kanały",
+          "description": "Gdzie wysłać powiadomienie (pusta lista = nigdzie; null = wszystkie z ustawień)."
+        },
+        "speakers": {
+          "name": "Głośniki",
+          "description": "Gdzie mówić (pusta lista = nigdzie; null = wszystkie z ustawień)."
+        },
+        "max_reminders": {
+          "name": "Maks. razy",
+          "description": "Przestań przypominać po tylu przypomnieniach (puste = bez limitu)."
+        },
+        "remind_until": {
+          "name": "Przypominaj do",
+          "description": "Nie przypominaj po tym terminie (puste = bez limitu)."
+        },
+        "keep_done": {
+          "name": "Zostaw po wykonaniu",
+          "description": "Zostaw zadanie w „Zrobione” (null = opcja integracji)."
         }
       }
     }
@@ -299,8 +367,7 @@
   "entity": {
     "sensor": {
       "active": {
-        "name": "Remindo aktywne",
-        "unit_of_measurement": "zadań"
+        "name": "Remindo aktywne"
       }
     }
   },

@@ -41,7 +41,8 @@ When adding the integration (and later under *Configure*) you set:
 | TTS engine, media players | where announcements are spoken |
 | Screen switch to turn on first | e.g. `switch.<tablet>_screen` from Fully Kiosk |
 | Presence entity | e.g. a group of people; speech only when someone is home |
-| Quiet hours | no spoken announcements (push still arrives) |
+| Quiet hours | no spoken announcements; push still arrives |
+| Quiet hours also for push | on = nothing is sent at night; a reminder that falls into the quiet hours waits until they end |
 | Default interval, time for date-only tasks, snooze from phone | |
 | Open when the notification is tapped | e.g. `/lovelace/remindo` |
 | Keep done tasks on the list | off = a task disappears once ticked off (it stays in the logbook); can be changed per task and per rule |
@@ -65,7 +66,13 @@ With "Remind" unticked the task is a plain note on the list. With "Keep on the l
 
 <p align="center"><img src="docs/images/snooze-en.png" width="460" alt="Snoozing to a chosen time"></p>
 
-Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅 pick…** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time.
+Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit, **✕** won't do. Tasks that are reminding right now also get the quick snooze buttons. On a recurring task **✕** only skips this date; to remove the task for good, open **✎** and choose **Delete**.
+
+<p align="center"><img src="docs/images/edit-en.png" width="460" alt="Editing a task"></p>
+
+**✎** lets you change the text, the due time, the reminder interval and where to remind.
+
+Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time.
 
 The card follows the language of the user's profile.
 
@@ -85,7 +92,7 @@ The card follows the language of the user's profile.
 | `{name}` | the device name | "{name} open too long" → "Garage door open too long" |
 | `{event}` | (calendar) the event names | "Bin collection tomorrow: {event}" |
 
-The value is refreshed at every reminder. If you know HA templates you can also use `{{ ... }}`, e.g. "It's {{ states('sensor.outside_temperature') }}°C outside".
+The value is refreshed at every reminder. If you know HA templates you can also use `{{ ... }}` (in rules, and in `remindo.add` called by an automation or an administrator; text typed by other users or coming from a calendar is never run as a template), e.g. "It's {{ states('sensor.outside_temperature') }}°C outside".
 
 Examples:
 
@@ -96,7 +103,9 @@ Examples:
 | Put the bins out | `calendar.waste`, 1 day before, 18:00 → "Put the bins out: Paper, Glass" (or put `{event}` in the text to place the event name yourself) |
 | Air the bathroom | `sensor.bathroom_humidity` above 70 for 15 min |
 
-Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never triggers a rule.
+Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never triggers a rule by itself, and does not hide a real change either: "running → unavailable → finished" still counts.
+
+A "for at least N min" countdown survives a restart of Home Assistant. A calendar check that was missed because Home Assistant was down runs after the start. A calendar task nobody ticked off disappears after the event day.
 
 ## Use cases
 
@@ -155,7 +164,9 @@ Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never trigger
 | Action | Fields |
 |---|---|
 | `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
-| `remindo.done`, `remindo.dismiss` | `uid` or `key` |
+| `remindo.update` | `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Only the fields you send change; `null` clears a field. |
+| `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time. |
+| `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |
 | `remindo.snooze` | `uid`/`key` + `minutes` or `until` |
 | `remindo.close_by_key` | `key`: closes the task (e.g. the gate was closed); sends `done_message` if set |
 
@@ -185,11 +196,11 @@ Configuration screens, actions, error messages, push notifications and the logbo
 ## Development
 
 ```bash
-pip install -r requirements_test.txt
+pip install -r requirements_test.txt   # Python 3.14
 pytest
 ```
 
-Every push runs the tests, hassfest and repository validation on GitHub. A release is created automatically when a `vX.Y.Z` tag is pushed (it must match `version` in `manifest.json`).
+Every push runs the tests, ruff, hassfest and repository validation on GitHub. A release is created automatically when a `vX.Y.Z` tag is pushed (it must match `version` in `manifest.json`).
 
 ## License
 

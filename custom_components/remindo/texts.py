@@ -11,7 +11,6 @@ _TEXTS: dict[str, dict[str, str]] = {
         "done": "✅ Done",
         "snooze": "⏰ +{minutes} min",
         "dismiss": "❌ Skip",
-        "rule": "Rule",
         "task": "Task: {summary}",
         "ev_created": "added",
         "ev_reminded": "reminded",
@@ -23,6 +22,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "src_todo": "from To-do list",
         "src_auto": "automatically",
         "src_rule": "by rule",
+        "src_expired": "date passed",
         "nth": ", time #{count}",
     },
     "pl": {
@@ -30,7 +30,6 @@ _TEXTS: dict[str, dict[str, str]] = {
         "done": "✅ Zrobione",
         "snooze": "⏰ +{minutes} min",
         "dismiss": "❌ Nie robię",
-        "rule": "Reguła",
         "task": "Zadanie: {summary}",
         "ev_created": "dodano",
         "ev_reminded": "przypomniano",
@@ -42,6 +41,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "src_todo": "z listy To-do",
         "src_auto": "automatycznie",
         "src_rule": "z reguły",
+        "src_expired": "termin minął",
         "nth": ", {count}. raz",
     },
 }
