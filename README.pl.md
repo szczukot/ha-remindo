@@ -100,7 +100,7 @@ Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie w
 
 ## Przykłady zastosowań
 
-### U autora
+### Przykładowy zestaw
 
 | Sytuacja | Ustawienia |
 |---|---|

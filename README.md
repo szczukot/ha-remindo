@@ -100,7 +100,7 @@ Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never trigger
 
 ## Use cases
 
-### From the author's home
+### Example setup
 
 | Situation | Settings |
 |---|---|
