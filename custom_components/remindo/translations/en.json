@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Tasks with reminders",
+        "title": "Remindo — tasks with reminders",
         "data": {
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
@@ -32,7 +32,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Tasks with reminders",
+        "title": "Remindo — tasks with reminders",
         "data": {
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
@@ -53,13 +53,6 @@
           "default_interval": "0 = remind once.",
           "click_url": "HA path, e.g. /dashboard-tablet/zadania"
         }
-      }
-    }
-  },
-  "entity": {
-    "todo": {
-      "zadania": {
-        "name": "Tasks"
       }
     }
   },

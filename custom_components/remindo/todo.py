@@ -32,14 +32,13 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     manager: TaskManager = entry.runtime_data
-    async_add_entities([ZadaniaTodoList(manager, entry)])
+    async_add_entities([RemindoTodoList(manager, entry)])
 
 
-class ZadaniaTodoList(TodoListEntity):
+class RemindoTodoList(TodoListEntity):
     """Lista zadań z przypomnieniami."""
 
     _attr_has_entity_name = True
-    _attr_translation_key = "zadania"
     _attr_icon = "mdi:clipboard-check-outline"
     _attr_supported_features = (
         TodoListEntityFeature.CREATE_TODO_ITEM
@@ -53,7 +52,7 @@ class ZadaniaTodoList(TodoListEntity):
     def __init__(self, manager: TaskManager, entry: ConfigEntry) -> None:
         self._manager = manager
         self._attr_unique_id = f"{entry.entry_id}_todo"
-        self._attr_name = "Zadania"
+        self._attr_name = "Remindo"
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()

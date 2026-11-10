@@ -1,5 +1,5 @@
-/* Karta Lovelace: custom:zadania-card (integracja Zadania) */
-const VERSION = "0.6.0";
+/* Karta Lovelace: custom:remindo-card (integracja Remindo) */
+const VERSION = "0.7.0";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -25,7 +25,7 @@ const localIso = (d) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 const tomorrowDate = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
-class ZadaniaCard extends HTMLElement {
+class RemindoCard extends HTMLElement {
   setConfig(config) {
     this._config = { title: "Zadania", show_done: true, show_form: true, ...config };
     this._tasks = [];
@@ -50,7 +50,7 @@ class ZadaniaCard extends HTMLElement {
     if (!this._hass || this._unsub) return;
     this._unsub = this._hass.connection
       .subscribeMessage((msg) => { this._tasks = msg.tasks || []; this._dismissed = msg.dismissed || []; this._opts = msg.options || {}; this._error = null; this._render(); },
-        { type: "zadania/subscribe" })
+        { type: "remindo/subscribe" })
       .catch((err) => { this._error = err.message || String(err); this._unsub = null; this._render(); setTimeout(() => this._subscribe(), 15000); });
   }
 
@@ -58,7 +58,7 @@ class ZadaniaCard extends HTMLElement {
   static getStubConfig() { return { title: "Zadania" }; }
 
   async _call(service, data) {
-    try { await this._hass.callService("zadania", service, data); }
+    try { await this._hass.callService("remindo", service, data); }
     catch (err) { this._error = err.message || String(err); this._render(); }
   }
 
@@ -234,7 +234,7 @@ class ZadaniaCard extends HTMLElement {
     this._forceRender = false;
     const g = this._groups();
     const empty = !g.now.length && !g.planned.length && !g.notes.length;
-    this.shadowRoot.innerHTML = `<style>${ZadaniaCard.styles}</style>
+    this.shadowRoot.innerHTML = `<style>${RemindoCard.styles}</style>
       <ha-card>
         <div class="head"><span>${esc(this._config.title)}</span>${g.now.length ? `<span class="badge">${g.now.length}</span>` : ""}
 </div>
@@ -254,7 +254,7 @@ class ZadaniaCard extends HTMLElement {
   }
 }
 
-ZadaniaCard.styles = `
+RemindoCard.styles = `
   ha-card { padding: 12px 16px 16px; }
   .head { display:flex; align-items:center; gap:8px; font-size:20px; font-weight:500; margin-bottom:8px; }
   .badge { background: var(--error-color, #db4437); color:#fff; border-radius:12px; padding:0 9px; font-size:14px; line-height:22px; }
@@ -297,9 +297,9 @@ ZadaniaCard.styles = `
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
 `;
 
-if (!customElements.get("zadania-card")) {
-  customElements.define("zadania-card", ZadaniaCard);
+if (!customElements.get("remindo-card")) {
+  customElements.define("remindo-card", RemindoCard);
   window.customCards = window.customCards || [];
-  window.customCards.push({ type: "zadania-card", name: "Zadania", description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie", preview: false });
-  console.info(`%c ZADANIA-CARD %c ${VERSION} `, "background:#43a047;color:#fff", "");
+  window.customCards.push({ type: "remindo-card", name: "Remindo", description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie", preview: false });
+  console.info(`%c REMINDO-CARD %c ${VERSION} `, "background:#43a047;color:#fff", "");
 }

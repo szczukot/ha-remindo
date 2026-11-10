@@ -20,7 +20,7 @@ class ActiveTasksSensor(SensorEntity):
     """Ile zadań już przypomina (do zrobienia teraz)."""
 
     _attr_has_entity_name = True
-    _attr_name = "Zadania aktywne"
+    _attr_name = "Remindo active"
     _attr_icon = "mdi:bell-ring-outline"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "zadań"
@@ -44,6 +44,6 @@ class ActiveTasksSensor(SensorEntity):
     def extra_state_attributes(self) -> dict:
         active = [t for t in self._manager.open_tasks() if t.active]
         return {
-            "zadania": [t.summary for t in active],
-            "zaplanowane": sum(1 for t in self._manager.open_tasks() if not t.active and t.start),
+            "tasks": [t.summary for t in active],
+            "scheduled": sum(1 for t in self._manager.open_tasks() if not t.active and t.start),
         }

@@ -1,8 +1,9 @@
-"""Stałe integracji Zadania."""
+"""Stałe integracji Remindo."""
 
 from __future__ import annotations
 
-DOMAIN = "zadania"
+DOMAIN = "remindo"
+LEGACY_DOMAIN = "zadania"  # stara nazwa (wersje < 0.7)
 STORAGE_VERSION = 1
 STORAGE_KEY = DOMAIN
 
@@ -32,7 +33,7 @@ DEFAULTS = {
     CONF_DEFAULT_TIME: "09:00:00",
     CONF_PHONE_SNOOZE: 10,
     CONF_KEEP_HISTORY: 50,
-    CONF_CLICK_URL: "/todo?entity_id=todo.zadania",
+    CONF_CLICK_URL: "/todo?entity_id=todo.remindo",
 }
 
 # Pola usług
@@ -62,18 +63,18 @@ STATUS_DONE = "done"
 STATUS_DISMISSED = "dismissed"
 
 # Zdarzenia
-EVENT_CREATED = "zadania_created"
-EVENT_REMINDED = "zadania_reminded"
-EVENT_DONE = "zadania_done"
-EVENT_SNOOZED = "zadania_snoozed"
-EVENT_DISMISSED = "zadania_dismissed"
+EVENT_CREATED = "remindo_created"
+EVENT_REMINDED = "remindo_reminded"
+EVENT_DONE = "remindo_done"
+EVENT_SNOOZED = "remindo_snoozed"
+EVENT_DISMISSED = "remindo_dismissed"
 EVENTS = [EVENT_CREATED, EVENT_REMINDED, EVENT_DONE, EVENT_SNOOZED, EVENT_DISMISSED]
 
 SIGNAL_UPDATED = f"{DOMAIN}_updated"
 
-ACTION_PREFIX = "ZADANIA"
+ACTION_PREFIX = "REMINDO"
 ACTION_DONE = "DONE"
 ACTION_SNOOZE = "SNOOZE"
 ACTION_DISMISS = "DISMISS"
 
-CARD_URL = "/zadania_static/zadania-card.js"
+CARD_URL = "/remindo_static/remindo-card.js"

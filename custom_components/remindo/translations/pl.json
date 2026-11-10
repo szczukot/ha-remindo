@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Zadania z przypomnieniami",
+        "title": "Remindo — zadania z przypomnieniami",
         "data": {
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
@@ -32,7 +32,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Zadania z przypomnieniami",
+        "title": "Remindo — zadania z przypomnieniami",
         "data": {
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
@@ -53,13 +53,6 @@
           "default_interval": "0 = przypomnij tylko raz.",
           "click_url": "Ścieżka w HA, np. /dashboard-tablet/zadania"
         }
-      }
-    }
-  },
-  "entity": {
-    "todo": {
-      "zadania": {
-        "name": "Zadania"
       }
     }
   },

@@ -94,20 +94,20 @@ def _clean(data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-class ZadaniaConfigFlow(ConfigFlow, domain=DOMAIN):
+class RemindoConfigFlow(ConfigFlow, domain=DOMAIN):
     """Pierwsza konfiguracja."""
 
     VERSION = 1
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(title="Zadania", data={}, options=_clean(user_input))
+            return self.async_create_entry(title="Remindo", data={}, options=_clean(user_input))
         return self.async_show_form(step_id="user", data_schema=_schema(self.hass, {}))
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        return ZadaniaOptionsFlow()
+        return RemindoOptionsFlow()
 
     @classmethod
     @callback
@@ -118,7 +118,7 @@ class ZadaniaConfigFlow(ConfigFlow, domain=DOMAIN):
         return {RULE: RuleSubentryFlow}
 
 
-class ZadaniaOptionsFlow(OptionsFlow):
+class RemindoOptionsFlow(OptionsFlow):
     """Zmiana ustawień."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

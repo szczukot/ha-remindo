@@ -1,4 +1,4 @@
-"""Zadania z przypomnieniami dla Home Assistant."""
+"""Remindo: zadania z przypomnieniami dla Home Assistant."""
 
 from __future__ import annotations
 
@@ -46,6 +46,7 @@ from .const import (
     ATTR_UNTIL,
     CARD_URL,
     DOMAIN,
+    LEGACY_DOMAIN,
     SIGNAL_UPDATED,
     REPEAT_NONE,
     REPEAT_OPTIONS,
@@ -55,7 +56,7 @@ from .manager import Task, TaskManager
 PLATFORMS = [Platform.TODO, Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-type ZadaniaConfigEntry = ConfigEntry[TaskManager]
+type RemindoConfigEntry = ConfigEntry[TaskManager]
 
 _WHEN = vol.Any(cv.datetime, cv.date, cv.string)
 
@@ -95,7 +96,7 @@ CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Rejestruje kartę Lovelace (raz na uruchomienie HA)."""
     integration = await async_get_integration(hass, DOMAIN)
-    path = Path(__file__).parent / "frontend" / "zadania-card.js"
+    path = Path(__file__).parent / "frontend" / "remindo-card.js"
     # Wersja w adresie = skrót zawartości pliku, żeby przeglądarki nie trzymały starej karty
     digest = await hass.async_add_executor_job(lambda: hashlib.sha1(path.read_bytes()).hexdigest()[:8])
     await hass.http.async_register_static_paths(
@@ -111,7 +112,7 @@ def _manager(hass: HomeAssistant) -> TaskManager:
         return manager
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     if not entries:
-        raise ServiceValidationError("Integracja Zadania nie jest załadowana")
+        raise ServiceValidationError("Integracja Remindo nie jest załadowana")
     return entries[0].runtime_data
 
 
@@ -124,11 +125,21 @@ def _target(manager: TaskManager, data: dict[str, Any]) -> Task:
     return task
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: RemindoConfigEntry) -> bool:
     manager = TaskManager(hass, dict(entry.options or entry.data))
     await manager.async_load()
     entry.runtime_data = manager
     hass.data[DOMAIN] = manager
+
+    # Reguły ze starej integracji „zadania” (podwpisy) → przenieś, jeśli tu jeszcze żadnych nie ma
+    if not any(s.subentry_type == "rule" for s in entry.subentries.values()):
+        for old_entry in hass.config_entries.async_entries(LEGACY_DOMAIN):
+            for sub in old_entry.subentries.values():
+                if sub.subentry_type == "rule":
+                    hass.config_entries.async_add_subentry(
+                        entry,
+                        ConfigSubentry(data=sub.data, subentry_type="rule", title=sub.title, unique_id=None),
+                    )
 
     # Reguły z wersji 0.4–0.5 (trzymane w magazynie) → podwpisy integracji
     for old in manager.take_legacy_rules():
@@ -156,11 +167,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> b
     return True
 
 
-async def _async_reload(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> None:
+async def _async_reload(hass: HomeAssistant, entry: RemindoConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: RemindoConfigEntry) -> bool:
     ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if ok:
         hass.data.pop(DOMAIN, None)
@@ -232,7 +243,7 @@ def _register_services(hass: HomeAssistant) -> None:
 
 
 
-@websocket_api.websocket_command({vol.Required("type"): "zadania/subscribe"})
+@websocket_api.websocket_command({vol.Required("type"): "remindo/subscribe"})
 @websocket_api.async_response
 async def ws_subscribe(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]

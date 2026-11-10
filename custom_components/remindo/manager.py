@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 from .rules import RuleEngine
 
 from .const import (
+    LEGACY_DOMAIN,
     ACTION_DISMISS,
     ACTION_DONE,
     ACTION_PREFIX,
@@ -178,7 +179,14 @@ class TaskManager:
 
     # ------------------------------------------------------------------ magazyn
     async def async_load(self) -> None:
-        data = await self._store.async_load() or {}
+        data = await self._store.async_load()
+        if data is None:
+            # Pierwsze uruchomienie po zmianie nazwy: przejmij dane starej integracji „zadania”
+            legacy: Store[dict[str, Any]] = Store(self.hass, STORAGE_VERSION, LEGACY_DOMAIN)
+            data = await legacy.async_load()
+            if data:
+                _LOGGER.info("Remindo: przeniesiono %s zadań z integracji „zadania”", len(data.get("tasks", [])))
+        data = data or {}
         self.tasks = {t["uid"]: Task.from_dict(t) for t in data.get("tasks", [])}
         self.history = data.get("history", [])
         self._legacy_rules: list[dict[str, Any]] = data.get("rules", [])
@@ -513,12 +521,12 @@ class TaskManager:
         return state.name if state else entity_id
 
     def _tag(self, task: Task) -> str:
-        return f"zadania_{task.uid}"
+        return f"remindo_{task.uid}"
 
     async def _send_notifications(self, task: Task) -> None:
         body = task.summary if not task.description else f"{task.summary}\n{task.description}"
         snooze = int(self.options[CONF_PHONE_SNOOZE])
-        click = self.options.get(CONF_CLICK_URL) or "/todo?entity_id=todo.zadania"
+        click = self.options.get(CONF_CLICK_URL) or "/todo?entity_id=todo.remindo"
         for target in self.phones_for(task):
             if True:
                 service = target.removeprefix("notify.")
@@ -530,7 +538,7 @@ class TaskManager:
                         "message": body,
                         "data": {
                             "tag": self._tag(task),
-                            "group": "zadania",
+                            "group": "remindo",
                             "sticky": "true",
                             "clickAction": click,
                             "url": click,

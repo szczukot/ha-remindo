@@ -12,8 +12,8 @@ from pytest_homeassistant_custom_component.common import (
 from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.util import dt as dt_util
 
-from custom_components.zadania.const import DOMAIN
-from custom_components.zadania.manager import add_months, next_occurrence
+from custom_components.remindo.const import DOMAIN
+from custom_components.remindo.manager import add_months, next_occurrence
 
 OPTS = {
     "notify_targets": ["notify.mobile_app_test"],
@@ -51,7 +51,7 @@ async def _setup(hass: HomeAssistant):
 async def test_reminder_flow(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
     entry, calls = await _setup(hass)
-    done_events = async_capture_events(hass, "zadania_done")
+    done_events = async_capture_events(hass, "remindo_done")
 
     res = await hass.services.async_call(
         DOMAIN, "add", {"summary": "Zamknij bramę", "key": "brama", "interval": 5},
@@ -70,9 +70,9 @@ async def test_reminder_flow(hass: HomeAssistant, freezer: FrozenDateTimeFactory
     await hass.async_block_till_done()
     assert len(calls["notify"]) == 1
     actions = calls["notify"][0].data["data"]["actions"]
-    assert actions[0]["action"] == f"ZADANIA_DONE_{uid}"
+    assert actions[0]["action"] == f"REMINDO_DONE_{uid}"
     assert len(calls["tts"]) == 1 and len(calls["switch"]) == 1
-    assert hass.states.get("sensor.zadania_aktywne").state == "1"
+    assert hass.states.get("sensor.remindo_active").state == "1"
 
     # po 5 min ponowne przypomnienie
     freezer.tick(timedelta(minutes=5, seconds=1))
@@ -81,7 +81,7 @@ async def test_reminder_flow(hass: HomeAssistant, freezer: FrozenDateTimeFactory
     assert len(calls["notify"]) == 2
 
     # przycisk z telefonu: odłóż
-    hass.bus.async_fire("mobile_app_notification_action", {"action": f"ZADANIA_SNOOZE_{uid}"})
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"REMINDO_SNOOZE_{uid}"})
     await hass.async_block_till_done()
     task = entry.runtime_data.tasks[uid]
     assert task.snoozes == 1
@@ -92,7 +92,7 @@ async def test_reminder_flow(hass: HomeAssistant, freezer: FrozenDateTimeFactory
     await hass.async_block_till_done()
     assert task.status == "done"
     assert len(done_events) == 1 and done_events[0].data["source"] == "auto"
-    assert hass.states.get("sensor.zadania_aktywne").state == "0"
+    assert hass.states.get("sensor.remindo_active").state == "0"
 
 
 async def test_no_tts_when_away_or_quiet(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
@@ -131,16 +131,16 @@ async def test_recurring_and_todo(hass: HomeAssistant, freezer: FrozenDateTimeFa
     # standardowa usługa todo: dodaj z samą datą, odhacz
     await hass.services.async_call(
         "todo", "add_item", {"item": "Kup mleko", "due_date": "2026-11-12"},
-        target={"entity_id": "todo.zadania"}, blocking=True,
+        target={"entity_id": "todo.remindo"}, blocking=True,
     )
     items = await hass.services.async_call(
-        "todo", "get_items", {}, target={"entity_id": "todo.zadania"}, blocking=True, return_response=True
+        "todo", "get_items", {}, target={"entity_id": "todo.remindo"}, blocking=True, return_response=True
     )
-    mleko = [i for i in items["todo.zadania"]["items"] if i["summary"] == "Kup mleko"][0]
+    mleko = [i for i in items["todo.remindo"]["items"] if i["summary"] == "Kup mleko"][0]
     assert mleko["due"].startswith("2026-11-12T09:00")
     await hass.services.async_call(
         "todo", "update_item", {"item": mleko["uid"], "status": "completed"},
-        target={"entity_id": "todo.zadania"}, blocking=True,
+        target={"entity_id": "todo.remindo"}, blocking=True,
     )
     assert entry.runtime_data.tasks[mleko["uid"]].status == "done"
 
@@ -281,18 +281,20 @@ async def test_calendar_rule(hass: HomeAssistant, freezer: FrozenDateTimeFactory
 
 
 async def test_legacy_rules_migrated(hass: HomeAssistant, hass_storage) -> None:
-    hass_storage["zadania"] = {"version": 1, "key": "zadania", "data": {"tasks": [], "history": [], "rules": [
+    hass_storage["zadania"] = {"version": 1, "key": "zadania", "data": {"tasks": [
+        {"uid": "old1", "summary": "Stare zadanie", "start": None}], "history": [], "rules": [
         {"id": "abc", "summary": "Stara reguła", "entity_id": "binary_sensor.x", "mode": "state", "value": "on"}]}}
     entry, calls = await _setup(hass)
     subs = list(entry.subentries.values())
     assert [s.title for s in subs] == ["Stara reguła"]
     assert len(entry.runtime_data.rules.rules) == 1
+    assert [t.summary for t in entry.runtime_data.tasks.values()] == ["Stare zadanie"]
 
 
 async def test_ws_survives_reload(hass: HomeAssistant, hass_ws_client) -> None:
     entry, calls = await _setup(hass)
     client = await hass_ws_client(hass)
-    await client.send_json({"id": 1, "type": "zadania/subscribe"})
+    await client.send_json({"id": 1, "type": "remindo/subscribe"})
     assert (await asyncio.wait_for(client.receive_json(), 2))["success"]
     assert (await asyncio.wait_for(client.receive_json(), 2))["event"]["tasks"] == []
     await hass.config_entries.async_reload(entry.entry_id)

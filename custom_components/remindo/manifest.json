@@ -1,15 +1,15 @@
 {
-  "domain": "zadania",
-  "name": "Zadania z przypomnieniami",
+  "domain": "remindo",
+  "name": "Remindo",
   "codeowners": ["@szczukot"],
   "config_flow": true,
   "dependencies": ["http", "frontend", "todo", "websocket_api"],
   "after_dependencies": ["mobile_app", "tts", "logbook"],
-  "documentation": "https://github.com/szczukot/ha-zadania",
+  "documentation": "https://github.com/szczukot/ha-remindo",
   "integration_type": "service",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/szczukot/ha-zadania/issues",
+  "issue_tracker": "https://github.com/szczukot/ha-remindo/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.6.0"
+  "version": "0.7.0"
 }
