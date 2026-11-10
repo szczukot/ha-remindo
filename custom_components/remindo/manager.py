@@ -19,6 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from .rules import RuleEngine
 
+from . import texts
 from .const import (
     LEGACY_DOMAIN,
     ACTION_DISMISS,
@@ -57,8 +58,15 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-_REPEAT_LABEL = {"hourly": "godz.", "daily": "dni", "weekly": "tyg.", "monthly": "mies.", "yearly": "lat"}
-_REPEAT_ONE = {"hourly": "godzinę", "daily": "dzień", "weekly": "tydzień", "monthly": "miesiąc", "yearly": "rok"}
+
+class RemindoError(ValueError):
+    """Error with a translation key (exceptions.* in strings.json)."""
+
+    def __init__(self, key: str, **placeholders: str) -> None:
+        super().__init__(key)
+        self.key = key
+        self.placeholders = placeholders
+
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -154,13 +162,10 @@ class Task:
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
-    @property
-    def repeat_label(self) -> str | None:
+    def repeat_label(self, hass: HomeAssistant | None = None) -> str | None:
         if self.repeat == REPEAT_NONE:
             return None
-        if self.repeat_every > 1:
-            return f"co {self.repeat_every} {_REPEAT_LABEL.get(self.repeat, self.repeat)}"
-        return f"co {_REPEAT_ONE.get(self.repeat, self.repeat)}"
+        return texts.repeat_label(hass, self.repeat, self.repeat_every)
 
 
 class TaskManager:
@@ -185,7 +190,7 @@ class TaskManager:
             legacy: Store[dict[str, Any]] = Store(self.hass, STORAGE_VERSION, LEGACY_DOMAIN)
             data = await legacy.async_load()
             if data:
-                _LOGGER.info("Remindo: przeniesiono %s zadań z integracji „zadania”", len(data.get("tasks", [])))
+                _LOGGER.info("Remindo: imported %s tasks from the legacy 'zadania' integration", len(data.get("tasks", [])))
         data = data or {}
         self.tasks = {t["uid"]: Task.from_dict(t) for t in data.get("tasks", [])}
         self.history = data.get("history", [])
@@ -266,7 +271,7 @@ class TaskManager:
             else:
                 parsed_d = dt_util.parse_date(start)
                 if parsed_d is None:
-                    raise ValueError(f"Nieznany format startu: {start}")
+                    raise RemindoError("invalid_start", start=str(start))
                 start = parsed_d
         if isinstance(start, datetime):
             if start.tzinfo is None:
@@ -275,7 +280,7 @@ class TaskManager:
         if isinstance(start, date):
             at = _parse_time(self.options.get(CONF_DEFAULT_TIME), "09:00:00")
             return datetime.combine(start, at, dt_util.get_default_time_zone())
-        raise ValueError(f"Nieznany format startu: {start}")
+        raise RemindoError("invalid_start", start=str(start))
 
     async def async_add(
         self,
@@ -324,7 +329,7 @@ class TaskManager:
             remind_until=_iso(self._resolve_start(remind_until)) if remind_until else None,
         )
         if task.repeat != REPEAT_NONE and start_dt is None:
-            raise ValueError("Zadanie cykliczne musi mieć start")
+            raise RemindoError("repeat_needs_start")
         self.tasks[task.uid] = task
         self._schedule(task)
         self._fire(EVENT_CREATED, task, source, context)
@@ -459,7 +464,7 @@ class TaskManager:
         try:
             await self._send_notifications(task)
         except Exception:  # noqa: BLE001 - powiadomienie nie może zatrzymać harmonogramu
-            _LOGGER.exception("Nie udało się wysłać przypomnienia o zadaniu %s", task.summary)
+            _LOGGER.exception("Failed to send reminder for task %s", task.summary)
 
     # ------------------------------------------------------------- powiadomienia
     def is_quiet(self, now: datetime | None = None) -> bool:
@@ -534,7 +539,7 @@ class TaskManager:
                     "notify",
                     service,
                     {
-                        "title": "📋 Zadanie",
+                        "title": texts.text(self.hass, "title"),
                         "message": body,
                         "data": {
                             "tag": self._tag(task),
@@ -543,9 +548,9 @@ class TaskManager:
                             "clickAction": click,
                             "url": click,
                             "actions": [
-                                {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": "✅ Zrobione"},
-                                {"action": f"{ACTION_PREFIX}_{ACTION_SNOOZE}_{task.uid}", "title": f"⏰ +{snooze} min"},
-                                {"action": f"{ACTION_PREFIX}_{ACTION_DISMISS}_{task.uid}", "title": "❌ Nie robię"},
+                                {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": texts.text(self.hass, "done")},
+                                {"action": f"{ACTION_PREFIX}_{ACTION_SNOOZE}_{task.uid}", "title": texts.text(self.hass, "snooze", minutes=snooze)},
+                                {"action": f"{ACTION_PREFIX}_{ACTION_DISMISS}_{task.uid}", "title": texts.text(self.hass, "dismiss")},
                             ],
                         },
                     },
@@ -555,7 +560,7 @@ class TaskManager:
             await self.hass.services.async_call(
                 "persistent_notification",
                 "create",
-                {"title": "📋 Zadanie", "message": body, "notification_id": self._tag(task)},
+                {"title": texts.text(self.hass, "title"), "message": body, "notification_id": self._tag(task)},
                 blocking=False,
             )
         speakers = self.speakers_for(task)
@@ -633,7 +638,7 @@ class TaskManager:
 
     def serialize(self, task: Task) -> dict[str, Any]:
         data = task.as_dict()
-        data["repeat_label"] = task.repeat_label
+        data["repeat_label"] = task.repeat_label(self.hass)
         data["phone_labels"] = [self.phone_label(p) for p in self.phones_for(task)]
         data["speaker_labels"] = [self.speaker_label(s) for s in self.speakers_for(task)]
         return data

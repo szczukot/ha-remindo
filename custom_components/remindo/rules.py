@@ -97,7 +97,7 @@ class RuleEngine:
             try:
                 rule = Rule.from_dict(raw)
             except TypeError:
-                _LOGGER.warning("Pominięto uszkodzoną regułę: %s", raw)
+                _LOGGER.warning("Skipping invalid rule: %s", raw)
                 continue
             self.rules[rule.id] = rule
         for rule in self.rules.values():
@@ -224,7 +224,7 @@ class RuleEngine:
                 return_response=True,
             )
         except Exception:  # noqa: BLE001
-            _LOGGER.exception("Nie udało się odczytać kalendarza %s", rule.entity_id)
+            _LOGGER.exception("Failed to read calendar %s", rule.entity_id)
             return
         events = (resp or {}).get(rule.entity_id, {}).get("events", [])
         names = [e.get("summary", "") for e in events]
@@ -233,8 +233,16 @@ class RuleEngine:
         if not names:
             return
         what = ", ".join(dict.fromkeys(names))
-        summary = rule.summary.replace("{wydarzenie}", what) if "{wydarzenie}" in rule.summary else f"{rule.summary}: {what}"
-        message = (rule.tts_message or summary).replace("{wydarzenie}", what)
+        tokens = ("{event}", "{wydarzenie}")
+        summary = rule.summary
+        if any(t in summary for t in tokens):
+            for t in tokens:
+                summary = summary.replace(t, what)
+        else:
+            summary = f"{summary}: {what}"
+        message = rule.tts_message or summary
+        for t in tokens:
+            message = message.replace(t, what)
         await self.manager.async_add(
             summary, description=rule.description, start="now", interval=rule.interval,
             key=rule.key, phones=rule.phones, speakers=rule.speakers, tts_message=message,

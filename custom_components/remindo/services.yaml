@@ -2,7 +2,7 @@ add:
   fields:
     summary:
       required: true
-      example: "Zamknij bramę garażową"
+      example: "Close the garage door"
       selector:
         text:
     description:
@@ -23,7 +23,7 @@ add:
           unit_of_measurement: min
           mode: box
     key:
-      example: brama
+      example: garage
       selector:
         text:
     repeat:
@@ -50,7 +50,7 @@ add:
       selector:
         boolean:
     phones:
-      example: "notify.mobile_app_mi_14t_pro"
+      example: "notify.mobile_app_phone"
       selector:
         text:
           multiple: true
@@ -92,6 +92,6 @@ close_by_key:
   fields:
     key:
       required: true
-      example: brama
+      example: garage
       selector:
         text:

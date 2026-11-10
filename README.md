@@ -1,125 +1,130 @@
-# Remindo — zadania z przypomnieniami dla Home Assistant
+# Remindo — tasks that keep reminding you, for Home Assistant
 
-[🇬🇧 English summary below](#english)
+🇬🇧 English · 🇵🇱 [Polski](README.pl.md)
 
-Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadania, które **same przypominają**, dopóki ich nie odhaczysz.
+A Home Assistant integration that turns "remember to…" into tasks that **keep reminding you** until you tick them off.
 
-- 📋 **Lista zadań** (`todo.remindo`), widoczna też w standardowej karcie To-do i kalendarzu.
-- ⏰ **Przypomnienia co X minut/godzin**, aż zareagujesz, z limitem („maks. 3 razy” albo „do 22:00”).
-- 📱 **Push na telefony** z przyciskami ✅ Zrobione / ⏰ Odłóż / ❌ Nie robię. Powiadomienie znika ze wszystkich telefonów po każdej akcji.
-- 🔊 **Komunikat głosowy** (TTS) na tablecie lub głośniku, tylko gdy ktoś jest w domu i poza ciszą nocną.
-- 🔁 **Zadania cykliczne**: co N godzin / dni / tygodni / miesięcy / lat (np. „filtr rekuperatora co 3 miesiące”).
-- 🤖 **Reguły**: zadanie dodaje się samo, gdy urządzenie osiągnie stan (zmywarka skończyła, brama otwarta 10 min, wilgotność > 70%) albo dzień przed wydarzeniem w kalendarzu (wywóz śmieci). Zamyka się samo, gdy warunek minie.
-- 🗂️ **Karta Lovelace** dostarczana z integracją: Teraz / Zaplanowane / Notatki / Zrobione / Odrzucone, odkładanie jednym kliknięciem, ręczne dodawanie zadań.
+- 📋 **Task list** (`todo.remindo`), also visible in the standard To-do card and the calendar.
+- ⏰ **Reminders every X minutes/hours** until you react, with a limit ("at most 3 times" or "until 22:00").
+- 📱 **Push to phones** with ✅ Done / ⏰ Snooze / ❌ Skip buttons. After any action the notification disappears from every phone.
+- 🔊 **Spoken announcement** (TTS) on a tablet or speaker, only when someone is home and outside quiet hours.
+- 🔁 **Recurring tasks**: every N hours / days / weeks / months / years (e.g. "HRV filter every 3 months").
+- 🤖 **Rules**: a task adds itself when a device reaches a state (dishwasher finished, garage open for 10 min, humidity > 70%) or the day before a calendar event (bin collection). It closes itself when the condition ends.
+- 🗂️ **Lovelace card** shipped with the integration: Now / Scheduled / Notes / Done / Skipped, one-tap snooze, adding tasks by hand.
+- 🌍 English and Polish.
 
-## Instalacja
+## Installation
 
-Wymaga Home Assistant **2026.11** lub nowszego.
+Requires Home Assistant **2026.11** or newer.
 
-### Marketplace (zalecane)
-1. *Ustawienia → **Marketplace*** → menu **⋮** → **Dodaj z linku**.
-2. Wklej `https://github.com/szczukot/ha-remindo` → **Remindo** → **Zainstaluj**.
-3. Zrestartuj Home Assistant, gdy pojawi się prośba w *Ustawienia → System → Naprawy*.
-4. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Remindo***.
+### Marketplace (recommended)
+1. *Settings → **Marketplace*** → **⋮** menu → **Add from link**.
+2. Paste `https://github.com/szczukot/ha-remindo` → **Remindo** → **Install**.
+3. If Home Assistant asks for a restart (*Settings → System → Repairs*), restart it.
+4. *Settings → Devices & services → Add integration → **Remindo*** (the Marketplace may open this step for you right after installing).
 
-### Ręcznie
-Skopiuj folder `custom_components/remindo` do `/config/custom_components/` (np. przez dodatek File editor albo Samba), zrestartuj HA i dodaj integrację **Remindo** jak w kroku 4.
+### Manual
+Copy `custom_components/remindo` to `/config/custom_components/` (e.g. with the File editor or Samba add-on), restart Home Assistant and add the **Remindo** integration as in step 4.
 
-## Konfiguracja
+## Configuration
 
-Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
+When adding the integration (and later under *Configure*) you set:
 
-| Opcja | Opis |
+| Option | Description |
 |---|---|
-| Telefony | encje `notify.mobile_app_*`, na które idzie push |
-| Powiadomienie w HA | dodatkowo dzwoneczek w HA |
-| Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
-| Włącz ekran tabletu | np. `switch.<tablet>_screen` z Fully Kiosk |
-| Obecność | np. `group.domownicy`; głos tylko gdy ktoś jest w domu |
-| Cisza nocna | bez komunikatów głosowych (push nadal przychodzi) |
-| Domyślny interwał, godzina dla zadań z samą datą, odłożenie z telefonu | |
-| Po kliknięciu powiadomienia otwórz | np. `/lovelace/remindo` |
+| Push notification targets | `notify.mobile_app_*` services that receive the push |
+| Persistent notification in HA | also show the bell notification in HA |
+| TTS engine, media players | where announcements are spoken |
+| Screen switch to turn on first | e.g. `switch.<tablet>_screen` from Fully Kiosk |
+| Presence entity | e.g. a group of people; speech only when someone is home |
+| Quiet hours | no spoken announcements (push still arrives) |
+| Default interval, time for date-only tasks, snooze from phone | |
+| Open when the notification is tapped | e.g. `/lovelace/remindo` |
 
-## Karta
+## Card
 
-Ładuje się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” wybierz **Remindo**:
+Loaded automatically with the integration (no resource to add). In "Add card" pick **Remindo**:
 
 ```yaml
 type: custom:remindo-card
-title: Zadania
-show_done: true    # sekcje Zrobione / Odrzucone (zwinięte)
-show_form: true    # przycisk „＋ Dodaj zadanie”
+title: Tasks       # optional, defaults to "Tasks" / "Zadania"
+show_done: true    # Done / Skipped sections (collapsed)
+show_form: true    # "＋ Add task" button
 ```
 
-Formularz dodawania:
+The add form:
 
 ```
-☑ Przypominaj  [od teraz ▾]  co [30] [minut ▾]   dopóki nie odhaczę
-               przestań przypominać: [nigdy ▾ / po … razach / o konkretnej porze]
-☐ Powtarzaj                  co [5]  [dni ▾]     po odhaczeniu wróci w następnym terminie
-Gdzie przypominać: ☑ 📱 telefon  ☑ 🔊 tablet
+☑ Remind  [from now ▾]  every [30] [minutes ▾]   until I tick it off
+          stop reminding: [never ▾ / after … times / at a specific time]
+☐ Repeat                every [5]  [days ▾]      after ticking off it comes back at the next due time
+Remind on: ☑ 📱 phone  ☑ 🔊 tablet
 ```
 
-Odznaczone „Przypominaj” = zwykła notatka na liście.
+With "Remind" unticked the task is a plain note on the list.
 
-## Reguły (zadania dodawane automatycznie)
+The card follows the language of the user's profile.
 
-*Ustawienia → Urządzenia i usługi → Remindo → **＋ Dodaj regułę***. Trzy kroki:
+## Rules (tasks added automatically)
 
-1. **Kiedy**: treść zadania, encja, warunek (*ma stan* / *powyżej* / *poniżej* / *wydarzenie w kalendarzu*).
-2. **Warunek**: wartość (lista stanów encji) i „przez co najmniej N min”; dla kalendarza: ile dni przed i o której.
-3. **Przypomnienia**: ponawianie, limit, telefony, głośniki, „zamknij samo, gdy warunek minie”.
+*Settings → Devices & services → Remindo → **＋ Add rule***. Three steps:
 
-Przykłady:
+1. **When**: task text, entity, condition (*has state* / *above* / *below* / *calendar event*).
+2. **Condition**: value (list of the entity's states) and "for at least N min"; for a calendar: how many days before and at what time.
+3. **Reminders**: repeat interval, limit, phones, speakers, "close automatically when the condition ends".
 
-| Reguła | Ustawienia |
+Examples:
+
+| Rule | Settings |
 |---|---|
-| Wypakuj zmywarkę | `sensor.zmywarka_operation_state` ma stan `finished`; zamyka się samo po otwarciu |
-| Zamknij bramę garażową | `binary_sensor.brama` ma stan `on` przez 10 min; co 10 min, maks. 6 razy |
-| Wystaw śmietnik | `calendar.odpady`, 1 dzień przed, 18:00 → „Wystaw śmietnik: Papier, Szkło” |
-| Przewietrz łazienkę | `sensor.wilgotnosc_lazienka` powyżej 70 przez 15 min |
+| Unload the dishwasher | `sensor.dishwasher_operation_state` has state `finished`; closes itself when the door opens |
+| Close the garage | `binary_sensor.garage` has state `on` for 10 min; every 10 min, at most 6 times |
+| Put the bins out | `calendar.waste`, 1 day before, 18:00 → "Put the bins out: Paper, Glass" (or put `{event}` in the text to place the event name yourself) |
+| Air the bathroom | `sensor.bathroom_humidity` above 70 for 15 min |
 
-Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie wyzwala reguły.
+Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never triggers a rule.
 
-## Usługi (do automatyzacji i skryptów)
+## Actions (for automations and scripts)
 
-| Usługa | Pola |
+| Action | Fields |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`. Zwraca `uid`. |
-| `remindo.done`, `remindo.dismiss` | `uid` albo `key` |
-| `remindo.snooze` | `uid`/`key` + `minutes` albo `until` |
-| `remindo.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła) |
+| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`. Returns `uid`. |
+| `remindo.done`, `remindo.dismiss` | `uid` or `key` |
+| `remindo.snooze` | `uid`/`key` + `minutes` or `until` |
+| `remindo.close_by_key` | `key`: closes the task (e.g. the gate was closed) |
 
 ```yaml
 action: remindo.add
 data:
-  summary: Wymień filtr w rekuperatorze
+  summary: Replace the HRV filter
   start: "2026-12-01"
   repeat: monthly
   repeat_every: 3
-  phones: [notify.mobile_app_telefon]
+  phones: [notify.mobile_app_phone]
   speakers: []
 ```
 
-## Encje i zdarzenia
+Reminders that were due while Home Assistant was down are sent about 30 seconds after it starts again.
 
-- `todo.remindo`: lista (odhaczenie w zwykłej karcie To-do zamyka zadanie i czyści powiadomienia),
-- `sensor.remindo_active`: ile zadań przypomina teraz (atrybut `tasks` z nazwami),
-- zdarzenia `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, opisane po polsku w dzienniku.
+## Entities and events
 
-## Rozwój
+- `todo.remindo`: the list (ticking off in the regular To-do card closes the task and clears notifications),
+- `sensor.remindo_active`: how many tasks are reminding right now (attribute `tasks` with their names),
+- events `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, described in the logbook.
+
+## Language
+
+Configuration screens, actions, error messages, push notifications and the logbook are available in English and Polish. Push, logbook and the To-do description use the language set in *Settings → System → General*; the card uses the user's profile language.
+
+## Development
 
 ```bash
-pip install pytest-homeassistant-custom-component
+pip install -r requirements_test.txt
 pytest
 ```
 
----
+Every push runs the tests, hassfest and repository validation on GitHub. A release is created automatically when a `vX.Y.Z` tag is pushed (it must match `version` in `manifest.json`).
 
-## English
-
-**Remindo**: tasks with reminders for Home Assistant: a to-do list whose items keep reminding you (push with action buttons, optional TTS when someone is home) until you mark them done, snooze or dismiss them. Supports recurring tasks, reminder limits, per-task phone/speaker targeting, and **rules** (Settings → Devices & services → Remindo → *Add rule*) that create tasks automatically when an entity reaches a state/threshold or before a calendar event, closing them when the condition ends. Install via *Settings → Marketplace → ⋮ → Add from link* (`https://github.com/szczukot/ha-remindo`, HA 2026.11+). Ships with a Lovelace card (`custom:remindo-card`). The UI is in Polish, with English translations for the configuration screens.
-
-## Licencja
+## License
 
 MIT

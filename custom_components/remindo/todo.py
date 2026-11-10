@@ -62,12 +62,11 @@ class RemindoTodoList(TodoListEntity):
     def _refresh(self) -> None:
         self.async_write_ha_state()
 
-    @staticmethod
-    def _to_item(task: Task) -> TodoItem:
+    def _to_item(self, task: Task) -> TodoItem:
         due_raw = task.next_reminder or task.start
         due = dt_util.as_local(dt_util.parse_datetime(due_raw)) if due_raw else None
         description = task.description
-        if label := task.repeat_label:
+        if label := task.repeat_label(self.hass):
             description = f"🔁 {label}" + (f"\n{description}" if description else "")
         return TodoItem(
             uid=task.uid,

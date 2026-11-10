@@ -51,7 +51,8 @@ from .const import (
     REPEAT_NONE,
     REPEAT_OPTIONS,
 )
-from .manager import Task, TaskManager
+from . import texts
+from .manager import RemindoError, Task, TaskManager
 
 PLATFORMS = [Platform.TODO, Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -112,7 +113,7 @@ def _manager(hass: HomeAssistant) -> TaskManager:
         return manager
     entries = hass.config_entries.async_loaded_entries(DOMAIN)
     if not entries:
-        raise ServiceValidationError("Integracja Remindo nie jest załadowana")
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="not_loaded")
     return entries[0].runtime_data
 
 
@@ -120,7 +121,9 @@ def _target(manager: TaskManager, data: dict[str, Any]) -> Task:
     task = manager.find(uid=data.get(ATTR_UID), key=data.get(ATTR_KEY))
     if task is None:
         raise ServiceValidationError(
-            f"Nie znaleziono otwartego zadania (uid={data.get(ATTR_UID)}, klucz={data.get(ATTR_KEY)})"
+            translation_domain=DOMAIN,
+            translation_key="task_not_found",
+            translation_placeholders={"uid": str(data.get(ATTR_UID)), "key": str(data.get(ATTR_KEY))},
         )
     return task
 
@@ -148,7 +151,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: RemindoConfigEntry) -> b
             ConfigSubentry(
                 data=MappingProxyType({k: v for k, v in old.items() if k != "id"}),
                 subentry_type="rule",
-                title=old.get("summary", "Reguła"),
+                title=old.get("summary", texts.text(hass, "rule")),
                 unique_id=None,
             ),
         )
@@ -205,6 +208,10 @@ def _register_services(hass: HomeAssistant) -> None:
                 source="service",
                 context=call.context,
             )
+        except RemindoError as err:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key=err.key, translation_placeholders=err.placeholders
+            ) from err
         except ValueError as err:
             raise ServiceValidationError(str(err)) from err
         return {"uid": task.uid}
@@ -227,6 +234,10 @@ def _register_services(hass: HomeAssistant) -> None:
                 source="service",
                 context=call.context,
             )
+        except RemindoError as err:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key=err.key, translation_placeholders=err.placeholders
+            ) from err
         except ValueError as err:
             raise ServiceValidationError(str(err)) from err
 

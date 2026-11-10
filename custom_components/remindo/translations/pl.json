@@ -269,5 +269,27 @@
         "reconfigure_successful": "Reguła zapisana."
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "active": {
+        "name": "Remindo aktywne",
+        "unit_of_measurement": "zadań"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "Integracja Remindo nie jest załadowana"
+    },
+    "task_not_found": {
+      "message": "Nie znaleziono otwartego zadania (uid={uid}, klucz={key})"
+    },
+    "invalid_start": {
+      "message": "Nieznany format startu: {start}. Użyj now, daty (2026-12-01) albo daty z godziną (2026-12-01T18:00)."
+    },
+    "repeat_needs_start": {
+      "message": "Zadanie cykliczne musi mieć termin startu"
+    }
   }
 }

@@ -269,5 +269,27 @@
         "reconfigure_successful": "Rule saved."
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "active": {
+        "name": "Remindo active",
+        "unit_of_measurement": "tasks"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "The Remindo integration is not loaded"
+    },
+    "task_not_found": {
+      "message": "No open task found (uid={uid}, key={key})"
+    },
+    "invalid_start": {
+      "message": "Unknown start format: {start}. Use now, a date (2026-12-01) or a date with time (2026-12-01T18:00)."
+    },
+    "repeat_needs_start": {
+      "message": "A recurring task needs a start date"
+    }
   }
 }

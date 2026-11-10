@@ -20,10 +20,9 @@ class ActiveTasksSensor(SensorEntity):
     """Ile zadań już przypomina (do zrobienia teraz)."""
 
     _attr_has_entity_name = True
-    _attr_name = "Remindo active"
+    _attr_translation_key = "active"
     _attr_icon = "mdi:bell-ring-outline"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = "zadań"
 
     def __init__(self, manager: TaskManager, entry: ConfigEntry) -> None:
         self._manager = manager

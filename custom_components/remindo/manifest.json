@@ -1,15 +1,26 @@
 {
   "domain": "remindo",
   "name": "Remindo",
-  "codeowners": ["@szczukot"],
+  "after_dependencies": [
+    "mobile_app",
+    "tts",
+    "logbook"
+  ],
+  "codeowners": [
+    "@szczukot"
+  ],
   "config_flow": true,
-  "dependencies": ["http", "frontend", "todo", "websocket_api"],
-  "after_dependencies": ["mobile_app", "tts", "logbook"],
+  "dependencies": [
+    "http",
+    "frontend",
+    "todo",
+    "websocket_api"
+  ],
   "documentation": "https://github.com/szczukot/ha-remindo",
   "integration_type": "service",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/szczukot/ha-remindo/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.7.1"
+  "version": "0.8.0"
 }
