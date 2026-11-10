@@ -1,30 +1,46 @@
-# Zadania z przypomnieniami (Home Assistant)
+# Zadania z przypomnieniami — Home Assistant
 
-Lista zadań (encja `todo.zadania`), do której zadania dodają automatyzacje. Każde zadanie przypomina od podanego startu, co zadany interwał, dopóki nie odpowiesz: ✅ zrobione, ⏰ odłóż, ❌ nie robię.
+[🇬🇧 English summary below](#english)
+
+Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadania, które **same przypominają**, dopóki ich nie odhaczysz.
+
+- 📋 **Lista zadań** (`todo.zadania`), widoczna też w standardowej karcie To-do i kalendarzu.
+- ⏰ **Przypomnienia co X minut/godzin**, aż zareagujesz, z limitem („maks. 3 razy” albo „do 22:00”).
+- 📱 **Push na telefony** z przyciskami ✅ Zrobione / ⏰ Odłóż / ❌ Nie robię. Powiadomienie znika ze wszystkich telefonów po każdej akcji.
+- 🔊 **Komunikat głosowy** (TTS) na tablecie lub głośniku, tylko gdy ktoś jest w domu i poza ciszą nocną.
+- 🔁 **Zadania cykliczne**: co N godzin / dni / tygodni / miesięcy / lat (np. „filtr rekuperatora co 3 miesiące”).
+- 🤖 **Reguły**: zadanie dodaje się samo, gdy urządzenie osiągnie stan (zmywarka skończyła, brama otwarta 10 min, wilgotność > 70%) albo dzień przed wydarzeniem w kalendarzu (wywóz śmieci). Zamyka się samo, gdy warunek minie.
+- 🗂️ **Karta Lovelace** dostarczana z integracją: Teraz / Zaplanowane / Notatki / Zrobione / Odrzucone, odkładanie jednym kliknięciem, ręczne dodawanie zadań.
 
 ## Instalacja
-Skopiuj `custom_components/zadania` do `/config/custom_components/`, zrestartuj HA, dodaj integrację **Zadania z przypomnieniami** w *Ustawienia → Urządzenia i usługi*.
 
-## Usługi
-| Usługa | Pola |
+### Ręcznie
+1. Skopiuj folder `custom_components/zadania` do `/config/custom_components/` (np. przez dodatek File editor albo Samba).
+2. Zrestartuj Home Assistant.
+3. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Zadania z przypomnieniami***.
+
+### HACS (repozytorium niestandardowe)
+*HACS → ⋮ → Niestandardowe repozytoria* → adres tego repozytorium, kategoria **Integracja**.
+
+## Konfiguracja
+
+Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
+
+| Opcja | Opis |
 |---|---|
-| `zadania.add` | `summary`, `description`, `start` (`now` / data / data i godzina / puste = notatka), `interval` (min, 0 = raz), `key`, `repeat` (`none`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `tts`, `tts_message`, `push`. Zwraca `uid`. |
-| `zadania.done` / `zadania.dismiss` | `uid` albo `key` |
-| `zadania.snooze` | `uid`/`key` + `minutes` albo `until` |
-| `zadania.close_by_key` | `key` (cicho zamyka, np. brama się zamknęła) |
-
-Zadanie cykliczne po zrobieniu (albo „nie robię”) wraca w następnym terminie.
-
-## Przypomnienia
-- push na wybrane telefony z przyciskami (znikają po każdej akcji, także po odhaczeniu na zwykłej liście To-do),
-- powiadomienie w HA,
-- komunikat TTS na tablecie/głośniku tylko gdy ktoś jest w domu i poza ciszą nocną.
-
-## Zdarzenia
-`zadania_created`, `zadania_reminded`, `zadania_done`, `zadania_snoozed`, `zadania_dismissed` (widoczne w dzienniku).
+| Telefony | encje `notify.mobile_app_*`, na które idzie push |
+| Powiadomienie w HA | dodatkowo dzwoneczek w HA |
+| Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
+| Włącz ekran tabletu | np. `switch.<tablet>_screen` z Fully Kiosk |
+| Obecność | np. `group.domownicy`; głos tylko gdy ktoś jest w domu |
+| Cisza nocna | bez komunikatów głosowych (push nadal przychodzi) |
+| Domyślny interwał, godzina dla zadań z samą datą, odłożenie z telefonu | |
+| Po kliknięciu powiadomienia otwórz | np. `/dashboard-tablet/zadania` |
 
 ## Karta
-Ładuje się automatycznie z integracją (bez dodawania zasobu). Lista zadań z przyciskami ✓ / odłóż / ✕ i ręcznym dodawaniem.
+
+Ładuje się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” wybierz **Zadania**:
+
 ```yaml
 type: custom:zadania-card
 title: Zadania
@@ -32,39 +48,75 @@ show_done: true    # sekcje Zrobione / Odrzucone (zwinięte)
 show_form: true    # przycisk „＋ Dodaj zadanie”
 ```
 
+Formularz dodawania:
+
+```
+☑ Przypominaj  [od teraz ▾]  co [30] [minut ▾]   dopóki nie odhaczę
+               przestań przypominać: [nigdy ▾ / po … razach / o konkretnej porze]
+☐ Powtarzaj                  co [5]  [dni ▾]     po odhaczeniu wróci w następnym terminie
+Gdzie przypominać: ☑ 📱 telefon  ☑ 🔊 tablet
+```
+
+Odznaczone „Przypominaj” = zwykła notatka na liście.
+
 ## Reguły (zadania dodawane automatycznie)
-*Ustawienia → Urządzenia i usługi → Zadania → **＋ Dodaj regułę***. Formularz w trzech krokach:
-1. treść zadania, encja, warunek (ma stan / powyżej / poniżej / wydarzenie w kalendarzu),
-2. wartość i „przez co najmniej N min” (albo: ile dni przed wydarzeniem, o której),
-3. przypomnienia: ponawianie, limit, telefony, głośniki, zamykanie samo.
 
-Każdą regułę można potem edytować lub usunąć na stronie integracji.
+*Ustawienia → Urządzenia i usługi → Zadania → **＋ Dodaj regułę***. Trzy kroki:
 
-## Przykład: brama
+1. **Kiedy**: treść zadania, encja, warunek (*ma stan* / *powyżej* / *poniżej* / *wydarzenie w kalendarzu*).
+2. **Warunek**: wartość (lista stanów encji) i „przez co najmniej N min”; dla kalendarza: ile dni przed i o której.
+3. **Przypomnienia**: ponawianie, limit, telefony, głośniki, „zamknij samo, gdy warunek minie”.
+
+Przykłady:
+
+| Reguła | Ustawienia |
+|---|---|
+| Wypakuj zmywarkę | `sensor.zmywarka_operation_state` ma stan `finished`; zamyka się samo po otwarciu |
+| Zamknij bramę garażową | `binary_sensor.brama` ma stan `on` przez 10 min; co 10 min, maks. 6 razy |
+| Wystaw śmietnik | `calendar.odpady`, 1 dzień przed, 18:00 → „Wystaw śmietnik: Papier, Szkło” |
+| Przewietrz łazienkę | `sensor.wilgotnosc_lazienka` powyżej 70 przez 15 min |
+
+Przejście przez `unavailable` / `unknown` (restart HA, zanik Wi-Fi) nigdy nie wyzwala reguły.
+
+## Usługi (do automatyzacji i skryptów)
+
+| Usługa | Pola |
+|---|---|
+| `zadania.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`. Zwraca `uid`. |
+| `zadania.done`, `zadania.dismiss` | `uid` albo `key` |
+| `zadania.snooze` | `uid`/`key` + `minutes` albo `until` |
+| `zadania.close_by_key` | `key`: zamyka zadanie (np. brama się zamknęła) |
+
 ```yaml
-triggers:
-  - trigger: state
-    entity_id: binary_sensor.brama
-    to: "on"
-    for: "00:10:00"
-    id: otwarta
-  - trigger: state
-    entity_id: binary_sensor.brama
-    to: "off"
-    id: zamknieta
-actions:
-  - choose:
-      - conditions: [{condition: trigger, id: otwarta}]
-        sequence:
-          - action: zadania.add
-            data: {summary: "Zamknij bramę garażową", key: brama, interval: 10}
-    default:
-      - action: zadania.close_by_key
-        data: {key: brama}
+action: zadania.add
+data:
+  summary: Wymień filtr w rekuperatorze
+  start: "2026-12-01"
+  repeat: monthly
+  repeat_every: 3
+  phones: [notify.mobile_app_telefon]
+  speakers: []
 ```
 
-## Testy
-```
+## Encje i zdarzenia
+
+- `todo.zadania`: lista (odhaczenie w zwykłej karcie To-do zamyka zadanie i czyści powiadomienia),
+- `sensor.zadania_aktywne`: ile zadań przypomina teraz (atrybut `zadania` z nazwami),
+- zdarzenia `zadania_created`, `zadania_reminded`, `zadania_done`, `zadania_snoozed`, `zadania_dismissed`, opisane po polsku w dzienniku.
+
+## Rozwój
+
+```bash
 pip install pytest-homeassistant-custom-component
 pytest
 ```
+
+---
+
+## English
+
+**Tasks with reminders** for Home Assistant: a to-do list whose items keep reminding you (push with action buttons, optional TTS when someone is home) until you mark them done, snooze or dismiss them. Supports recurring tasks, reminder limits, per-task phone/speaker targeting, and **rules** (Settings → Devices & services → Tasks → *Add rule*) that create tasks automatically when an entity reaches a state/threshold or before a calendar event, closing them when the condition ends. Ships with a Lovelace card (`custom:zadania-card`). The UI is in Polish, with English translations for the configuration screens.
+
+## Licencja
+
+MIT
