@@ -184,23 +184,35 @@ def test_hourly() -> None:
     assert next_occurrence(d, "hourly", 5, d + timedelta(hours=6)) == d + timedelta(hours=10)
 
 
+async def _add_rule(hass: HomeAssistant, entry, data: dict) -> str:
+    """Dodaje regułę przez prawdziwy formularz (podwpis) — tak jak użytkownik w UI."""
+    flow = await hass.config_entries.subentries.async_init((entry.entry_id, "rule"), context={"source": "user"})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": data["summary"], "entity_id": data["entity_id"], "mode": data.get("mode", "state")}
+    )
+    cond = {k: data[k] for k in ("value", "for_minutes", "days_before", "at_time", "contains") if k in data}
+    if not data["entity_id"].startswith("calendar."):
+        cond.setdefault("for_minutes", 0)
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], cond)
+    assert flow["step_id"] == "notify", flow
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"remind": True, "interval": 30, "auto_close": data.get("auto_close", True)}
+    )
+    assert flow["type"] == "create_entry", flow
+    await hass.async_block_till_done()
+    return next(s.subentry_id for s in entry.subentries.values() if s.title == data["summary"])
+
+
 async def test_rules(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-09 15:00:00+01:00")
     entry, calls = await _setup(hass)
-    manager = entry.runtime_data
     hass.states.async_set("binary_sensor.brama", "off")
     hass.states.async_set("sensor.zmywarka", "run")
-    gate = await hass.services.async_call(
-        DOMAIN, "rule_save",
-        {"summary": "Zamknij bramę", "entity_id": "binary_sensor.brama", "value": "on", "for_minutes": 10},
-        blocking=True, return_response=True,
-    )
-    await hass.services.async_call(
-        DOMAIN, "rule_save",
-        {"summary": "Wypakuj zmywarkę", "entity_id": "sensor.zmywarka", "value": "finished"},
-        blocking=True, return_response=True,
-    )
-    # zmywarka: od razu; restart (unavailable -> finished) nie dubluje
+    gate = await _add_rule(hass, entry, {"summary": "Zamknij bramę", "entity_id": "binary_sensor.brama", "value": "on", "for_minutes": 10})
+    await _add_rule(hass, entry, {"summary": "Wypakuj zmywarkę", "entity_id": "sensor.zmywarka", "value": "finished"})
+    manager = entry.runtime_data
+    assert len(manager.rules.rules) == 2
+
     hass.states.async_set("sensor.zmywarka", "finished")
     await hass.async_block_till_done()
     assert [t.summary for t in manager.open_tasks()] == ["Wypakuj zmywarkę"]
@@ -208,12 +220,10 @@ async def test_rules(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> Non
     hass.states.async_set("sensor.zmywarka", "finished")
     await hass.async_block_till_done()
     assert len(manager.open_tasks()) == 1
-    # otwarcie drzwi zmywarki zamyka zadanie
     hass.states.async_set("sensor.zmywarka", "ready")
     await hass.async_block_till_done()
     assert manager.open_tasks() == []
 
-    # brama: dopiero po 10 min
     hass.states.async_set("binary_sensor.brama", "on")
     await hass.async_block_till_done()
     freezer.tick(timedelta(minutes=5))
@@ -223,57 +233,60 @@ async def test_rules(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> Non
     freezer.tick(timedelta(minutes=6))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    assert [t.key for t in manager.open_tasks()] == [f"rule_{gate['id']}"]
+    assert [t.key for t in manager.open_tasks()] == [f"rule_{gate}"]
     hass.states.async_set("binary_sensor.brama", "off")
     await hass.async_block_till_done()
     assert manager.open_tasks() == []
 
-    # krótkie otwarcie nie tworzy zadania
-    hass.states.async_set("binary_sensor.brama", "on")
+    # edycja (reconfigure) zmienia treść
+    flow = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "rule"), context={"source": "reconfigure", "subentry_id": gate}
+    )
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Brama!", "entity_id": "binary_sensor.brama", "mode": "state"}
+    )
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": "on", "for_minutes": 1})
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"remind": False, "auto_close": True})
+    assert flow["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
-    freezer.tick(timedelta(minutes=2))
-    async_fire_time_changed(hass)
-    hass.states.async_set("binary_sensor.brama", "off")
-    await hass.async_block_till_done()
-    freezer.tick(timedelta(minutes=10))
-    async_fire_time_changed(hass)
-    await hass.async_block_till_done()
-    assert manager.open_tasks() == []
+    rule = entry.runtime_data.rules.rules[gate]
+    assert rule.summary == "Brama!" and rule.interval == 0 and rule.for_minutes == 1
 
-    # reguły przeżywają przeładowanie
-    await hass.services.async_call(DOMAIN, "rule_save", {"id": gate["id"], "summary": "Brama!", "entity_id": "binary_sensor.brama", "value": "on", "enabled": False}, blocking=True)
-    await hass.config_entries.async_reload(entry.entry_id)
+    # usunięcie
+    hass.config_entries.async_remove_subentry(entry, gate)
     await hass.async_block_till_done()
-    rules = entry.runtime_data.rules.rules
-    assert len(rules) == 2 and rules[gate["id"]].summary == "Brama!" and not rules[gate["id"]].enabled
-    await hass.services.async_call(DOMAIN, "rule_delete", {"id": gate["id"]}, blocking=True)
-    assert len(entry.runtime_data.rules.rules) == 1
+    assert list(entry.runtime_data.rules.rules) != [gate] and len(entry.runtime_data.rules.rules) == 1
 
 
 async def test_calendar_rule(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     freezer.move_to("2026-11-12 17:59:50+01:00")
     entry, calls = await _setup(hass)
-    manager = entry.runtime_data
 
     async def get_events(call):
         assert call.data["start_date_time"].startswith("2026-11-13T00:00")
         return {"calendar.smieci": {"events": [{"summary": "Odpady biodegradowalne"}, {"summary": "Papier i tektura"}]}}
 
     hass.services.async_register("calendar", "get_events", get_events, supports_response=SupportsResponse.ONLY)
-    await hass.services.async_call(
-        DOMAIN, "rule_save",
-        {"summary": "Wystaw śmietnik", "entity_id": "calendar.smieci", "mode": "calendar", "days_before": 1, "at_time": "18:00"},
-        blocking=True,
-    )
+    hass.states.async_set("calendar.smieci", "off")
+    await _add_rule(hass, entry, {"summary": "Wystaw śmietnik", "entity_id": "calendar.smieci", "days_before": 1, "at_time": "18:00:00"})
+    manager = entry.runtime_data
     freezer.tick(timedelta(seconds=11))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert [t.summary for t in manager.open_tasks()] == ["Wystaw śmietnik: Odpady biodegradowalne, Papier i tektura"]
-    # dzień po wywozie zamyka się samo
     freezer.move_to("2026-11-14 00:00:05+01:00")
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert manager.open_tasks() == []
+
+
+async def test_legacy_rules_migrated(hass: HomeAssistant, hass_storage) -> None:
+    hass_storage["zadania"] = {"version": 1, "key": "zadania", "data": {"tasks": [], "history": [], "rules": [
+        {"id": "abc", "summary": "Stara reguła", "entity_id": "binary_sensor.x", "mode": "state", "value": "on"}]}}
+    entry, calls = await _setup(hass)
+    subs = list(entry.subentries.values())
+    assert [s.title for s in subs] == ["Stara reguła"]
+    assert len(entry.runtime_data.rules.rules) == 1
 
 
 async def test_ws_survives_reload(hass: HomeAssistant, hass_ws_client) -> None:

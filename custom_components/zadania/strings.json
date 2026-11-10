@@ -177,58 +177,6 @@
           "description": "Key given when adding (e.g. gate)."
         }
       }
-    },
-    "rule_save": {
-      "name": "Save rule",
-      "description": "Creates or updates an automatic task rule.",
-      "fields": {
-        "id": {
-          "name": "ID",
-          "description": "Empty = new rule."
-        },
-        "summary": {
-          "name": "Task summary",
-          "description": "What to do."
-        },
-        "entity_id": {
-          "name": "Entity",
-          "description": "Entity to watch."
-        },
-        "mode": {
-          "name": "Condition",
-          "description": "state = equals, above, below."
-        },
-        "value": {
-          "name": "Value",
-          "description": "State or numeric threshold."
-        },
-        "for_minutes": {
-          "name": "For minutes",
-          "description": "How long the condition must hold."
-        },
-        "auto_close": {
-          "name": "Auto close",
-          "description": "Close the task when the condition ends."
-        },
-        "enabled": {
-          "name": "Enabled",
-          "description": ""
-        },
-        "interval": {
-          "name": "Interval (min)",
-          "description": "Empty = default."
-        }
-      }
-    },
-    "rule_delete": {
-      "name": "Delete rule",
-      "description": "Deletes a rule.",
-      "fields": {
-        "id": {
-          "name": "ID",
-          "description": ""
-        }
-      }
     }
   },
   "selector": {
@@ -240,6 +188,92 @@
         "weekly": "Weekly",
         "monthly": "Monthly",
         "yearly": "Yearly"
+      }
+    },
+    "rule_mode": {
+      "options": {
+        "state": "Has a state",
+        "above": "Is above",
+        "below": "Is below",
+        "calendar": "Has a calendar event"
+      }
+    }
+  },
+  "config_subentries": {
+    "rule": {
+      "entry_type": "Rule",
+      "initiate_flow": {
+        "user": "Add rule",
+        "reconfigure": "Edit rule"
+      },
+      "step": {
+        "trigger": {
+          "title": "New rule — when?",
+          "description": "A task is added automatically when the entity meets the condition.",
+          "data": {
+            "summary": "Task summary",
+            "entity_id": "Entity (device, sensor, calendar)",
+            "mode": "Condition"
+          },
+          "data_description": {
+            "summary": "E.g. \"Unload the dishwasher\". For calendars the event names are appended."
+          }
+        },
+        "condition_state": {
+          "title": "Condition",
+          "description": "Entity: {entity} (now: {current})",
+          "data": {
+            "value": "Has state",
+            "for_minutes": "For at least (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = immediately."
+          }
+        },
+        "condition_number": {
+          "title": "Condition",
+          "description": "Entity: {entity} (now: {current})",
+          "data": {
+            "value": "Threshold",
+            "for_minutes": "For at least (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = immediately."
+          }
+        },
+        "condition_calendar": {
+          "title": "Calendar",
+          "description": "Calendar: {entity}",
+          "data": {
+            "days_before": "Days before the event",
+            "at_time": "At",
+            "contains": "Only events containing (optional)"
+          },
+          "data_description": {
+            "days_before": "1 = the day before, 0 = on the day.",
+            "contains": "Empty = all events."
+          }
+        },
+        "notify": {
+          "title": "Reminders",
+          "data": {
+            "remind": "Repeat reminder",
+            "interval": "Every (min)",
+            "max_reminders": "At most times",
+            "phones": "Phones (push)",
+            "speakers": "Speakers (announcement)",
+            "auto_close": "Close the task when the condition ends"
+          },
+          "data_description": {
+            "remind": "Off = remind once.",
+            "max_reminders": "Empty = until done.",
+            "phones": "None selected = list only.",
+            "auto_close": "For calendars: after the event day."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Rule saved."
       }
     }
   }

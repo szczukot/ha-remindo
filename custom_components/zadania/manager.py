@@ -174,13 +174,14 @@ class TaskManager:
         self._timers: dict[str, CALLBACK_TYPE] = {}
         self._listeners: list[Callable[[], None]] = []
         self.rules = RuleEngine(self)
+        self._legacy_rules: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------ magazyn
     async def async_load(self) -> None:
         data = await self._store.async_load() or {}
         self.tasks = {t["uid"]: Task.from_dict(t) for t in data.get("tasks", [])}
         self.history = data.get("history", [])
-        self.rules.load(data.get("rules", []))
+        self._legacy_rules: list[dict[str, Any]] = data.get("rules", [])
         now = dt_util.now()
         for task in self.tasks.values():
             if task.status == STATUS_OPEN and task.next_reminder:
@@ -201,7 +202,6 @@ class TaskManager:
             lambda: {
                 "tasks": [t.as_dict() for t in self.tasks.values()],
                 "history": self.history,
-                "rules": self.rules.dump(),
             },
             1,
         )
@@ -220,19 +220,16 @@ class TaskManager:
         self._timers.clear()
         self.rules.stop()
         await self._store.async_save(
-            {"tasks": [t.as_dict() for t in self.tasks.values()], "history": self.history,
-             "rules": self.rules.dump()}
+            {"tasks": [t.as_dict() for t in self.tasks.values()], "history": self.history}
         )
 
     # -------------------------------------------------------------------- reguły
-    async def async_rule_save(self, data: dict[str, Any]) -> dict[str, Any]:
-        rule = self.rules.save(data)
-        self._save()
-        return rule.as_dict()
-
-    async def async_rule_delete(self, rule_id: str) -> None:
-        self.rules.delete(rule_id)
-        self._save()
+    def take_legacy_rules(self) -> list[dict[str, Any]]:
+        """Reguły zapisane przez starsze wersje — do przeniesienia do ustawień integracji."""
+        rules, self._legacy_rules = self._legacy_rules, []
+        if rules:
+            self._save()
+        return rules
 
     # ---------------------------------------------------------------- wyszukiwanie
     def open_tasks(self) -> list[Task]:

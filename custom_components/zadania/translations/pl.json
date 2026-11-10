@@ -177,58 +177,6 @@
           "description": "Klucz nadany przy dodawaniu (np. brama)."
         }
       }
-    },
-    "rule_save": {
-      "name": "Zapisz regułę",
-      "description": "Tworzy lub zmienia regułę automatycznego zadania.",
-      "fields": {
-        "id": {
-          "name": "ID",
-          "description": "Puste = nowa reguła."
-        },
-        "summary": {
-          "name": "Treść zadania",
-          "description": "Co trzeba zrobić."
-        },
-        "entity_id": {
-          "name": "Encja",
-          "description": "Którą encję obserwować."
-        },
-        "mode": {
-          "name": "Warunek",
-          "description": "state = stan równy, above = powyżej, below = poniżej."
-        },
-        "value": {
-          "name": "Wartość",
-          "description": "Stan albo próg liczbowy."
-        },
-        "for_minutes": {
-          "name": "Przez ile minut",
-          "description": "Jak długo warunek musi trwać."
-        },
-        "auto_close": {
-          "name": "Zamknij samo",
-          "description": "Zamknij zadanie, gdy warunek przestanie być spełniony."
-        },
-        "enabled": {
-          "name": "Włączona",
-          "description": ""
-        },
-        "interval": {
-          "name": "Co ile minut",
-          "description": "Puste = domyślnie."
-        }
-      }
-    },
-    "rule_delete": {
-      "name": "Usuń regułę",
-      "description": "Usuwa regułę.",
-      "fields": {
-        "id": {
-          "name": "ID",
-          "description": ""
-        }
-      }
     }
   },
   "selector": {
@@ -240,6 +188,92 @@
         "weekly": "Co tydzień",
         "monthly": "Co miesiąc",
         "yearly": "Co rok"
+      }
+    },
+    "rule_mode": {
+      "options": {
+        "state": "Ma określony stan",
+        "above": "Jest powyżej progu",
+        "below": "Jest poniżej progu",
+        "calendar": "Ma wydarzenie w kalendarzu"
+      }
+    }
+  },
+  "config_subentries": {
+    "rule": {
+      "entry_type": "Reguła",
+      "initiate_flow": {
+        "user": "Dodaj regułę",
+        "reconfigure": "Edytuj regułę"
+      },
+      "step": {
+        "trigger": {
+          "title": "Nowa reguła — kiedy?",
+          "description": "Zadanie zostanie dodane automatycznie, gdy wybrana encja spełni warunek.",
+          "data": {
+            "summary": "Treść zadania",
+            "entity_id": "Encja (urządzenie, czujnik, kalendarz)",
+            "mode": "Warunek"
+          },
+          "data_description": {
+            "summary": "Np. „Wypakuj zmywarkę”. Przy kalendarzu nazwy wydarzeń (np. „Szkło”) dopiszą się na końcu."
+          }
+        },
+        "condition_state": {
+          "title": "Warunek",
+          "description": "Encja: {entity} (teraz: {current})",
+          "data": {
+            "value": "Ma stan",
+            "for_minutes": "Przez co najmniej (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = od razu. Np. brama otwarta dłużej niż 10 min."
+          }
+        },
+        "condition_number": {
+          "title": "Warunek",
+          "description": "Encja: {entity} (teraz: {current})",
+          "data": {
+            "value": "Próg",
+            "for_minutes": "Przez co najmniej (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = od razu."
+          }
+        },
+        "condition_calendar": {
+          "title": "Kalendarz",
+          "description": "Kalendarz: {entity}",
+          "data": {
+            "days_before": "Ile dni przed wydarzeniem",
+            "at_time": "O której godzinie",
+            "contains": "Tylko wydarzenia zawierające (opcjonalnie)"
+          },
+          "data_description": {
+            "days_before": "1 = dzień wcześniej, 0 = w dniu wydarzenia.",
+            "contains": "Np. „Szkło”. Puste = wszystkie wydarzenia."
+          }
+        },
+        "notify": {
+          "title": "Przypomnienia",
+          "data": {
+            "remind": "Ponawiaj przypomnienie",
+            "interval": "Co ile minut",
+            "max_reminders": "Maksymalnie razy",
+            "phones": "Telefony (push)",
+            "speakers": "Głośniki / tablety (komunikat)",
+            "auto_close": "Zamknij zadanie samo, gdy warunek minie"
+          },
+          "data_description": {
+            "remind": "Wyłączone = przypomni tylko raz.",
+            "max_reminders": "Puste = aż odhaczysz.",
+            "phones": "Nic nie zaznaczone = bez powiadomień, zadanie tylko na liście.",
+            "auto_close": "Np. brama zamknięta, zmywarka otwarta. Przy kalendarzu: po dniu wydarzenia."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Reguła zapisana."
       }
     }
   }

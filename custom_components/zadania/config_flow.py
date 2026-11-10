@@ -6,7 +6,14 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    ConfigSubentryFlow,
+    OptionsFlow,
+    SubentryFlowResult,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector
 
@@ -102,6 +109,14 @@ class ZadaniaConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         return ZadaniaOptionsFlow()
 
+    @classmethod
+    @callback
+    def async_get_supported_subentry_types(
+        cls, config_entry: ConfigEntry
+    ) -> dict[str, type[ConfigSubentryFlow]]:
+        """Reguły dodaje się na stronie integracji: „＋ Dodaj regułę”."""
+        return {RULE: RuleSubentryFlow}
+
 
 class ZadaniaOptionsFlow(OptionsFlow):
     """Zmiana ustawień."""
@@ -112,3 +127,159 @@ class ZadaniaOptionsFlow(OptionsFlow):
         return self.async_show_form(
             step_id="init", data_schema=_schema(self.hass, dict(self.config_entry.options))
         )
+
+
+# ---------------------------------------------------------------------- reguły
+
+RULE = "rule"
+_MODES = ["state", "above", "below", "calendar"]
+
+
+def _num(value: Any, default: Any = None) -> Any:
+    if value in (None, ""):
+        return default
+    number = float(value)
+    return int(number) if number.is_integer() else number
+
+
+class RuleSubentryFlow(ConfigSubentryFlow):
+    """Reguła: gdy encja spełni warunek, dodaj zadanie. Trzy kroki."""
+
+    def __init__(self) -> None:
+        self._data: dict[str, Any] = {}
+
+    # --- dodawanie
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self.async_step_trigger(user_input)
+
+    # --- edycja
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        if not self._data:
+            self._data = dict(self._get_reconfigure_subentry().data)
+        return await self.async_step_trigger(user_input)
+
+    def _suggest(self, schema: dict) -> vol.Schema:
+        return self.add_suggested_values_to_schema(vol.Schema(schema), self._data)
+
+    async def async_step_trigger(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        if user_input is not None:
+            if user_input["entity_id"].startswith("calendar."):
+                user_input["mode"] = "calendar"
+            self._data.update(user_input)
+            return await self.async_step_condition()
+        schema = {
+            vol.Required("summary"): selector.TextSelector(),
+            vol.Required("entity_id"): selector.EntitySelector(),
+            vol.Required("mode", default=self._data.get("mode", "state")): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=_MODES, translation_key="rule_mode",
+                                              mode=selector.SelectSelectorMode.LIST)
+            ),
+        }
+        return self.async_show_form(step_id="trigger", data_schema=self._suggest(schema))
+
+    async def async_step_condition(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        mode = self._data["mode"]
+        if user_input is not None:
+            if mode in ("above", "below"):
+                user_input["value"] = str(_num(user_input["value"]))
+            for key in ("for_minutes", "days_before"):
+                if key in user_input:
+                    user_input[key] = int(user_input[key])
+            if mode == "calendar":
+                user_input.setdefault("contains", None)
+                user_input["value"] = ""
+                user_input["at_time"] = str(user_input["at_time"])[:5]
+            self._data.update(user_input)
+            return await self.async_step_notify()
+        entity = self._data["entity_id"]
+        minutes = selector.NumberSelector(
+            selector.NumberSelectorConfig(min=0, max=10080, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+        )
+        if mode == "state":
+            schema = {
+                vol.Required("value"): selector.StateSelector(selector.StateSelectorConfig(entity_id=entity)),
+                vol.Required("for_minutes", default=self._data.get("for_minutes", 0)): minutes,
+            }
+        elif mode in ("above", "below"):
+            schema = {
+                vol.Required("value"): selector.NumberSelector(
+                    selector.NumberSelectorConfig(mode=selector.NumberSelectorMode.BOX, step="any")
+                ),
+                vol.Required("for_minutes", default=self._data.get("for_minutes", 0)): minutes,
+            }
+        else:
+            schema = {
+                vol.Required("days_before", default=self._data.get("days_before", 1)): selector.NumberSelector(
+                    selector.NumberSelectorConfig(min=0, max=30, mode=selector.NumberSelectorMode.BOX)
+                ),
+                vol.Required("at_time", default=self._data.get("at_time", "18:00")): selector.TimeSelector(),
+                vol.Optional("contains"): selector.TextSelector(),
+            }
+        state = self.hass.states.get(entity)
+        return self.async_show_form(
+            step_id=f"condition_{'state' if mode == 'state' else 'number' if mode != 'calendar' else 'calendar'}",
+            data_schema=self._suggest(schema),
+            description_placeholders={
+                "entity": state.name if state else entity,
+                "current": state.state if state else "?",
+            },
+        )
+
+    async def async_step_condition_state(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self.async_step_condition(user_input)
+
+    async def async_step_condition_number(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self.async_step_condition(user_input)
+
+    async def async_step_condition_calendar(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self.async_step_condition(user_input)
+
+    async def async_step_notify(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        options = {**DEFAULTS, **self._get_entry().options}
+        phones = [p if p.startswith("notify.") else f"notify.{p}" for p in options.get(CONF_NOTIFY) or []]
+        speakers = options.get(CONF_MEDIA_PLAYER) or []
+        speakers = [speakers] if isinstance(speakers, str) else list(speakers)
+        if user_input is not None:
+            data = {**self._data, **user_input}
+            data["interval"] = int(data.get("interval") or 0) if data.get("remind", True) else 0
+            data["max_reminders"] = int(data["max_reminders"]) if data.get("max_reminders") else None
+            data.pop("remind", None)
+            data.setdefault("phones", [])
+            data.setdefault("speakers", [])
+            data["enabled"] = True
+            title = data["summary"]
+            if self.source == "reconfigure":
+                return self.async_update_and_abort(
+                    self._get_entry(), self._get_reconfigure_subentry(), data=data, title=title
+                )
+            return self.async_create_entry(title=title, data=data)
+
+        def labels(values: list[str], domain: str) -> list[selector.SelectOptionDict]:
+            out = []
+            for value in values:
+                state = self.hass.states.get(value)
+                name = state.name if state else value.split(".", 1)[-1].removeprefix("mobile_app_").replace("_", " ")
+                out.append(selector.SelectOptionDict(value=value, label=name))
+            return out
+
+        interval = self._data.get("interval", options[CONF_DEFAULT_INTERVAL])
+        schema: dict = {
+            vol.Required("remind", default=interval != 0): selector.BooleanSelector(),
+            vol.Optional("interval", default=interval or options[CONF_DEFAULT_INTERVAL]): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=10080, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+            ),
+            vol.Optional("max_reminders"): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=1000, mode=selector.NumberSelectorMode.BOX)
+            ),
+        }
+        if phones:
+            schema[vol.Optional("phones", default=self._data.get("phones", phones))] = selector.SelectSelector(
+                selector.SelectSelectorConfig(options=labels(phones, "notify"), multiple=True)
+            )
+        if speakers:
+            schema[vol.Optional("speakers", default=self._data.get("speakers", speakers))] = selector.SelectSelector(
+                selector.SelectSelectorConfig(options=labels(speakers, "media_player"), multiple=True)
+            )
+        schema[vol.Required("auto_close", default=self._data.get("auto_close", True))] = selector.BooleanSelector()
+        return self.async_show_form(step_id="notify", data_schema=self._suggest(schema))
+

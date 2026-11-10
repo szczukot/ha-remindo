@@ -88,57 +88,6 @@ snooze:
     until:
       selector:
         text:
-rule_save:
-  fields:
-    id:
-      selector:
-        text:
-    summary:
-      required: true
-      selector:
-        text:
-    entity_id:
-      required: true
-      selector:
-        entity:
-    mode:
-      default: state
-      selector:
-        select:
-          options: [state, above, below]
-    value:
-      required: true
-      selector:
-        text:
-    for_minutes:
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 10080
-          unit_of_measurement: min
-          mode: box
-    auto_close:
-      default: true
-      selector:
-        boolean:
-    enabled:
-      default: true
-      selector:
-        boolean:
-    interval:
-      selector:
-        number:
-          min: 0
-          max: 10080
-          unit_of_measurement: min
-          mode: box
-rule_delete:
-  fields:
-    id:
-      required: true
-      selector:
-        text:
 close_by_key:
   fields:
     key:

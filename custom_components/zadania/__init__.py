@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant.components import frontend, websocket_api
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import Platform
 from homeassistant.core import (
     HomeAssistant,
@@ -89,28 +90,6 @@ SNOOZE_SCHEMA = vol.All(
     cv.has_at_least_one_key(ATTR_UID, ATTR_KEY),
 )
 CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
-RULE_SCHEMA = vol.Schema(
-    {
-        vol.Optional("id"): cv.string,
-        vol.Required(ATTR_SUMMARY): cv.string,
-        vol.Required("entity_id"): cv.entity_id,
-        vol.Optional("mode", default="state"): vol.In(["state", "above", "below", "calendar"]),
-        vol.Optional("value", default=""): vol.Coerce(str),
-        vol.Optional("days_before", default=1): vol.All(vol.Coerce(int), vol.Range(min=0, max=30)),
-        vol.Optional("at_time", default="18:00"): cv.string,
-        vol.Optional("contains"): vol.Any(None, cv.string),
-        vol.Optional("for_minutes", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=10080)),
-        vol.Optional("auto_close", default=True): cv.boolean,
-        vol.Optional("enabled", default=True): cv.boolean,
-        vol.Optional(ATTR_DESCRIPTION): vol.Any(None, cv.string),
-        vol.Optional(ATTR_INTERVAL): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=10080))),
-        vol.Optional(ATTR_PHONES): vol.Any(None, cv.ensure_list_csv),
-        vol.Optional(ATTR_SPEAKERS): vol.Any(None, cv.entity_ids),
-        vol.Optional(ATTR_TTS_MESSAGE): vol.Any(None, cv.string),
-        vol.Optional(ATTR_MAX_REMINDERS): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=1000))),
-    }
-)
-RULE_DELETE_SCHEMA = vol.Schema({vol.Required("id"): cv.string})
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -150,6 +129,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZadaniaConfigEntry) -> b
     await manager.async_load()
     entry.runtime_data = manager
     hass.data[DOMAIN] = manager
+
+    # Reguły z wersji 0.4–0.5 (trzymane w magazynie) → podwpisy integracji
+    for old in manager.take_legacy_rules():
+        hass.config_entries.async_add_subentry(
+            entry,
+            ConfigSubentry(
+                data=MappingProxyType({k: v for k, v in old.items() if k != "id"}),
+                subentry_type="rule",
+                title=old.get("summary", "Reguła"),
+                unique_id=None,
+            ),
+        )
+    manager.rules.load(
+        [{**sub.data, "id": sub.subentry_id} for sub in entry.subentries.values() if sub.subentry_type == "rule"]
+    )
 
     entry.async_on_unload(
         hass.bus.async_listen("mobile_app_notification_action", manager.async_handle_phone_action)
@@ -236,17 +230,6 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, "snooze", snooze, SNOOZE_SCHEMA)
     hass.services.async_register(DOMAIN, "close_by_key", close_by_key, CLOSE_SCHEMA)
 
-    async def rule_save(call: ServiceCall) -> ServiceResponse:
-        try:
-            return await _manager(hass).async_rule_save(dict(call.data))
-        except ValueError as err:
-            raise ServiceValidationError(str(err)) from err
-
-    async def rule_delete(call: ServiceCall) -> None:
-        await _manager(hass).async_rule_delete(call.data["id"])
-
-    hass.services.async_register(DOMAIN, "rule_save", rule_save, RULE_SCHEMA, SupportsResponse.OPTIONAL)
-    hass.services.async_register(DOMAIN, "rule_delete", rule_delete, RULE_DELETE_SCHEMA)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "zadania/subscribe"})
@@ -264,7 +247,6 @@ async def ws_subscribe(
         manager = _manager(hass)
         return {
             "tasks": [manager.serialize(t) for t in manager.tasks.values()],
-            "rules": manager.rules.dump(),
             "dismissed": [h for h in manager.history if h.get("result") == "dismissed"][-20:],
             "options": {
                 "phone_snooze": manager.options.get("phone_snooze"),

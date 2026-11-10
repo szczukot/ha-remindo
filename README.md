@@ -23,26 +23,22 @@ Zadanie cykliczne po zrobieniu (albo „nie robię”) wraca w następnym termin
 ## Zdarzenia
 `zadania_created`, `zadania_reminded`, `zadania_done`, `zadania_snoozed`, `zadania_dismissed` (widoczne w dzienniku).
 
-## Karty
-Ładują się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” są dwie:
-
-**Zadania – lista**: zadania do zrobienia, przyciski ✓ / odłóż / ✕, dodawanie ręczne.
+## Karta
+Ładuje się automatycznie z integracją (bez dodawania zasobu). Lista zadań z przyciskami ✓ / odłóż / ✕ i ręcznym dodawaniem.
 ```yaml
 type: custom:zadania-card
 title: Zadania
-link: /dashboard-tablet/zadania-reguly   # opcjonalnie: przycisk „⚙ Reguły”
-show_done: true                          # sekcje Zrobione / Odrzucone (zwinięte)
-show_form: true                          # przycisk „＋ Dodaj zadanie”
+show_done: true    # sekcje Zrobione / Odrzucone (zwinięte)
+show_form: true    # przycisk „＋ Dodaj zadanie”
 ```
 
-**Zadania – reguły**: ustawianie „gdy coś się stanie → dodaj zadanie” (stan encji, próg liczbowy, wydarzenie w kalendarzu).
-```yaml
-type: custom:zadania-rules-card
-title: Reguły zadań
-link: /dashboard-tablet/zadania          # opcjonalnie: przycisk „← Zadania”
-```
+## Reguły (zadania dodawane automatycznie)
+*Ustawienia → Urządzenia i usługi → Zadania → **＋ Dodaj regułę***. Formularz w trzech krokach:
+1. treść zadania, encja, warunek (ma stan / powyżej / poniżej / wydarzenie w kalendarzu),
+2. wartość i „przez co najmniej N min” (albo: ile dni przed wydarzeniem, o której),
+3. przypomnienia: ponawianie, limit, telefony, głośniki, zamykanie samo.
 
-Każdą kartę można postawić na dowolnym widoku, np. listę na tablecie, a reguły na dashboardzie admina.
+Każdą regułę można potem edytować lub usunąć na stronie integracji.
 
 ## Przykład: brama
 ```yaml
