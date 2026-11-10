@@ -1,5 +1,5 @@
 /* Karta Lovelace: custom:remindo-card (integracja Remindo) */
-const VERSION = "0.7.0";
+const VERSION = "0.7.1";
 
 const fmtTime = (iso) => {
   if (!iso) return "";
