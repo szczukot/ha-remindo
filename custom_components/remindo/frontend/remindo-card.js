@@ -5,9 +5,9 @@ const I18N = {
   en: {
     title: "Tasks", today: "today", tomorrow: "tomorrow", just_now: "just now", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago",
     now: "now", now_again: "now · again {t}", now_no_more: "now · no more reminders", dismissed_ago: "skipped {t}", snoozed_until: "snoozed until ",
-    done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n} min", then_every: "then every {n} min again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} min again", snoozed_n: "snoozed {n}×",
+    done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n}", then_every: "then every {n} again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} again", snoozed_n: "snoozed {n}×",
     max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications", ha_only: "notification in HA only", restore: "Restore (open it again)", del_title: "Delete (no trace, cannot be restored)", del_title_rec: "Delete with all future dates",
-    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} min again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_due: "Due:", e_due_hint: "empty = a note without reminders", e_every: "remind every", e_once: "0 = once", del: "Delete", del_confirm: "Really delete?", e_save: "Save",
+    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_due: "Due:", e_due_hint: "empty = a note without reminders", e_every: "remind every", e_once: "0 = once", del: "Delete", del_confirm: "Really delete?", e_save: "Save",
     sec_now: "Now", sec_planned: "Scheduled", sec_notes: "Notes", sec_done: "Done", sec_dismissed: "Skipped", empty: "Nothing to do 🎉",
     add: "＋ Add task", what: "What needs doing?", remind: "Remind", from_now: "from now", in_1h: "in 1 h", tonight: "today 19:00",
     pick: "pick a time…", every: "every", until_done: "until I tick it off", note_hint: "no reminders — just a note on the list",
@@ -22,9 +22,9 @@ const I18N = {
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
     now: "teraz", now_again: "teraz · znowu {t}", now_no_more: "teraz · już nie przypomina", dismissed_ago: "odrzucone {t}", snoozed_until: "odłożone do ",
-    done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n} min", then_every: "potem znowu co {n} min", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n} min", snoozed_n: "odłożone {n}×",
+    done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n}", then_every: "potem znowu co {n}", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n}", snoozed_n: "odłożone {n}×",
     max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień", ha_only: "tylko powiadomienie w HA", restore: "Przywróć (otwórz ponownie)", del_title: "Usuń (bez śladu, nie da się przywrócić)", del_title_rec: "Usuń razem ze wszystkimi kolejnymi terminami",
-    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n} min", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_due: "Termin:", e_due_hint: "puste = notatka bez przypomnień", e_every: "przypominaj co", e_once: "0 = raz", del: "Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
+    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n}", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_due: "Termin:", e_due_hint: "puste = notatka bez przypomnień", e_every: "przypominaj co", e_once: "0 = raz", del: "Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
     sec_now: "Teraz", sec_planned: "Zaplanowane", sec_notes: "Notatki", sec_done: "Zrobione", sec_dismissed: "Odrzucone", empty: "Nic do zrobienia 🎉",
     add: "＋ Dodaj zadanie", what: "Co trzeba zrobić?", remind: "Przypominaj", from_now: "od teraz", in_1h: "za 1 h", tonight: "dziś 19:00",
     pick: "wybierz termin…", every: "co", until_done: "dopóki nie odhaczę", note_hint: "bez przypomnień — zwykła notatka na liście",
@@ -86,6 +86,8 @@ const toIso = (value) => new Date(value).toISOString();
 const tomorrowDate = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
 const IDLE_CLOSE_MS = 5 * 60 * 1000;
+// 30 → "30 min", 120 → "2 h", 1440 → "24 h"
+const span = (min) => (min >= 60 && min % 60 === 0 ? `${min / 60} h` : `${min} min`);
 // an icon instead of the 🗑 emoji, which some systems (Windows) draw almost invisible
 const TRASH = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z"/></svg>`;
 
@@ -173,7 +175,7 @@ class RemindoCard extends HTMLElement {
     const closed = kind === "done" || kind === "dismissed";
     const meta = [];
     if (kind === "now") meta.push(t("reminding_since", { t: ago(task.last_reminded) }));
-    if (task.interval && !closed && kind !== "notes") meta.push(t(kind === "planned" ? "then_every" : "every_min", { n: task.interval }));
+    if (task.interval && !closed && kind !== "notes") meta.push(t(kind === "planned" ? "then_every" : "every_min", { n: span(task.interval) }));
     if (!closed && task.repeat && task.repeat !== "none") meta.push(`🔁 ${repeatLabel(task)}`);
     if (!closed && task.snoozes) meta.push(t("snoozed_n", { n: task.snoozes }));
     if (task.max_reminders && !closed) meta.push(t("max_n", { n: task.max_reminders, m: task.reminders || 0 }));
@@ -183,7 +185,7 @@ class RemindoCard extends HTMLElement {
       meta.push(where.length ? where.join(", ") : t(this._opts?.persistent ? "ha_only" : "no_notify"));
     }
     const recurring = task.repeat && task.repeat !== "none";
-    const hint = (when) => t(task.interval ? "snooze_hint_then" : "snooze_hint", { t: when, n: task.interval });
+    const hint = (when) => t(task.interval ? "snooze_hint_then" : "snooze_hint", { t: when, n: span(task.interval) });
     const btns = closed ? `
       <div class="btns">
         <button data-a="reopen" data-uid="${task.uid}" title="${t("restore")}">↩</button>
@@ -194,7 +196,7 @@ class RemindoCard extends HTMLElement {
         ${kind === "now" ? `
         <button data-a="snooze" data-min="10" data-uid="${task.uid}" title="${hint("10 min")}">+10 min</button>
         <button data-a="snooze" data-min="60" data-uid="${task.uid}" title="${hint("1 h")}">+1 h</button>
-        <button data-a="tomorrow" data-uid="${task.uid}" title="${t(task.interval ? "btn_tomorrow_hint_then" : "btn_tomorrow_hint", { t: this._morning(), n: task.interval })}">${t("btn_tomorrow", { t: this._morning() })}</button>` : ""}
+        <button data-a="tomorrow" data-uid="${task.uid}" title="${t(task.interval ? "btn_tomorrow_hint_then" : "btn_tomorrow_hint", { t: this._morning(), n: span(task.interval) })}">${t("btn_tomorrow", { t: this._morning() })}</button>` : ""}
         ${kind !== "notes" ? `<button data-a="pick" data-uid="${task.uid}" title="${t("btn_pick_hint")}">${t("btn_pick")}</button>` : ""}
         <button data-a="edit" data-uid="${task.uid}" title="${t("edit")}">✎</button>
         <button class="no" data-a="dismiss" data-uid="${task.uid}" title="${t(recurring ? "btn_skip_once" : "btn_dismiss")}">✕</button>
@@ -264,7 +266,7 @@ class RemindoCard extends HTMLElement {
       <input id="p-dt" type="datetime-local" min="${min}" value="${localIso(d).slice(0, 16)}" />
       <button class="ok" data-a="pick-ok" data-uid="${task.uid}">${t("pick_ok")}</button>
       <button data-a="pick-cancel">${t("cancel")}</button>
-      ${task.interval ? `<span>${t("then_every", { n: task.interval })}</span>` : ""}
+      ${task.interval ? `<span>${t("then_every", { n: span(task.interval) })}</span>` : ""}
     </div>`;
   }
 
