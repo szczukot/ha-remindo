@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.10.7";
+const VERSION = "0.10.8";
 
 const I18N = {
   en: {
@@ -7,7 +7,7 @@ const I18N = {
     now: "now", now_again: "now · again {t}", now_no_more: "now · no more reminders", dismissed_ago: "skipped {t}", snoozed_until: "snoozed until ",
     done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n}", then_every: "then every {n} again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} again", snoozed_n: "snoozed {n}×",
     max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications", ha_only: "notification in HA only", restore: "Restore (open it again)", del_title: "Delete (no trace, cannot be restored)", del_title_rec: "Delete with all future dates",
-    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_due: "Due:", e_due_hint: "empty = a note without reminders", e_every: "remind every", e_once: "0 = once", del: "Delete", del_confirm: "Really delete?", e_save: "Save",
+    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_once: "0 = once", del: "Delete", del_confirm: "Really delete?", e_save: "Save",
     sec_now: "Now", sec_planned: "Scheduled", sec_notes: "Notes", sec_done: "Done", sec_dismissed: "Skipped", empty: "Nothing to do 🎉",
     add: "＋ Add task", what: "What needs doing?", remind: "Remind", from_now: "from now", in_1h: "in 1 h", tonight: "today 19:00",
     pick: "pick a time…", every: "every", until_done: "until I tick it off", note_hint: "no reminders — just a note on the list",
@@ -24,7 +24,7 @@ const I18N = {
     now: "teraz", now_again: "teraz · znowu {t}", now_no_more: "teraz · już nie przypomina", dismissed_ago: "odrzucone {t}", snoozed_until: "odłożone do ",
     done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n}", then_every: "potem znowu co {n}", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n}", snoozed_n: "odłożone {n}×",
     max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień", ha_only: "tylko powiadomienie w HA", restore: "Przywróć (otwórz ponownie)", del_title: "Usuń (bez śladu, nie da się przywrócić)", del_title_rec: "Usuń razem ze wszystkimi kolejnymi terminami",
-    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n}", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_due: "Termin:", e_due_hint: "puste = notatka bez przypomnień", e_every: "przypominaj co", e_once: "0 = raz", del: "Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
+    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n}", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_once: "0 = raz", del: "Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
     sec_now: "Teraz", sec_planned: "Zaplanowane", sec_notes: "Notatki", sec_done: "Zrobione", sec_dismissed: "Odrzucone", empty: "Nic do zrobienia 🎉",
     add: "＋ Dodaj zadanie", what: "Co trzeba zrobić?", remind: "Przypominaj", from_now: "od teraz", in_1h: "za 1 h", tonight: "dziś 19:00",
     pick: "wybierz termin…", every: "co", until_done: "dopóki nie odhaczę", note_hint: "bez przypomnień — zwykła notatka na liście",
@@ -104,7 +104,7 @@ class RemindoCard extends HTMLElement {
     const first = !this._hass;
     this._hass = hass;
     const lang = pickLang(hass);
-    if (lang !== LANG) { LANG = lang; this._forceRender = !this._formOpen; this._render(); }
+    if (lang !== LANG) { LANG = lang; this._forceRender = !(this._formOpen || this._edit); this._render(); }
     // not while a retry is waiting: hass changes many times a second
     if (!this._unsub && !this._retry) this._subscribe();
   }
@@ -206,51 +206,7 @@ class RemindoCard extends HTMLElement {
       <div class="txt"><div class="sum">${esc(task.summary)}</div>
         ${when ? `<div class="when">${esc(when)}</div>` : ""}
         ${task.description ? `<div class="desc">${esc(task.description)}</div>` : ""}
-        <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}${this._edit === task.uid ? this._editor(task) : ""}</div>`;
-  }
-
-  _editor(task) {
-    const due = task.next_reminder || task.start;
-    const hours = task.interval && task.interval % 60 === 0;
-    const checked = (list, id) => (list == null || list.includes(id) ? "checked" : "");
-    return `<div class="editor">
-      <input id="e-sum" value="${esc(task.summary)}" />
-      <div class="frow"><span>${t("e_due")}</span>
-        <input id="e-dt" type="datetime-local" value="${due ? localIso(new Date(due)).slice(0, 16) : ""}" data-was="${due ? localIso(new Date(due)).slice(0, 16) : ""}" />
-        ${task.repeat && task.repeat !== "none" ? "" : `<span class="hint">${t("e_due_hint")}</span>`}</div>
-      <div class="frow"><span>${t("e_every")}</span>
-        <input id="e-int" type="number" min="0" value="${hours ? task.interval / 60 : task.interval || 0}" />
-        <select id="e-int-u"><option value="1"${hours ? "" : " selected"}>min</option><option value="60"${hours ? " selected" : ""}>h</option></select>
-        <span class="hint">${t("e_once")}</span></div>
-      <div class="frow where"><span>${t("where")}</span>
-        ${(this._opts?.phones || []).map((p) => `<label><input type="checkbox" class="e-phone" value="${esc(p.id)}" ${task.push === false ? "" : checked(task.phones, p.id)} /> 📱 ${esc(p.name)}</label>`).join("")}
-        ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="e-spk" value="${esc(s.id)}" ${task.tts === false ? "" : checked(task.speakers, s.id)} /> 🔊 ${esc(s.name)}</label>`).join("")}
-      </div>
-      <div class="frow">
-        <button class="no" data-a="delete" data-uid="${task.uid}" title="${t(task.repeat && task.repeat !== "none" ? "del_title_rec" : "del_title")}">${TRASH} ${t("del")}</button>
-        <span class="spacer"></span>
-        <button data-a="edit-cancel">${t("cancel")}</button>
-        <button class="ok" data-a="edit-save" data-uid="${task.uid}">${t("e_save")}</button>
-      </div></div>`;
-  }
-
-  _saveEdit(uid) {
-    const $ = (id) => this.shadowRoot.getElementById(id);
-    const task = this._tasks.find((x) => x.uid === uid);
-    const summary = $("e-sum").value.trim();
-    if (!task || !summary) { $("e-sum").focus(); return; }
-    const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
-    const data = { uid, summary };
-    // channels are sent only when changed, so "all configured" keeps following the settings
-    const was = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.defaultChecked).map((c) => c.value);
-    if (String(pick(".e-phone")) !== String(was(".e-phone"))) data.phones = pick(".e-phone");
-    if (String(pick(".e-spk")) !== String(was(".e-spk"))) data.speakers = pick(".e-spk");
-    const interval = Math.max(0, Number($("e-int").value || 0)) * Number($("e-int-u").value);
-    if (interval !== task.interval) data.interval = interval;
-    // only a changed due time is sent, so saving other fields never moves the reminder
-    if ($("e-dt").value !== $("e-dt").dataset.was) data.start = $("e-dt").value ? toIso($("e-dt").value) : null;
-    this._edit = null;
-    this._call("update", data);
+        <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}${this._edit === task.uid ? this._taskForm(task) : ""}</div>`;
   }
 
   _morning() {
@@ -277,77 +233,125 @@ class RemindoCard extends HTMLElement {
     return `<div class="sec"><div class="sec-title" data-a="sec" data-k="${kind}">${closed ? "▸" : "▾"} ${title} <span>${list.length}</span></div>${closed ? "" : list.map((task) => this._row(task, kind)).join("")}</div>`;
   }
 
-  _form() {
-    if (!this._config.show_form) return "";
-    if (!this._formOpen) return `<button class="add-btn" data-a="form">${t("add")}</button>`;
-    const di = Number(this._opts?.default_interval ?? 30) || 30;
-    return `<div class="form">
-      <input id="f-sum" placeholder="${t("what")}" />
+  // One form for adding and for editing; editing fills it with the task's values.
+  _taskForm(task) {
+    const edit = !!task;
+    const interval = edit ? Number(task.interval || 0) : Number(this._opts?.default_interval ?? 30) || 30;
+    const hours = interval >= 60 && interval % 60 === 0;
+    const due = edit ? task.next_reminder || task.start : null;
+    const rec = edit && task.repeat && task.repeat !== "none";
+    const lim = edit ? (task.remind_until ? "until" : task.max_reminders ? "count" : "") : "";
+    const keep = edit && task.keep_done != null ? task.keep_done : this._opts?.keep_done !== false;
+    const when = edit && due ? "custom" : "now";
+    const local = (iso) => (iso ? localIso(new Date(iso)).slice(0, 16) : "");
+    const opt = (value, label, current) => `<option value="${value}"${value === current ? " selected" : ""}>${label}</option>`;
+    // a channel is ticked when the task uses it (no list = all configured)
+    const on = (list, id, enabled) => (enabled !== false && (list == null || list.includes(id)) ? "checked" : "");
+    return `<div class="form${edit ? " editor" : ""}">
+      <input id="f-sum" placeholder="${t("what")}" value="${edit ? esc(task.summary) : ""}" />
       <div class="frow">
-        <label class="chk"><input type="checkbox" id="f-rem" checked /> ${t("remind")}</label>
+        <label class="chk"><input type="checkbox" id="f-rem" ${!edit || task.start ? "checked" : ""} /> ${t("remind")}</label>
         <span class="grp" id="f-rem-g"><select id="f-when">
-          <option value="now">${t("from_now")}</option>
-          <option value="1h">${t("in_1h")}</option>
-          ${new Date().getHours() < 19 ? `<option value="evening">${t("tonight")}</option>` : ""}
-          <option value="custom">${t("pick")}</option>
+          ${opt("now", t("from_now"), when)}${opt("1h", t("in_1h"), when)}
+          ${new Date().getHours() < 19 ? opt("evening", t("tonight"), when) : ""}
+          ${opt("custom", t("pick"), when)}
         </select>
-        <input id="f-dt" type="datetime-local" style="display:none" />
-        ${t("every")} <input id="f-int" type="number" min="1" value="${di % 60 === 0 ? di / 60 : di}" />
-          <select id="f-int-u"><option value="1"${di % 60 === 0 ? "" : " selected"}></option><option value="60"${di % 60 === 0 ? " selected" : ""}></option></select></span>
-        <span class="hint" id="f-rem-h">${t("until_done")}</span>
-        <span class="hint" id="f-note-h" style="display:none">${t("note_hint")}</span>
+        <input id="f-dt" type="datetime-local" value="${local(due)}" data-was="${local(due)}" />
+        ${t("every")} <input id="f-int" type="number" min="0" value="${hours ? interval / 60 : interval}" />
+          <select id="f-int-u"><option value="1"${hours ? "" : " selected"}></option><option value="60"${hours ? " selected" : ""}></option></select></span>
+        <span class="hint" id="f-rem-h">${t("until_done")} · ${t("e_once")}</span>
+        <span class="hint" id="f-note-h">${t("note_hint")}</span>
       </div>
       <div class="frow" id="f-lim-row"><span class="chk"></span>
-        <span class="grp">${t("stop")} <select id="f-lim"><option value="">${t("stop_never")}</option><option value="count">${t("stop_count")}</option><option value="until">${t("stop_until")}</option></select>
-          <input id="f-lim-n" type="number" min="1" value="3" style="display:none" />
-          <input id="f-lim-dt" type="datetime-local" style="display:none" /></span>
+        <span class="grp">${t("stop")} <select id="f-lim">${opt("", t("stop_never"), lim)}${opt("count", t("stop_count"), lim)}${opt("until", t("stop_until"), lim)}</select>
+          <input id="f-lim-n" type="number" min="1" value="${(edit && task.max_reminders) || 3}" />
+          <input id="f-lim-dt" type="datetime-local" value="${edit ? local(task.remind_until) : ""}" data-was="${edit ? local(task.remind_until) : ""}" /></span>
       </div>
       <div class="frow">
-        <label class="chk"><input type="checkbox" id="f-rep-on" /> ${t("repeat")}</label>
-        <span class="grp off" id="f-rep-g">${t("every")} <input id="f-every" type="number" min="1" value="1" />
-          <select id="f-rep"><option value="hourly"></option><option value="daily" selected></option><option value="weekly"></option><option value="monthly"></option><option value="yearly"></option></select></span>
+        <label class="chk"><input type="checkbox" id="f-rep-on" ${rec ? "checked" : ""} /> ${t("repeat")}</label>
+        <span class="grp" id="f-rep-g">${t("every")} <input id="f-every" type="number" min="1" value="${edit ? Number(task.repeat_every || 1) : 1}" />
+          <select id="f-rep">${Object.keys(UNIT).map((u) => opt(u, "", rec ? task.repeat : "daily")).join("")}</select></span>
         <span class="hint" id="f-rep-h">${t("repeat_hint")}</span>
       </div>
       <div class="frow where" id="f-where">
         <span>${t("where")}</span>
-        ${(this._opts?.phones || []).map((p) => `<label><input type="checkbox" class="f-phone" value="${esc(p.id)}" checked /> 📱 ${esc(p.name)}</label>`).join("")}
-        ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="f-spk" value="${esc(s.id)}" checked /> 🔊 ${esc(s.name)}</label>`).join("")}
+        ${(this._opts?.phones || []).map((p) => `<label><input type="checkbox" class="f-phone" value="${esc(p.id)}" ${edit ? on(task.phones, p.id, task.push) : "checked"} /> 📱 ${esc(p.name)}</label>`).join("")}
+        ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="f-spk" value="${esc(s.id)}" ${edit ? on(task.speakers, s.id, task.tts) : "checked"} /> 🔊 ${esc(s.name)}</label>`).join("")}
       </div>
       <div class="hint" id="f-where-h">${t("where_hint")}</div>
       <div class="frow" id="f-keep-row">
-        <label><input type="checkbox" id="f-keep" ${this._opts?.keep_done === false ? "" : "checked"} /> ${t("keep")}</label>
+        <label><input type="checkbox" id="f-keep" ${keep ? "checked" : ""} /> ${t("keep")}</label>
         <span class="hint">${t("keep_hint")}</span>
       </div>
       <div class="frow end">
+        ${edit ? `<button class="no" data-a="delete" data-uid="${task.uid}" title="${t(rec ? "del_title_rec" : "del_title")}">${TRASH} ${t("del")}</button><span class="spacer"></span>` : ""}
         <button data-a="cancel">${t("cancel")}</button>
-        <button class="ok" data-a="save">${t("save")}</button>
+        <button class="ok" data-a="save"${edit ? ` data-uid="${task.uid}"` : ""}>${t(edit ? "e_save" : "save")}</button>
       </div></div>`;
   }
 
-  _save() {
+  _form() {
+    if (!this._config.show_form) return "";
+    if (this._formOpen) return this._taskForm(null);
+    // while a task is being edited, only one form at a time
+    return this._edit || this._pick ? "" : `<button class="add-btn" data-a="form">${t("add")}</button>`;
+  }
+
+  _save(uid) {
     const $ = (id) => this.shadowRoot.getElementById(id);
+    const task = uid ? this._tasks.find((x) => x.uid === uid) : null;
+    if (uid && !task) { this._edit = null; this._forceRender = true; return this._render(); }
     const summary = $("f-sum").value.trim();
     if (!summary) { $("f-sum").focus(); return; }
+    const remind = $("f-rem").checked;
     const when = $("f-when").value;
-    const d = new Date();
-    let start = "now";
-    if (when === "1h") start = toIso(Date.now() + 3600e3);
-    else if (when === "evening") { d.setHours(19, 0, 0, 0); start = toIso(d); }
-    else if (when === "custom") start = $("f-dt").value ? toIso($("f-dt").value) : "now";
-    if (!$("f-rem").checked) start = null;
-    const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
-    const interval = $("f-rem").checked ? Math.max(1, Number($("f-int").value || 1)) * Number($("f-int-u").value) : 0;
-    const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk") };
-    if (interval && $("f-lim").value === "count") data.max_reminders = Math.max(1, Number($("f-lim-n").value || 1));
-    if (interval && $("f-lim").value === "until" && $("f-lim-dt").value) data.remind_until = toIso($("f-lim-dt").value);
-    data.keep_done = $("f-keep").checked;
-    const rep = $("f-rep-on").checked ? $("f-rep").value : "none";
-    if (rep !== "none") {
-      if (start === null) { this._error = t("repeat_needs_start"); this._render(); return; }
-      data.repeat = rep; data.repeat_every = Number($("f-every").value || 1);
+    let start = null;
+    if (remind) {
+      const d = new Date();
+      if (when === "1h") start = toIso(Date.now() + 3600e3);
+      else if (when === "evening") { d.setHours(19, 0, 0, 0); start = toIso(d); }
+      else if (when === "custom" && $("f-dt").value) start = toIso($("f-dt").value);
+      else start = "now";
     }
-    this._formOpen = false;
-    this._call("add", data);
+    const interval = remind ? Math.max(0, Number($("f-int").value || 0)) * Number($("f-int-u").value) : 0;
+    const rep = remind && $("f-rep-on").checked ? $("f-rep").value : "none";
+    const every = Math.max(1, Number($("f-every").value || 1));
+    const lim = interval ? $("f-lim").value : "";
+    const n = Math.max(1, Number($("f-lim-n").value || 1)), until = $("f-lim-dt").value;
+    const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
+    const keep = $("f-keep").checked;
+    if (!task) {
+      const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk"), keep_done: keep };
+      if (lim === "count") data.max_reminders = n;
+      if (lim === "until" && until) data.remind_until = toIso(until);
+      if (rep !== "none") { data.repeat = rep; data.repeat_every = every; }
+      this._formOpen = false; this._forceRender = true; this._render();
+      return this._call("add", data);
+    }
+    // editing: only what changed is sent, so e.g. fixing the text never moves the reminder
+    const data = { uid, summary };
+    if (!remind) { if (task.start) data.start = null; }
+    else if (!task.start || when !== "custom" || $("f-dt").value !== $("f-dt").dataset.was) data.start = start;
+    if (remind && interval !== Number(task.interval || 0)) data.interval = interval;
+    if (rep !== (task.repeat || "none")) data.repeat = rep;
+    if (rep !== "none" && every !== Number(task.repeat_every || 1)) data.repeat_every = every;
+    if (lim === "count") {
+      if (n !== task.max_reminders) data.max_reminders = n;
+      if (task.remind_until) data.remind_until = null;
+    } else if (lim === "until" && until) {
+      if (until !== $("f-lim-dt").dataset.was) data.remind_until = toIso(until);
+      if (task.max_reminders) data.max_reminders = null;
+    } else {
+      if (task.max_reminders) data.max_reminders = null;
+      if (task.remind_until) data.remind_until = null;
+    }
+    // channels are sent only when changed, so "all configured" keeps following the settings
+    const was = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.defaultChecked).map((c) => c.value);
+    if (String(pick(".f-phone")) !== String(was(".f-phone"))) data.phones = pick(".f-phone");
+    if (String(pick(".f-spk")) !== String(was(".f-spk"))) data.speakers = pick(".f-spk");
+    if (keep !== $("f-keep").defaultChecked) data.keep_done = keep;
+    this._edit = null; this._forceRender = true; this._render();
+    this._call("update", data);
   }
 
   _onClick(ev) {
@@ -370,27 +374,25 @@ class RemindoCard extends HTMLElement {
         this._pick = null;
         return this._call("snooze", { uid, until: toIso(v) });
       }
-      case "edit": this._edit = this._edit === uid ? null : uid; this._pick = null; this._forceRender = true; this._render();
-        return this.shadowRoot.getElementById("e-sum")?.focus();
-      case "edit-cancel": this._edit = null; this._forceRender = true; return this._render();
-      case "edit-save": return this._saveEdit(uid);
+      case "edit": this._edit = this._edit === uid ? null : uid; this._pick = null; this._formOpen = false; this._forceRender = true; this._render();
+        return this.shadowRoot.getElementById("f-sum")?.focus();
       // two clicks to delete: the first one only asks
       case "delete": b.textContent = t("del_confirm"); b.dataset.a = "delete-yes"; return;
       case "delete-yes": this._edit = null; return this._call("delete", { uid });
-      case "form": this._formOpen = true; this._render(); this._unit(); return this.shadowRoot.getElementById("f-sum")?.focus();
-      case "cancel": this._formOpen = false; this._forceRender = true; return this._render();
-      case "save": return this._save();
+      case "form": this._formOpen = true; this._edit = null; this._pick = null; this._forceRender = true; this._render();
+        return this.shadowRoot.getElementById("f-sum")?.focus();
+      case "cancel": this._formOpen = false; this._edit = null; this._forceRender = true; return this._render();
+      case "save": return this._save(uid);
       case "err": this._error = null; this._forceRender = true; return this._render();
       case "sec": this._collapsed[b.dataset.k] = !this._collapsed[b.dataset.k]; this._forceRender = true; return this._render();
     }
   }
 
-  _onChange(ev) {
-    const $ = (id) => this.shadowRoot.getElementById(id);
-    if (ev.target.id === "f-when") $("f-dt").style.display = ev.target.value === "custom" ? "" : "none";
+  _onChange() {
     this._unit();
   }
 
+  // the form: show only the fields that apply, unit names in the right form
   _unit() {
     const $ = (id) => this.shadowRoot.getElementById(id);
     if (!$("f-rem")) return;
@@ -399,26 +401,26 @@ class RemindoCard extends HTMLElement {
     label($("f-int-u"), Number($("f-int").value || 1), { 1: forms("u_min"), 60: forms("u_hour") });
     label($("f-rep"), Number($("f-every").value || 1), { hourly: forms("u_hour"), daily: forms("u_day"),
       weekly: forms("u_week"), monthly: forms("u_month"), yearly: forms("u_year") });
+    const remind = $("f-rem").checked;
     on("f-rem", "f-rem-g", "f-rem-h");
-    $("f-rep-on").disabled = !$("f-rem").checked;
-    if (!$("f-rem").checked) $("f-rep-on").checked = false;
+    $("f-dt").style.display = $("f-when").value === "custom" ? "" : "none";
+    $("f-rep-on").disabled = !remind;
+    if (!remind) $("f-rep-on").checked = false;
     on("f-rep-on", "f-rep-g", "f-rep-h");
-    $("f-note-h").style.display = $("f-rem").checked ? "none" : "";
-    $("f-rem-h").style.display = $("f-rem").checked ? "" : "none";
-    for (const id of ["f-where", "f-where-h", "f-lim-row"]) $(id).style.display = $("f-rem").checked ? "" : "none";
+    $("f-note-h").style.display = remind ? "none" : "";
+    $("f-rem-h").style.display = remind ? "" : "none";
+    for (const id of ["f-where", "f-where-h", "f-lim-row"]) $(id).style.display = remind ? "" : "none";
     $("f-keep-row").style.display = $("f-rep-on").checked ? "none" : "";
     $("f-lim-n").style.display = $("f-lim").value === "count" ? "" : "none";
     $("f-lim-dt").style.display = $("f-lim").value === "until" ? "" : "none";
   }
 
-
   _render() {
     if (!this.shadowRoot || !this._config) return;
     // Do not interrupt typing in the form (the list refreshes after it closes)
-    if (this._formOpen && this.shadowRoot.querySelector(".form") && !this._forceRender) return;
+    if ((this._formOpen || this._edit) && this.shadowRoot.querySelector(".form") && !this._forceRender) return;
     // Do not close the date picker while the user is choosing
     if (this._pick && this.shadowRoot.getElementById("p-dt") && !this._forceRender) return;
-    if (this._edit && this.shadowRoot.getElementById("e-sum") && !this._forceRender) return;
     this._forceRender = false;
     const g = this._groups();
     const empty = !g.now.length && !g.planned.length && !g.notes.length;
@@ -440,9 +442,7 @@ class RemindoCard extends HTMLElement {
     card.onchange = (e) => { this._touched = Date.now(); this._onChange(e); };
     card.oninput = () => { this._touched = Date.now(); };
     const sum = this.shadowRoot.getElementById("f-sum");
-    if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(); }; this._unit(); }
-    const edit = this.shadowRoot.getElementById("e-sum");
-    if (edit) edit.onkeydown = (e) => { if (e.key === "Enter") this._saveEdit(this._edit); };
+    if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(this._edit); }; this._unit(); }
   }
 }
 
@@ -489,7 +489,6 @@ RemindoCard.styles = `
   input[type=number] { width:64px; }
   input[type=checkbox] { width:18px; height:18px; vertical-align:middle; }
   .editor { flex-basis:100%; display:flex; flex-direction:column; gap:8px; padding-top:8px; }
-  .editor #e-sum { width:100%; box-sizing:border-box; }
   .spacer { flex:1; }
   .picker { flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-top:6px; }
   .picker span { font-size:13px; color: var(--secondary-text-color); }

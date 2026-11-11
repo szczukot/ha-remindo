@@ -122,6 +122,8 @@ UPDATE_FIELDS = {
     vol.Optional(ATTR_DESCRIPTION): vol.Any(None, cv.string),
     vol.Optional(ATTR_START): vol.Any(None, _when),
     vol.Optional(ATTR_INTERVAL): _INTERVAL,
+    vol.Optional(ATTR_REPEAT): vol.In(REPEAT_OPTIONS),
+    vol.Optional(ATTR_REPEAT_EVERY): vol.All(vol.Coerce(int), vol.Range(min=1, max=365)),
     vol.Optional(ATTR_PHONES): _PHONES,
     vol.Optional(ATTR_SPEAKERS): _SPEAKERS,
     vol.Optional(ATTR_MAX_REMINDERS): _MAX_REMINDERS,

@@ -255,6 +255,14 @@
           "name": "Interval (min)",
           "description": "Repeat every N minutes until handled. 0 = once."
         },
+        "repeat": {
+          "name": "Repeat",
+          "description": "How often the task comes back after ticking off (\"none\" = a one-off task). Needs a due time."
+        },
+        "repeat_every": {
+          "name": "Every how many units",
+          "description": "E.g. 3 with \"monthly\" = every 3 months."
+        },
         "phones": {
           "name": "Channels",
           "description": "Where to send the notification (empty list = nowhere; null = all configured)."

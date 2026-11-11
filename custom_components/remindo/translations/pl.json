@@ -255,6 +255,14 @@
           "name": "Co ile minut",
           "description": "Co ile minut ponawiać, dopóki nie zareagujesz. 0 = raz."
         },
+        "repeat": {
+          "name": "Cykliczność",
+          "description": "Co ile zadanie wraca po odhaczeniu („none” = jednorazowe). Wymaga terminu."
+        },
+        "repeat_every": {
+          "name": "Co ile jednostek",
+          "description": "Np. 3 przy „monthly” = co 3 miesiące."
+        },
         "phones": {
           "name": "Kanały",
           "description": "Gdzie wysłać powiadomienie (pusta lista = nigdzie; null = wszystkie z ustawień)."

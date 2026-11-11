@@ -121,6 +121,17 @@ update:
           max: 10080
           unit_of_measurement: min
           mode: box
+    repeat:
+      selector:
+        select:
+          options: [none, hourly, daily, weekly, monthly, yearly]
+          translation_key: repeat
+    repeat_every:
+      selector:
+        number:
+          min: 1
+          max: 365
+          mode: box
     phones:
       example: "notify.mobile_app_phone"
       selector:

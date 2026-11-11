@@ -71,7 +71,7 @@ Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit,
 
 <p align="center"><img src="docs/images/edit-en.png" width="460" alt="Editing a task"></p>
 
-**✎** lets you change the text, the due time, the reminder interval and where to remind.
+**✎** opens the same form as adding a task, filled in with the task's values: text, due time, reminder interval, when to stop reminding, repeating, where to remind and keeping it after done can all be changed. Only one form is open at a time.
 
 Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time. If a recurring task has "stop reminding at" and nobody ticks it off by then, that date counts as skipped and the task waits for the next one.
 
@@ -168,7 +168,7 @@ If a rule watches an entity that no longer exists (renamed or removed), or compa
 | Action | Fields |
 |---|---|
 | `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
-| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Only the fields you send change; `null` clears a field. |
+| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`. Only the fields you send change; `null` clears a field. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time; a second close within 30 s (another phone, the card) is ignored, so a date is never skipped by accident. |
 | `remindo.reopen` | `uid`: opens a done or skipped task again; a task with a due time reminds again right away |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |

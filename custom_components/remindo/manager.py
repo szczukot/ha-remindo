@@ -421,9 +421,10 @@ class TaskManager:
                 task.template = None  # edited by hand: no longer follows the template
         if "description" in changes:
             task.description = changes["description"] or None
+        repeat = changes.get("repeat") or task.repeat
         if "start" in changes:
             start_dt = self._resolve_start(changes["start"])
-            if task.repeat != REPEAT_NONE and start_dt is None:
+            if repeat != REPEAT_NONE and start_dt is None:
                 raise RemindoError("repeat_needs_start")
             old_start, until = _dt(task.start), _dt(task.remind_until)
             if start_dt and old_start and until and "remind_until" not in changes:
@@ -431,6 +432,12 @@ class TaskManager:
                 task.remind_until = _iso(until + (start_dt - old_start))
             task.start = task.next_reminder = _iso(start_dt)
             task.active = bool(start_dt and start_dt <= now and task.active)
+        if "repeat" in changes:
+            if repeat != REPEAT_NONE and not task.start:
+                raise RemindoError("repeat_needs_start")
+            task.repeat = repeat
+        if changes.get("repeat_every"):
+            task.repeat_every = max(1, int(changes["repeat_every"]))
         if "interval" in changes and changes["interval"] is not None:
             task.interval = max(0, int(changes["interval"]))
             if task.active:

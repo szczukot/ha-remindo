@@ -633,3 +633,24 @@ async def test_yearly_task_skips_a_date_nobody_ticked_off(hass: HomeAssistant, f
     await tick(hass, freezer, seconds=1)
     await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
     assert manager.find(uid).start.startswith("2028-11-09T09:00")
+
+
+async def test_update_repeat(hass: HomeAssistant) -> None:
+    """The card's editor can turn repeating on, change it and turn it off."""
+    entry, _ = await setup_integration(hass)
+    manager = entry.runtime_data
+    uid = await add_task(hass, summary="Flag", start="2027-11-09 09:00:00")
+    await hass.services.async_call(DOMAIN, "update", {"uid": uid, "repeat": "yearly"}, blocking=True)
+    assert manager.find(uid).recurring and manager.find(uid).repeat == "yearly"
+    await hass.services.async_call(DOMAIN, "update", {"uid": uid, "repeat": "monthly", "repeat_every": 3}, blocking=True)
+    assert (manager.find(uid).repeat, manager.find(uid).repeat_every) == ("monthly", 3)
+    await hass.services.async_call(DOMAIN, "update", {"uid": uid, "repeat": "none"}, blocking=True)
+    assert not manager.find(uid).recurring
+    note = await add_task(hass, summary="Note", start=None)
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(DOMAIN, "update", {"uid": note, "repeat": "daily"}, blocking=True)
+    # due time and repeating in one go
+    await hass.services.async_call(
+        DOMAIN, "update", {"uid": note, "repeat": "daily", "start": "2027-01-01 08:00:00"}, blocking=True
+    )
+    assert manager.find(note).recurring

@@ -71,7 +71,7 @@ Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym termini
 
 <p align="center"><img src="docs/images/edit-pl.png" width="460" alt="Zmiana zadania"></p>
 
-**✎** pozwala zmienić treść, termin, odstęp przypomnień i miejsce przypominania.
+**✎** otwiera ten sam formularz co dodawanie zadania, wypełniony wartościami zadania: można zmienić treść, termin, odstęp przypomnień, kiedy przestać przypominać, powtarzanie, miejsce przypominania i pozostawienie po wykonaniu. Naraz otwarty jest tylko jeden formularz.
 
 Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie. Jeśli zadanie cykliczne ma „przestań przypominać o konkretnej porze” i nikt go do tej pory nie odhaczy, ten termin liczy się jako pominięty, a zadanie czeka na następny.
 
@@ -168,7 +168,7 @@ Jeśli reguła obserwuje encję, której już nie ma (zmiana nazwy albo usunięc
 | Usługa | Pola |
 |---|---|
 | `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
-| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
+| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
 | `remindo.done`, `remindo.dismiss` | `uid` albo `key`. Zadanie cykliczne obie przesuwają na następny termin; drugie zamknięcie w ciągu 30 s (inny telefon, karta) jest pomijane, więc termin nie przepada przypadkiem. |
 | `remindo.reopen` | `uid`: otwiera ponownie zadanie zrobione albo odrzucone; zadanie z terminem od razu znowu przypomina |
 | `remindo.delete` | `uid` albo `key`: usuwa zadanie na stałe, także cykliczne |
