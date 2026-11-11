@@ -15,7 +15,9 @@ Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadani
 - ✅ **Komunikat po załatwieniu**: np. „Brama zamknięta ✅”, gdy zadanie zamknie się samo.
 - 🌍 Po polsku i angielsku.
 
-<p align="center"><img src="docs/images/card-pl.png" width="460" alt="Karta Remindo"></p>
+<p align="center"><img src="docs/images/demo-pl.gif" width="520" alt="Remindo w działaniu: odhaczanie, dodanie zadania cyklicznego, edycja"></p>
+
+⭐ **Jeśli Remindo Ci się przydaje, zostaw gwiazdkę repozytorium na GitHubie.** Dzięki temu łatwiej trafią na nie inni użytkownicy Home Assistant.
 
 ## Instalacja
 
@@ -49,6 +51,8 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Zostawiaj wykonane zadania na liście | wyłączone = zadanie znika po odhaczeniu (zostaje w dzienniku); można to zmienić dla każdego zadania i reguły |
 
 ## Karta
+
+<p align="center"><img src="docs/images/card-pl.png" width="460" alt="Karta Remindo"></p>
 
 Ładuje się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” wybierz **Remindo**:
 

@@ -15,7 +15,9 @@ A Home Assistant integration that turns "remember to…" into tasks that **keep 
 - ✅ **Message when resolved**: e.g. "Garage door closed ✅" when a task closes itself.
 - 🌍 English and Polish.
 
-<p align="center"><img src="docs/images/card-en.png" width="460" alt="Remindo card"></p>
+<p align="center"><img src="docs/images/demo-en.gif" width="520" alt="Remindo in action: ticking off, adding a recurring task, editing"></p>
+
+⭐ **If Remindo is useful to you, please star the repository on GitHub.** It helps other Home Assistant users find it.
 
 ## Installation
 
@@ -49,6 +51,8 @@ When adding the integration (and later under *Configure*) you set:
 | Keep done tasks on the list | off = a task disappears once ticked off (it stays in the logbook); can be changed per task and per rule |
 
 ## Card
+
+<p align="center"><img src="docs/images/card-en.png" width="460" alt="Remindo card"></p>
 
 Loaded automatically with the integration (no resource to add). In "Add card" pick **Remindo**:
 
