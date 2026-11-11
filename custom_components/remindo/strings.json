@@ -336,6 +336,18 @@
             "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them)."
           }
         },
+        "trigger_edit": {
+          "title": "Edit rule \"{rule}\" — when?",
+          "description": "A task is added automatically when the entity meets the condition.",
+          "data": {
+            "summary": "Task summary",
+            "entity_id": "Entity (device, sensor, calendar)",
+            "mode": "Condition"
+          },
+          "data_description": {
+            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them)."
+          }
+        },
         "condition_state": {
           "title": "Condition",
           "description": "Entity: {entity} (now: {current})",
@@ -364,11 +376,11 @@
           "data": {
             "days_before": "Days before the event",
             "at_time": "At",
-            "contains": "Only events containing (optional)"
+            "contains": "Only events whose name contains (optional)"
           },
           "data_description": {
             "days_before": "1 = the day before, 0 = on the day.",
-            "contains": "Empty = all events."
+            "contains": "A filter on the event name. E.g. \"Glass\" in a bin collection calendar → a reminder only for glass collection, other events in this calendar are ignored. Upper / lower case does not matter. Empty = all events."
           }
         },
         "notify": {
@@ -389,7 +401,7 @@
             "remind": "Off = remind once.",
             "max_reminders": "Empty = until done.",
             "phones": "None selected = no push for this rule. The task is still on the list, and shows as a notification in HA if that option is on in the integration settings.",
-            "auto_close": "For calendars: after the event day.",
+            "auto_close": "E.g. the gate is closed again, the dishwasher door was opened: the task closes itself (as done), its notifications disappear, and with \"Keep on the list after done\" off it is gone from the list. For a calendar: after the event day.",
             "done_message": "Sent to the same targets when the task closes itself, e.g. \"Garage door closed ✅\". {state} and {name} work here too. Empty = nothing.",
             "keep_done": "Off = disappears once done.",
             "tts_message": "What is said aloud instead of the task text, e.g. \"The dishwasher is done, please open it.\" {state} and {name} work here too (for calendars: {event}). Empty = the task text.",

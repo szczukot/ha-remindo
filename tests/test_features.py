@@ -64,7 +64,9 @@ async def test_rule_reconfigure(hass: HomeAssistant) -> None:
     hass.states.async_set("sensor.washer", "run")
     sub_id = await add_rule(hass, entry, {"summary": "Hang laundry", "entity_id": "sensor.washer", "value": "finished"})
     flow = await entry.start_subentry_reconfigure_flow(hass, sub_id)
-    assert flow["step_id"] == "trigger"
+    # editing, not adding: its own title naming the rule
+    assert flow["step_id"] == "trigger_edit"
+    assert flow["description_placeholders"]["rule"] == "Hang laundry"
     flow = await hass.config_entries.subentries.async_configure(
         flow["flow_id"], {"summary": "Hang the laundry", "entity_id": "sensor.washer", "mode": "state"}
     )

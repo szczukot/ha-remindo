@@ -336,6 +336,18 @@
             "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz)."
           }
         },
+        "trigger_edit": {
+          "title": "Edycja reguły „{rule}” — kiedy?",
+          "description": "Zadanie zostanie dodane automatycznie, gdy wybrana encja spełni warunek.",
+          "data": {
+            "summary": "Treść zadania",
+            "entity_id": "Encja (urządzenie, czujnik, kalendarz)",
+            "mode": "Warunek"
+          },
+          "data_description": {
+            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz)."
+          }
+        },
         "condition_state": {
           "title": "Warunek",
           "description": "Encja: {entity} (teraz: {current})",
@@ -364,11 +376,11 @@
           "data": {
             "days_before": "Ile dni przed wydarzeniem",
             "at_time": "O której godzinie",
-            "contains": "Tylko wydarzenia zawierające (opcjonalnie)"
+            "contains": "Tylko wydarzenia, których nazwa zawiera (opcjonalnie)"
           },
           "data_description": {
             "days_before": "1 = dzień wcześniej, 0 = w dniu wydarzenia.",
-            "contains": "Np. „Szkło”. Puste = wszystkie wydarzenia."
+            "contains": "Filtr po nazwie wydarzenia. Np. „Szkło” w kalendarzu wywozu śmieci → przypomni tylko o wywozie szkła, inne wydarzenia z tego kalendarza pominie. Wielkość liter nie ma znaczenia. Puste = wszystkie wydarzenia."
           }
         },
         "notify": {
@@ -389,7 +401,7 @@
             "remind": "Wyłączone = przypomni tylko raz.",
             "max_reminders": "Puste = aż odhaczysz.",
             "phones": "Nic nie zaznaczone = bez pusha dla tej reguły. Zadanie nadal jest na liście i pokaże się jako powiadomienie w HA, jeśli ta opcja jest włączona w ustawieniach integracji.",
-            "auto_close": "Np. brama zamknięta, zmywarka otwarta. Przy kalendarzu: po dniu wydarzenia.",
+            "auto_close": "Np. brama znowu zamknięta, drzwi zmywarki otwarte: zadanie zamyka się samo (jako zrobione), znikają jego powiadomienia, a przy wyłączonym „Zostaw na liście po wykonaniu” znika też z listy. Przy kalendarzu: po dniu wydarzenia.",
             "done_message": "Wysyłany na te same kanały, gdy zadanie zamknie się samo, np. „Brama zamknięta ✅”. Tu też działa {state} i {name}. Puste = nic.",
             "keep_done": "Wyłączone = znika po wykonaniu.",
             "tts_message": "Co zostanie powiedziane na głos zamiast treści zadania, np. „Zmywarka skończyła, otwórz ją”. Tu też działa {state} i {name} (przy kalendarzu: {event}). Puste = treść zadania.",

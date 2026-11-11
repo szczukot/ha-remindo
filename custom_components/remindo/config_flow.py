@@ -215,9 +215,16 @@ class RuleSubentryFlow(ConfigSubentryFlow):
                                               mode=selector.SelectSelectorMode.LIST)
             ),
         }
+        editing = self.source == "reconfigure"
         return self.async_show_form(
-            step_id="trigger", data_schema=self._suggest(schema), errors=errors, description_placeholders=_TOKENS
+            step_id="trigger_edit" if editing else "trigger",
+            data_schema=self._suggest(schema),
+            errors=errors,
+            description_placeholders={**_TOKENS, "rule": self._get_reconfigure_subentry().title if editing else ""},
         )
+
+    async def async_step_trigger_edit(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self.async_step_trigger(user_input)
 
     async def async_step_condition(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         mode = self._data["mode"]
