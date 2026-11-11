@@ -87,7 +87,7 @@ Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit,
 
 **✎** opens the same form as adding a task, filled in with the task's values: text, due time, reminder interval, when to stop reminding, repeating, where to remind and keeping it after done can all be changed. Only one form is open at a time.
 
-Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time. If a recurring task has "stop reminding at" and nobody ticks it off by then, that date counts as skipped and the task waits for the next one.
+Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time. If a recurring task has "stop reminding at" and nobody ticks it off by then, that date counts as skipped and the task waits for the next one. A snooze past that time is not lost: the task reminds at the snoozed time and, for this date only, the end moves along (leaving as much time as there was, at least an hour).
 
 The card follows the language of the user's profile.
 

@@ -101,9 +101,10 @@ const TRASH = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fil
 class RemindoCard extends HTMLElement {
   setConfig(config) {
     this._config = { show_done: true, show_form: true, ...config };
-    this._tasks = [];
-    this._formOpen = false;
+    // called again whenever an option changes in the editor: keep the tasks already received
+    this._tasks = this._tasks || [];
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    this._forceRender = !(this._formOpen || this._edit || this._pick);
     this._render();
   }
 
@@ -208,7 +209,7 @@ class RemindoCard extends HTMLElement {
     if (!closed && task.repeat && task.repeat !== "none") meta.push(`🔁 ${repeatLabel(task)}`);
     if (!closed && task.snoozes) meta.push(t("snoozed_n", { n: task.snoozes }));
     if (task.max_reminders && !closed) meta.push(t("max_n", { n: task.max_reminders, m: task.reminders || 0 }));
-    if (task.remind_until && !closed) meta.push(t("until", { t: fmtTime(task.remind_until) }));
+    if (task.remind_until && !closed) meta.push(t("until", { t: fmtTime(task.until_override || task.remind_until) }));
     if (!closed && kind !== "notes") {
       const where = [...(task.phone_labels || []).map((n) => `📱 ${n}`), ...(task.speaker_labels || []).map((n) => `🔊 ${n}`)];
       meta.push(where.length ? where.join(", ") : t(this._opts?.persistent ? "ha_only" : "no_notify"));
@@ -357,7 +358,10 @@ class RemindoCard extends HTMLElement {
     const keep = $("f-keep").checked;
     const past = (input) => input.value && (!task || input.value !== input.dataset.was) && new Date(input.value) <= new Date();
     if ((remind && when === "custom" && past($("f-dt"))) || (lim === "until" && past($("f-lim-dt")))) return this._formError(t("pick_past"));
-    if (lim === "until" && until && new Date(until) <= startAt) return this._formError(t("until_before"));
+    // only what is being changed is checked: a task snoozed past its end must stay editable
+    const startChanged = !task || (remind && (!task.start || when !== "custom" || $("f-dt").value !== $("f-dt").dataset.was));
+    const untilChanged = !task || until !== $("f-lim-dt").dataset.was;
+    if (lim === "until" && until && (startChanged || untilChanged) && new Date(until) <= startAt) return this._formError(t("until_before"));
     if (!task) {
       const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk"), keep_done: keep };
       const list = this._fixedList() || $("f-list")?.value.trim();
@@ -372,7 +376,7 @@ class RemindoCard extends HTMLElement {
     const data = { uid, summary };
     if ($("f-list") && $("f-list").value.trim() !== $("f-list").dataset.was) data.list = $("f-list").value.trim() || null;
     if (!remind) { if (task.start) data.start = null; }
-    else if (!task.start || when !== "custom" || $("f-dt").value !== $("f-dt").dataset.was) data.start = start;
+    else if (startChanged) data.start = start;
     if (remind && interval !== Number(task.interval || 0)) data.interval = interval;
     if (rep !== (task.repeat || "none")) data.repeat = rep;
     if (rep !== "none" && every !== Number(task.repeat_every || 1)) data.repeat_every = every;

@@ -76,6 +76,9 @@ _BUSY = ("playing", "buffering")
 # is ignored (a different one, e.g. "skip" corrected to "done", still goes through).
 REPEAT_CLOSE_WINDOW = 30.0  # s
 
+# A recurring task snoozed past its "stop reminding at" keeps at least this long to react.
+SNOOZE_MIN_WINDOW = timedelta(hours=1)
+
 # Dismissed tasks stay restorable; only the most recent ones are kept.
 KEEP_DISMISSED = 20
 
@@ -174,6 +177,7 @@ class Task:
     speakers: list[str] | None = None  # None = all configured
     max_reminders: int | None = None  # None = no limit
     remind_until: str | None = None  # no reminders after this time (ISO)
+    until_override: str | None = None  # recurring, this date only: the end moved by a snooze (ISO)
     expires: str | None = None  # drop the task at this time if still open (ISO)
     keep_done: bool | None = None  # None = integration option
     done_message: str | None = None  # sent when the task closes itself
@@ -241,7 +245,7 @@ class TaskManager:
                 if when is None:
                     task.next_reminder = None
                 elif when < now:
-                    until = _dt(task.remind_until)
+                    until = self._stop_at(task)
                     # missed while Home Assistant was down, unless "stop reminding at" has passed
                     task.next_reminder = None if until and until < now else _iso(now + MISSED_DELAY)
             self._schedule(task)
@@ -482,6 +486,8 @@ class TaskManager:
             task.notify_data = dict(changes["notify_data"]) if changes["notify_data"] else None
         if "list" in changes:
             task.list_name = self.norm_list(changes["list"])
+        if changes.keys() & {"start", "remind_until", "repeat"}:
+            task.until_override = None  # set by a snooze for the old schedule
         if was_active and not task.active:
             # moved to a later time: the notification with buttons is out of date
             await self._clear_notifications(task)
@@ -546,6 +552,7 @@ class TaskManager:
                 # "stop reminding at" moves together with the due time
                 task.remind_until = _iso(nxt + (until - due))  # type: ignore[operator]
             task.start = task.next_reminder = _iso(nxt)
+            task.until_override = None
             task.active = False
             task.reminders = task.snoozes = 0
             self._schedule(task)
@@ -596,10 +603,16 @@ class TaskManager:
         else:
             when = dt_util.now() + timedelta(minutes=int(minutes or 10))
         await self._clear_notifications(task)
+        now = dt_util.now()
+        if task.recurring and when and (stop := self._stop_at(task)) and when >= stop:
+            # snoozed past "stop reminding at": the snooze must not be lost, so for this date
+            # the end moves along, leaving as much time to react as there was (at least an hour)
+            task.until_override = _iso(when + max(stop - now, SNOOZE_MIN_WINDOW))
         task.next_reminder = _iso(when)
         task.snoozes += 1
         task.active = False  # snoozed: moves from "Now" to "Scheduled"
         self._schedule(task)
+        self._schedule_expiry(task)
         self._fire(EVENT_SNOOZED, task, source, context, until=_iso(when))
         self._save()
 
@@ -640,12 +653,17 @@ class TaskManager:
         self._timers[uid] = async_track_point_in_time(self.hass, _fire_reminder, when)
 
     @staticmethod
-    def _expiry(task: Task) -> datetime | None:
+    def _stop_at(task: Task) -> datetime | None:
+        """ "Stop reminding at" for the current date (a snooze past it moves it, see async_snooze)."""
+        return _dt(task.until_override) or _dt(task.remind_until)
+
+    @classmethod
+    def _expiry(cls, task: Task) -> datetime | None:
         """When an open task is given up: its own date, or for a recurring task the
         "stop reminding at" time (that date is skipped and it waits for the next one)."""
         if expires := _dt(task.expires):
             return expires
-        return _dt(task.remind_until) if task.recurring else None
+        return cls._stop_at(task) if task.recurring else None
 
     @callback
     def _schedule_expiry(self, task: Task) -> None:
@@ -676,7 +694,7 @@ class TaskManager:
             # quiet hours also for push: the reminder waits until they end,
             # unless "stop reminding at" comes first
             later = self._quiet_end(now)
-            until = _dt(task.remind_until)
+            until = self._stop_at(task)
             task.next_reminder = None if until and later > until else _iso(later)
             self._schedule(task)
             self._save()
@@ -689,7 +707,7 @@ class TaskManager:
         nxt = now + timedelta(minutes=task.interval) if task.interval > 0 else None
         if nxt and task.max_reminders and task.reminders >= task.max_reminders:
             nxt = None  # reminder limit used up
-        if nxt and (until := _dt(task.remind_until)) and nxt > until:
+        if nxt and (until := self._stop_at(task)) and nxt > until:
             nxt = None  # past the "stop reminding at" time
         task.next_reminder = _iso(nxt)
         self._schedule(task)

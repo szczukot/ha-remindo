@@ -708,3 +708,33 @@ async def test_stop_reminding_must_be_after_the_due_time(hass: HomeAssistant) ->
         DOMAIN, "update", {"uid": uid, "start": "2027-10-30 09:00:00", "remind_until": "2027-11-01 20:00:00"}, blocking=True
     )
     assert task.remind_until.startswith("2027-11-01T20:00")
+
+
+async def test_snooze_past_stop_reminding_is_not_lost(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """The flag is snoozed to tomorrow although it stops reminding today at 20:00: it still
+    reminds tomorrow, gets as much time as was left, and next year's dates are unchanged."""
+    freezer.move_to("2026-11-11 08:00:00+01:00")
+    entry, _ = await setup_integration(hass)
+    manager = entry.runtime_data
+    uid = await add_task(
+        hass, summary="Hang out the flag", start="2026-11-09 09:00:00", interval=1440,
+        remind_until="2026-11-11 20:00:00", repeat="yearly",
+    )
+    await tick(hass, freezer, seconds=1)
+    await hass.services.async_call(DOMAIN, "snooze", {"uid": uid, "until": "2026-11-12"}, blocking=True)  # 09:00
+    task = manager.find(uid)
+    assert task.until_override.startswith("2026-11-12T20:59")  # 09:00 + the 12 h that were left
+    await tick(hass, freezer, hours=12, minutes=1)  # 11.11 20:01: not given up
+    assert task.start.startswith("2026-11-09T09:00") and not task.active
+    freezer.move_to("2026-11-12 09:00:01+01:00")
+    await tick(hass, freezer, seconds=1)
+    assert task.active and task.next_reminder is None  # reminded; the next one would be past the end
+    freezer.move_to("2026-11-12 21:00:00+01:00")
+    await tick(hass, freezer, seconds=1)  # nobody reacted: this year is skipped
+    assert task.start.startswith("2027-11-09T09:00")
+    assert task.remind_until.startswith("2027-11-11T20:00") and task.until_override is None
+    # a snooze that stays before the end changes nothing
+    freezer.move_to("2027-11-09 09:00:01+01:00")
+    await tick(hass, freezer, seconds=1)
+    await hass.services.async_call(DOMAIN, "snooze", {"uid": uid, "minutes": 60}, blocking=True)
+    assert task.until_override is None
