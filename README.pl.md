@@ -54,7 +54,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 
 <p align="center"><img src="docs/images/card-pl.png" width="460" alt="Karta Remindo"></p>
 
-Ładuje się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” wybierz **Remindo**:
+Ładuje się automatycznie z integracją (bez dodawania zasobu). W „Dodaj kartę” wybierz **Remindo**: lista kart pokazuje podgląd na żywo z Twoimi zadaniami. Opcje ustawisz w edytorze wizualnym (tytuł, przycisk „＋ Dodaj zadanie”, sekcje Zrobione / Odrzucone) albo w YAML. W widoku sekcji karta domyślnie zajmuje całą szerokość; w zakładce *Układ* można ją zwęzić (do połowy).
 
 ```yaml
 type: custom:remindo-card

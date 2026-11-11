@@ -54,7 +54,7 @@ When adding the integration (and later under *Configure*) you set:
 
 <p align="center"><img src="docs/images/card-en.png" width="460" alt="Remindo card"></p>
 
-Loaded automatically with the integration (no resource to add). In "Add card" pick **Remindo**:
+Loaded automatically with the integration (no resource to add). In "Add card" pick **Remindo**: the picker shows a live preview with your tasks. The options can be set in the visual editor (title, "＋ Add task" button, Done / Skipped sections) or in YAML. In a sections view the card takes the full width by default; in the *Layout* tab it can be made narrower (down to half).
 
 ```yaml
 type: custom:remindo-card

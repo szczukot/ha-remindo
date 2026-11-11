@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.10.9";
+const VERSION = "0.11.0";
 
 const I18N = {
   en: {
@@ -18,6 +18,7 @@ const I18N = {
     u_min: ["minute", "minutes", "minutes"], u_hour: ["hour", "hours", "hours"], u_day: ["day", "days", "days"],
     u_week: ["week", "weeks", "weeks"], u_month: ["month", "months", "months"], u_year: ["year", "years", "years"],
     description: "Task list with reminders: tick off, snooze, add",
+    ed_title: "Title", ed_title_hint: "Empty = \"Tasks\"", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
   },
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
@@ -35,6 +36,7 @@ const I18N = {
     u_min: ["minutę", "minuty", "minut"], u_hour: ["godzinę", "godziny", "godzin"], u_day: ["dzień", "dni", "dni"],
     u_week: ["tydzień", "tygodnie", "tygodni"], u_month: ["miesiąc", "miesiące", "miesięcy"], u_year: ["rok", "lata", "lat"],
     description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
+    ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania”", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
   },
 };
 let LANG = "en";
@@ -147,6 +149,9 @@ class RemindoCard extends HTMLElement {
 
   getCardSize() { return 3 + this._tasks.length; }
   static getStubConfig() { return {}; }
+  // sections view: full width by default, can be made narrower; height follows the list
+  getGridOptions() { return { columns: 12, min_columns: 6, rows: "auto" }; }
+  static getConfigElement() { return document.createElement("remindo-card-editor"); }
 
   async _call(service, data) {
     try { await this._hass.callService("remindo", service, data); }
@@ -495,9 +500,45 @@ RemindoCard.styles = `
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
 `;
 
+// Visual editor of the card options (HA's own form, so it looks like any other card)
+const EDITOR_SCHEMA = [
+  { name: "title", selector: { text: {} } },
+  { name: "show_form", selector: { boolean: {} } },
+  { name: "show_done", selector: { boolean: {} } },
+];
+const EDITOR_LABELS = { title: "ed_title", show_form: "ed_form", show_done: "ed_done" };
+
+class RemindoCardEditor extends HTMLElement {
+  setConfig(config) { this._config = config; this._update(); }
+  set hass(hass) { this._hass = hass; this._update(); }
+
+  _update() {
+    if (!this._hass || !this._config) return;
+    LANG = pickLang(this._hass);
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.computeLabel = (field) => t(EDITOR_LABELS[field.name]);
+      this._form.computeHelper = (field) => (field.name === "title" ? t("ed_title_hint") : "");
+      this._form.addEventListener("value-changed", (ev) => {
+        const config = { ...ev.detail.value };
+        if (!config.title) delete config.title;
+        this._config = config;
+        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
+      });
+      this.appendChild(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.schema = EDITOR_SCHEMA;
+    this._form.data = { show_form: true, show_done: true, ...this._config };
+  }
+}
+
 if (!customElements.get("remindo-card")) {
   customElements.define("remindo-card", RemindoCard);
+  customElements.define("remindo-card-editor", RemindoCardEditor);
   window.customCards = window.customCards || [];
-  window.customCards.push({ type: "remindo-card", name: "Remindo", description: I18N[pickLang({ language: document.documentElement.lang })].description, preview: false });
+  // preview: the card picker shows the real card with your tasks instead of plain text
+  window.customCards.push({ type: "remindo-card", name: "Remindo", description: I18N[pickLang({ language: document.documentElement.lang })].description, preview: true,
+    documentationURL: "https://github.com/szczukot/ha-remindo#card" });
   console.info(`%c REMINDO-CARD %c ${VERSION} `, "background:#43a047;color:#fff", "");
 }
