@@ -84,6 +84,10 @@ add:
       example: "Aquarium"
       selector:
         text:
+    icon:
+      example: "mdi:package-variant"
+      selector:
+        icon:
 done:
   fields: &target
     uid:
@@ -166,6 +170,10 @@ update:
       example: "Aquarium"
       selector:
         text:
+    icon:
+      example: "mdi:package-variant"
+      selector:
+        icon:
 snooze:
   fields:
     uid:

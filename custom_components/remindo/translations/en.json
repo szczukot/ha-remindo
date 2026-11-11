@@ -154,6 +154,10 @@
         "list": {
           "name": "List",
           "description": "Optional list, e.g. \"Aquarium\". A card set to that list shows only its tasks. Empty = the general list."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "Optional icon (e.g. mdi:package-variant), shown next to the task on the card and in the Android notification."
         }
       }
     },
@@ -294,6 +298,10 @@
         "list": {
           "name": "List",
           "description": "Optional list, e.g. \"Aquarium\". A card set to that list shows only its tasks. Empty = the general list."
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "Optional icon (e.g. mdi:package-variant), shown next to the task on the card and in the Android notification."
         }
       }
     },
@@ -346,10 +354,12 @@
           "data": {
             "summary": "Task summary",
             "entity_id": "Entity (device, sensor, calendar)",
-            "mode": "Condition"
+            "mode": "Condition",
+            "icon": "Icon"
           },
           "data_description": {
-            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them)."
+            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them).",
+            "icon": "Optional. Shown next to the task on the card and in the Android notification."
           }
         },
         "trigger_edit": {
@@ -358,10 +368,12 @@
           "data": {
             "summary": "Task summary",
             "entity_id": "Entity (device, sensor, calendar)",
-            "mode": "Condition"
+            "mode": "Condition",
+            "icon": "Icon"
           },
           "data_description": {
-            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them)."
+            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them).",
+            "icon": "Optional. Shown next to the task on the card and in the Android notification."
           }
         },
         "condition_state": {

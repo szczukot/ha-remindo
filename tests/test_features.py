@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+import voluptuous as vol
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -738,3 +739,44 @@ async def test_snooze_past_stop_reminding_is_not_lost(hass: HomeAssistant, freez
     await tick(hass, freezer, seconds=1)
     await hass.services.async_call(DOMAIN, "snooze", {"uid": uid, "minutes": 60}, blocking=True)
     assert task.until_override is None
+
+
+async def test_icons(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """An optional icon: on the task, in the Android notification, from a rule; cleared with null."""
+    entry, calls = await setup_integration(hass)
+    manager = entry.runtime_data
+    uid = await add_task(hass, summary="Parcel", icon="mdi:package-variant")
+    await tick(hass, freezer, seconds=1)
+    assert manager.find(uid).icon == "mdi:package-variant"
+    assert calls["notify"][-1].data["data"]["notification_icon"] == "mdi:package-variant"
+    plain = await add_task(hass, summary="No icon")
+    await tick(hass, freezer, seconds=1)
+    assert "notification_icon" not in calls["notify"][-1].data["data"]
+    await hass.services.async_call(DOMAIN, "update", {"uid": uid, "icon": None}, blocking=True)
+    assert manager.find(uid).icon is None
+    await hass.services.async_call(DOMAIN, "update", {"uid": plain, "icon": "mdi:flag"}, blocking=True)
+    assert manager.find(plain).icon == "mdi:flag"
+    with pytest.raises(vol.Invalid):
+        await add_task(hass, summary="Bad", icon="not an icon")
+    # a rule's icon goes to its task; clearing the field in the form removes it
+    hass.states.async_set("sensor.parcels", "0")
+    flow = await hass.config_entries.subentries.async_init((entry.entry_id, "rule"), context={"source": "user"})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Parcels", "icon": "mdi:package-variant", "entity_id": "sensor.parcels", "mode": "above"}
+    )
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": 0, "for_minutes": 0})
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"remind": True, "interval": 30, "auto_close": True})
+    assert flow["type"] == FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    hass.states.async_set("sensor.parcels", "1")
+    await hass.async_block_till_done()
+    assert next(t for t in entry.runtime_data.open_tasks() if t.summary == "Parcels").icon == "mdi:package-variant"
+    sub_id = next(s.subentry_id for s in entry.subentries.values() if s.title == "Parcels")
+    flow = await entry.start_subentry_reconfigure_flow(hass, sub_id)
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Parcels", "entity_id": "sensor.parcels", "mode": "above"}
+    )
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": 0, "for_minutes": 0})
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"remind": True, "interval": 30, "auto_close": True})
+    await hass.async_block_till_done()
+    assert entry.subentries[sub_id].data["icon"] is None

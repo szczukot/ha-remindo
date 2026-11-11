@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 
 const I18N = {
   en: {
@@ -20,7 +20,7 @@ const I18N = {
     description: "Task list with reminders: tick off, snooze, add",
     ed_title: "Title", ed_title_hint: "Empty = \"Tasks\" (or the list's name)", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
     ed_list: "Show only this list", ed_list_hint: "Empty = all tasks (with a filter once there are lists)",
-    all: "All", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
+    all: "All", f_icon: "Icon:", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
   },
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
@@ -40,7 +40,7 @@ const I18N = {
     description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
     ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania” (albo nazwa listy)", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
     ed_list: "Pokaż tylko listę", ed_list_hint: "Puste = wszystkie zadania (z filtrem, gdy są listy)",
-    all: "Wszystkie", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
+    all: "Wszystkie", f_icon: "Ikona:", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
   },
 };
 let LANG = "en";
@@ -233,7 +233,7 @@ class RemindoCard extends HTMLElement {
         ${recurring ? "" : `<button class="no" data-a="delete" data-uid="${task.uid}" title="${t("del_title")}">${TRASH}</button>`}
       </div>`;
     return `<div class="task ${kind}">
-      <div class="txt"><div class="sum">${esc(task.summary)}${task.list && !this._activeList() ? `<span class="tag">${esc(task.list)}</span>` : ""}</div>
+      <div class="txt"><div class="sum">${task.icon ? `<ha-icon class="ticon" icon="${esc(task.icon)}"></ha-icon>` : ""}${esc(task.summary)}${task.list && !this._activeList() ? `<span class="tag">${esc(task.list)}</span>` : ""}</div>
         ${when ? `<div class="when">${esc(when)}</div>` : ""}
         ${task.description ? `<div class="desc">${esc(task.description)}</div>` : ""}
         <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}${this._edit === task.uid ? this._taskForm(task) : ""}</div>`;
@@ -279,6 +279,8 @@ class RemindoCard extends HTMLElement {
     const on = (list, id, enabled) => (enabled !== false && (list == null || list.includes(id)) ? "checked" : "");
     return `<div class="form${edit ? " editor" : ""}">
       <input id="f-sum" placeholder="${t("what")}" value="${edit ? esc(task.summary) : ""}" />
+      <div class="frow"><span>${t("f_icon")}</span>
+        <span id="f-icon" data-value="${esc(edit ? task.icon || "" : "")}" data-was="${esc(edit ? task.icon || "" : "")}"></span></div>
       ${this._fixedList() ? "" : `<div class="frow"><span>${t("f_list")}</span>
         <input id="f-list" list="f-lists" placeholder="${t("f_list_hint")}" value="${esc(edit ? task.list || "" : this._filter || "")}" data-was="${esc(edit ? task.list || "" : "")}" />
         <datalist id="f-lists">${this._lists().map((l) => `<option value="${esc(l)}"></option>`).join("")}</datalist></div>`}
@@ -366,6 +368,7 @@ class RemindoCard extends HTMLElement {
       const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk"), keep_done: keep };
       const list = this._fixedList() || $("f-list")?.value.trim();
       if (list) data.list = list;
+      if (this._iconValue()) data.icon = this._iconValue();
       if (lim === "count" && interval) data.max_reminders = n;
       if (lim === "until" && until) data.remind_until = toIso(until);
       if (rep !== "none") { data.repeat = rep; data.repeat_every = every; }
@@ -375,6 +378,7 @@ class RemindoCard extends HTMLElement {
     // editing: only what changed is sent, so e.g. fixing the text never moves the reminder
     const data = { uid, summary };
     if ($("f-list") && $("f-list").value.trim() !== $("f-list").dataset.was) data.list = $("f-list").value.trim() || null;
+    if (this._iconValue() !== $("f-icon").dataset.was) data.icon = this._iconValue() || null;
     if (!remind) { if (task.start) data.start = null; }
     else if (startChanged) data.start = start;
     if (remind && interval !== Number(task.interval || 0)) data.interval = interval;
@@ -397,6 +401,54 @@ class RemindoCard extends HTMLElement {
     if (keep !== $("f-keep").defaultChecked) data.keep_done = keep;
     this._edit = null; this._forceRender = true; this._render();
     this._call("update", data);
+  }
+
+  // The icon field of the form: Home Assistant's own icon picker when it is available
+  // (it is loaded on demand), otherwise a plain text field for "mdi:…".
+  _iconValue() {
+    const slot = this.shadowRoot.getElementById("f-icon");
+    if (!slot) return "";
+    const input = slot.querySelector("input");
+    return (input ? input.value : slot.dataset.value || "").trim();
+  }
+
+  _mountIcon() {
+    const slot = this.shadowRoot.getElementById("f-icon");
+    if (!slot || slot.dataset.mounted === "picker") return;
+    if (customElements.get("ha-selector")) {
+      const value = this._iconValue();
+      const picker = document.createElement("ha-selector");
+      picker.hass = this._hass;
+      picker.selector = { icon: {} };
+      picker.value = value || undefined;
+      picker.addEventListener("value-changed", (ev) => {
+        ev.stopPropagation();
+        slot.dataset.value = ev.detail.value || "";
+        picker.value = ev.detail.value || undefined;
+      });
+      slot.dataset.value = value;
+      slot.dataset.mounted = "picker";
+      slot.replaceChildren(picker);
+      return;
+    }
+    if (!slot.dataset.mounted) {
+      slot.dataset.mounted = "text";
+      slot.innerHTML = `<input placeholder="mdi:package-variant" value="${esc(slot.dataset.value)}" />`;
+    }
+    RemindoCard.loadPicker().then(() => { if (customElements.get("ha-selector")) this._mountIcon(); });
+  }
+
+  // Home Assistant defines its form elements only when one of its own editors is first used
+  static loadPicker() {
+    RemindoCard._picker = RemindoCard._picker || (async () => {
+      try {
+        const helpers = await window.loadCardHelpers?.();
+        const card = await helpers?.createCardElement({ type: "entity", entity: "sun.sun" });
+        await card?.constructor?.getConfigElement?.();
+        await Promise.race([customElements.whenDefined("ha-selector"), new Promise((r) => setTimeout(r, 3000))]);
+      } catch (err) { /* the text field stays */ }
+    })();
+    return RemindoCard._picker;
   }
 
   // a message inside the open form: redrawing the card would wipe what was typed
@@ -495,7 +547,7 @@ class RemindoCard extends HTMLElement {
     card.onchange = (e) => { this._touched = Date.now(); this._onChange(e); };
     card.oninput = () => { this._touched = Date.now(); };
     const sum = this.shadowRoot.getElementById("f-sum");
-    if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(this._edit); }; this._unit(); }
+    if (sum) { sum.onkeydown = (e) => { if (e.key === "Enter") this._save(this._edit); }; this._unit(); this._mountIcon(); }
   }
 }
 
@@ -550,6 +602,10 @@ RemindoCard.styles = `
   .chip.on { background: var(--primary-color); border-color: transparent; color:#fff; }
   .tag { display:inline-block; margin-left:8px; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:500; vertical-align:middle;
          background: color-mix(in srgb, var(--primary-color) 14%, transparent); color: var(--primary-color); }
+  .ticon { --mdc-icon-size: 22px; margin-right: 6px; vertical-align: -4px; color: var(--secondary-text-color); }
+  .task.now .ticon { color: var(--warning-color, #ff9800); }
+  #f-icon { flex: 1 1 220px; min-width: 0; max-width: 320px; }
+  #f-icon ha-selector { display: block; }
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
 `;
 

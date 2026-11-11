@@ -185,6 +185,7 @@ class Task:
     templates: bool = False  # texts come from a trusted source and may be HA templates
     template: str | None = None  # summary template, rendered at every reminder
     list_name: str | None = None  # a list ("Aquarium") for cards that show one list; None = general
+    icon: str | None = None  # "mdi:package-variant": shown on the card and in the Android notification
     status: str = STATUS_OPEN
     active: bool = False  # already reminded (shown under "Now")
     reminders: int = 0
@@ -367,6 +368,7 @@ class TaskManager:
         done_message: str | None = None,
         notify_data: dict[str, Any] | None = None,
         list_name: str | None = None,
+        icon: str | None = None,
         templates: bool = False,
         restart: bool = False,
         source: str = "service",
@@ -425,6 +427,7 @@ class TaskManager:
             templates=templates,
             template=template,
             list_name=self.norm_list(list_name),
+            icon=icon or None,
         )
         self.tasks[task.uid] = task
         self._schedule(task)
@@ -486,6 +489,8 @@ class TaskManager:
             task.notify_data = dict(changes["notify_data"]) if changes["notify_data"] else None
         if "list" in changes:
             task.list_name = self.norm_list(changes["list"])
+        if "icon" in changes:
+            task.icon = changes["icon"] or None
         if changes.keys() & {"start", "remind_until", "repeat"}:
             task.until_override = None  # set by a snooze for the old schedule
         if was_active and not task.active:
@@ -873,6 +878,8 @@ class TaskManager:
                         "sticky": "true",
                         "clickAction": click,
                         "url": click,
+                        # Android shows it instead of the app's icon; iOS ignores it
+                        **({"notification_icon": task.icon} if task.icon else {}),
                         **extra,
                         "tag": self._tag(task),
                         "actions": [

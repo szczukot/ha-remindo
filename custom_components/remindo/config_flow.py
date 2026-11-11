@@ -205,10 +205,13 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             if problem := rule_problem(user_input["mode"], entity_id, self.hass.states.get(entity_id), exists):
                 errors["entity_id" if problem == "rule_entity_missing" else "mode"] = problem
             self._data.update(user_input)
+            if "icon" not in user_input:
+                self._data["icon"] = None  # the field was cleared
             if not errors:
                 return await self.async_step_condition()
         schema = {
             vol.Required("summary"): selector.TextSelector(),
+            vol.Optional("icon"): selector.IconSelector(),
             vol.Required("entity_id"): selector.EntitySelector(),
             vol.Required("mode", default=self._data.get("mode", "state")): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=MODES, translation_key="rule_mode",

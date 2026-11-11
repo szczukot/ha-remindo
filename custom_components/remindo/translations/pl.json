@@ -154,6 +154,10 @@
         "list": {
           "name": "Lista",
           "description": "Opcjonalna lista, np. „Akwarium”. Karta ustawiona na tę listę pokaże tylko jej zadania. Puste = lista ogólna."
+        },
+        "icon": {
+          "name": "Ikona",
+          "description": "Opcjonalna ikona (np. mdi:package-variant), pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
         }
       }
     },
@@ -294,6 +298,10 @@
         "list": {
           "name": "Lista",
           "description": "Opcjonalna lista, np. „Akwarium”. Karta ustawiona na tę listę pokaże tylko jej zadania. Puste = lista ogólna."
+        },
+        "icon": {
+          "name": "Ikona",
+          "description": "Opcjonalna ikona (np. mdi:package-variant), pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
         }
       }
     },
@@ -346,10 +354,12 @@
           "data": {
             "summary": "Treść zadania",
             "entity_id": "Encja (urządzenie, czujnik, kalendarz)",
-            "mode": "Warunek"
+            "mode": "Warunek",
+            "icon": "Ikona"
           },
           "data_description": {
-            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz)."
+            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz).",
+            "icon": "Opcjonalnie. Pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
           }
         },
         "trigger_edit": {
@@ -358,10 +368,12 @@
           "data": {
             "summary": "Treść zadania",
             "entity_id": "Encja (urządzenie, czujnik, kalendarz)",
-            "mode": "Warunek"
+            "mode": "Warunek",
+            "icon": "Ikona"
           },
           "data_description": {
-            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz)."
+            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz).",
+            "icon": "Opcjonalnie. Pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
           }
         },
         "condition_state": {
