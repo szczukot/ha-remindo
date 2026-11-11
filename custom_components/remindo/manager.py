@@ -455,6 +455,7 @@ class TaskManager:
             # moved to a later time: the notification with buttons is out of date
             await self._clear_notifications(task)
         self._schedule(task)
+        self._schedule_expiry(task)
         self._save()
         return task
 
@@ -511,6 +512,7 @@ class TaskManager:
             task.active = False
             task.reminders = task.snoozes = 0
             self._schedule(task)
+            self._schedule_expiry(task)
         elif status == STATUS_DONE and not self.keep_done(task):
             self._cancel(task.uid)
             self.tasks.pop(task.uid, None)
@@ -600,13 +602,21 @@ class TaskManager:
 
         self._timers[uid] = async_track_point_in_time(self.hass, _fire_reminder, when)
 
+    @staticmethod
+    def _expiry(task: Task) -> datetime | None:
+        """When an open task is given up: its own date, or for a recurring task the
+        "stop reminding at" time (that date is skipped and it waits for the next one)."""
+        if expires := _dt(task.expires):
+            return expires
+        return _dt(task.remind_until) if task.recurring else None
+
     @callback
     def _schedule_expiry(self, task: Task) -> None:
         """(Re)arm the timer that drops a task nobody ticked off."""
         uid = task.uid
         if cancel := self._expiry_timers.pop(uid, None):
             cancel()
-        if task.status != STATUS_OPEN or (expires := _dt(task.expires)) is None:
+        if task.status != STATUS_OPEN or (expires := self._expiry(task)) is None:
             return
 
         @callback
@@ -622,7 +632,7 @@ class TaskManager:
         if task is None or task.status != STATUS_OPEN:
             return
         now = dt_util.now()
-        if (expires := _dt(task.expires)) and expires <= now:
+        if (expires := self._expiry(task)) and expires <= now:
             await self.async_dismiss(task, "expired")
             return
         if self.options.get(CONF_QUIET_PUSH) and self.is_quiet(now):

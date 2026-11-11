@@ -73,7 +73,7 @@ Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym termini
 
 **✎** pozwala zmienić treść, termin, odstęp przypomnień i miejsce przypominania.
 
-Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie.
+Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie. Jeśli zadanie cykliczne ma „przestań przypominać o konkretnej porze” i nikt go do tej pory nie odhaczy, ten termin liczy się jako pominięty, a zadanie czeka na następny.
 
 Karta wyświetla się w języku profilu użytkownika.
 
@@ -150,6 +150,7 @@ Jeśli reguła obserwuje encję, której już nie ma (zmiana nazwy albo usunięc
 | 🔥 Niskie ciśnienie w kotle | reguła: ciśnienie (np. z eBUSd) poniżej 1.0 → „Dopompuj wodę w kotle: {state}” |
 | ❄️ Filtry klimatyzatorów | zadanie cykliczne co 3 miesiące |
 | 🛠️ Przegląd kotła / pompy ciepła | zadanie cykliczne co rok |
+| 🇵🇱 Wywieś flagę w święto | zadanie cykliczne co rok, od 2 dni wcześniej o 9:00, raz dziennie, przestań przypominać o 20:00 w dniu święta |
 | 📟 Odczyt gazomierza / wodomierza | zadanie cykliczne co miesiąc, 1. dnia o 9:00 |
 | 🔋 Słaba bateria w czujniku | reguła: bateria poniżej 15 → „Wymień baterię: {name} ({state})” |
 | 📱 Tablet się rozładowuje | reguła: bateria tabletu poniżej 20 → „Podłącz tablet” |

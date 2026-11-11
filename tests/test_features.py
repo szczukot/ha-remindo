@@ -20,7 +20,7 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.remindo import texts
 from custom_components.remindo.const import DOMAIN
 
-from .common import OPTS, add_rule, setup_integration
+from .common import OPTS, add_rule, add_task, setup_integration, tick
 
 COMPONENT = Path(__file__).parent.parent / "custom_components" / DOMAIN
 
@@ -608,3 +608,28 @@ async def test_notify_data_from_the_action(hass: HomeAssistant, freezer: FrozenD
     assert calls["notify"][0].data["data"]["notification_icon"] == "mdi:washing-machine"
     await hass.services.async_call(DOMAIN, "update", {"uid": res["uid"], "notify_data": None}, blocking=True)
     assert entry.runtime_data.tasks[res["uid"]].notify_data is None
+
+
+async def test_yearly_task_skips_a_date_nobody_ticked_off(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """ "Hang out the flag": from 2 days before, at most until the evening of the day.
+    Not ticked off by then → that year is skipped and the task waits for the next one."""
+    freezer.move_to("2026-11-11 08:00:00+01:00")
+    entry, _ = await setup_integration(hass)
+    uid = await add_task(
+        hass, summary="Hang out the flag", start="2026-11-09 09:00:00", interval=1440,
+        remind_until="2026-11-11 20:00:00", repeat="yearly",
+    )
+    manager = entry.runtime_data
+    await tick(hass, freezer, seconds=1)
+    assert manager.find(uid).active  # due already: reminds right away
+    await tick(hass, freezer, hours=12, minutes=1)  # 20:01
+    task = manager.find(uid)
+    assert task.status == "open" and not task.active
+    assert task.start.startswith("2027-11-09T09:00")
+    assert task.remind_until.startswith("2027-11-11T20:00")
+    assert manager.history[-1]["result"] == "dismissed" and manager.history[-1]["source"] == "expired"
+    # ticked off in time next year → 2028, no skip
+    freezer.move_to("2027-11-10 10:00:00+01:00")
+    await tick(hass, freezer, seconds=1)
+    await hass.services.async_call(DOMAIN, "done", {"uid": uid}, blocking=True)
+    assert manager.find(uid).start.startswith("2028-11-09T09:00")

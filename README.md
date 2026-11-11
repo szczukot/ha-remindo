@@ -73,7 +73,7 @@ Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit,
 
 **✎** lets you change the text, the due time, the reminder interval and where to remind.
 
-Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time.
+Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time. If a recurring task has "stop reminding at" and nobody ticks it off by then, that date counts as skipped and the task waits for the next one.
 
 The card follows the language of the user's profile.
 
@@ -150,6 +150,7 @@ If a rule watches an entity that no longer exists (renamed or removed), or compa
 | 🔥 Low boiler pressure | rule: pressure (e.g. from eBUSd) below 1.0 → "Top up the boiler: {state}" |
 | ❄️ AC filters | recurring task every 3 months |
 | 🛠️ Boiler / heat pump service | recurring task every year |
+| 🇵🇱 Hang out the flag on a national holiday | recurring task every year, from 2 days before at 9:00, once a day, stop reminding at 20:00 on the day |
 | 📟 Gas / water meter reading | recurring task every month, on the 1st at 9:00 |
 | 🔋 Low sensor battery | rule: battery below 15 → "Replace the battery: {name} ({state})" |
 | 📱 Wall tablet running low | rule: tablet battery below 20 → "Plug in the tablet" |
