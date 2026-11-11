@@ -189,8 +189,8 @@ Reminders that were due while Home Assistant was down are sent about 30 seconds 
 
 ## Entities and events
 
-- `todo.remindo`: the list (ticking off in the regular To-do card closes the task and clears notifications),
-- `sensor.remindo_active`: how many tasks are reminding right now (attribute `tasks` with their names),
+- `todo.remindo` (shown as *Remindo*): the list. Its state is the number of open tasks, as for every To-do list in Home Assistant. Ticking off in the regular To-do card closes the task and clears notifications.
+- `sensor.remindo_active` (shown as *Remindo reminding now*): how many tasks are reminding right now, i.e. are under *Now* in the card (attribute `tasks` with their names, `scheduled` with the number of tasks waiting for their time). Useful e.g. for a badge on the dashboard or for "show the tasks page when something is reminding".
 - events `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, described in the logbook.
 
 ### Your own reaction to a reminder

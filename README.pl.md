@@ -189,8 +189,8 @@ Przypomnienia, które wypadły, gdy Home Assistant był wyłączony, przychodzą
 
 ## Encje i zdarzenia
 
-- `todo.remindo`: lista (odhaczenie w zwykłej karcie To-do zamyka zadanie i czyści powiadomienia),
-- `sensor.remindo_active`: ile zadań przypomina teraz (atrybut `tasks` z nazwami),
+- `todo.remindo` (widoczna jako *Remindo*): lista. Jej stan to liczba otwartych zadań, jak w każdej liście To-do w Home Assistant. Odhaczenie w zwykłej karcie To-do zamyka zadanie i czyści powiadomienia.
+- `sensor.remindo_active` (widoczna jako *Remindo – przypomina teraz*): ile zadań przypomina w tej chwili, czyli jest w sekcji *Teraz* na karcie (atrybut `tasks` z nazwami, `scheduled` z liczbą zadań czekających na swój termin). Przydaje się np. do plakietki na dashboardzie albo do „pokaż stronę z zadaniami, gdy coś przypomina”.
 - zdarzenia `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, opisane w dzienniku.
 
 ### Własna reakcja na przypomnienie

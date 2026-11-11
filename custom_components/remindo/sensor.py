@@ -27,6 +27,8 @@ class ActiveTasksSensor(SensorEntity):
     def __init__(self, manager: TaskManager, entry: ConfigEntry) -> None:
         self._manager = manager
         self._attr_unique_id = f"{entry.entry_id}_active"
+        # a fixed id, whatever the (translated) name; used in automations and the docs
+        self.entity_id = "sensor.remindo_active"
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(self._manager.async_add_listener(self._refresh))
