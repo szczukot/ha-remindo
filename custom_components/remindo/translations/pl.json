@@ -460,6 +460,9 @@
     },
     "task_closed": {
       "message": "Zadanie „{summary}” jest już zrobione albo odrzucone. Najpierw je przywróć."
+    },
+    "until_before_start": {
+      "message": "„Przestań przypominać” musi być później niż termin."
     }
   },
   "issues": {

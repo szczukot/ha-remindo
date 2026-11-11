@@ -460,6 +460,9 @@
     },
     "task_closed": {
       "message": "The task \"{summary}\" is already done or skipped. Restore it first."
+    },
+    "until_before_start": {
+      "message": "\"Stop reminding at\" must be later than the due time."
     }
   },
   "issues": {

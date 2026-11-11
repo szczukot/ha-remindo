@@ -395,6 +395,8 @@ class TaskManager:
             return existing
         if (repeat or REPEAT_NONE) != REPEAT_NONE and start_dt is None:
             raise RemindoError("repeat_needs_start")
+        until_dt = self._resolve_start(remind_until) if remind_until else None
+        self._check_until(start_dt, until_dt)
         task = Task(
             uid=uuid.uuid4().hex[:12],
             summary=summary,
@@ -411,7 +413,7 @@ class TaskManager:
             phones=self._norm(phones, "notify."),
             speakers=self._norm(speakers, "media_player."),
             max_reminders=int(max_reminders) if max_reminders else None,
-            remind_until=_iso(self._resolve_start(remind_until)) if remind_until else None,
+            remind_until=_iso(until_dt),
             expires=_iso(expires),
             keep_done=keep_done,
             done_message=done_message or None,
@@ -431,6 +433,10 @@ class TaskManager:
         """Change fields of a task. A key present in `changes` is applied; None clears it."""
         now = dt_util.now()
         was_active = task.active
+        if changes.get("remind_until"):
+            # checked before anything changes, so a refused edit leaves the task as it was
+            start = self._resolve_start(changes["start"]) if "start" in changes else _dt(task.start)
+            self._check_until(start, self._resolve_start(changes["remind_until"]))
         if summary := changes.get("summary"):
             if summary != task.summary:
                 task.summary = summary
@@ -483,6 +489,12 @@ class TaskManager:
         self._schedule_expiry(task)
         self._save()
         return task
+
+    @staticmethod
+    def _check_until(start: datetime | None, until: datetime | None) -> None:
+        """"Stop reminding at" before the due time would never remind (and skip every date)."""
+        if start and until and until <= start:
+            raise RemindoError("until_before_start")
 
     async def async_done(
         self, task: Task, source: str = "service", context: Context | None = None

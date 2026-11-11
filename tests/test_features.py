@@ -692,3 +692,19 @@ async def test_lists(hass: HomeAssistant, hass_ws_client) -> None:
     msg = await client.receive_json()
     assert msg["event"]["options"]["lists"] == ["Aquarium"]
     assert {t["summary"]: t["list"] for t in msg["event"]["tasks"]}["Feed the fish"] == "Aquarium"
+
+
+async def test_stop_reminding_must_be_after_the_due_time(hass: HomeAssistant) -> None:
+    entry, _ = await setup_integration(hass)
+    with pytest.raises(ServiceValidationError):
+        await add_task(hass, summary="Flag", start="2027-11-09 09:00:00", remind_until="2027-11-08 20:00:00", repeat="yearly")
+    uid = await add_task(hass, summary="Flag", start="2027-11-09 09:00:00", remind_until="2027-11-11 20:00:00", repeat="yearly")
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(DOMAIN, "update", {"uid": uid, "remind_until": "2027-11-01 20:00:00"}, blocking=True)
+    task = entry.runtime_data.find(uid)
+    assert task.remind_until.startswith("2027-11-11T20:00")  # a refused edit changes nothing
+    # moving both together is fine
+    await hass.services.async_call(
+        DOMAIN, "update", {"uid": uid, "start": "2027-10-30 09:00:00", "remind_until": "2027-11-01 20:00:00"}, blocking=True
+    )
+    assert task.remind_until.startswith("2027-11-01T20:00")

@@ -20,7 +20,7 @@ const I18N = {
     description: "Task list with reminders: tick off, snooze, add",
     ed_title: "Title", ed_title_hint: "Empty = \"Tasks\" (or the list's name)", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
     ed_list: "Show only this list", ed_list_hint: "Empty = all tasks (with a filter once there are lists)",
-    all: "All", f_list: "List:", f_list_hint: "empty = general",
+    all: "All", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
   },
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
@@ -40,7 +40,7 @@ const I18N = {
     description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
     ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania” (albo nazwa listy)", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
     ed_list: "Pokaż tylko listę", ed_list_hint: "Puste = wszystkie zadania (z filtrem, gdy są listy)",
-    all: "Wszystkie", f_list: "Lista:", f_list_hint: "puste = ogólna",
+    all: "Wszystkie", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
   },
 };
 let LANG = "en";
@@ -288,7 +288,7 @@ class RemindoCard extends HTMLElement {
           ${new Date().getHours() < 19 ? opt("evening", t("tonight"), when) : ""}
           ${opt("custom", t("pick"), when)}
         </select>
-        <input id="f-dt" type="datetime-local" value="${local(due)}" data-was="${local(due)}" />
+        <input id="f-dt" type="datetime-local" min="${local(new Date())}" value="${local(due)}" data-was="${local(due)}" />
         ${t("every")} <input id="f-int" type="number" min="0" value="${hours ? interval / 60 : interval}" />
           <select id="f-int-u"><option value="1"${hours ? "" : " selected"}></option><option value="60"${hours ? " selected" : ""}></option></select></span>
         <span class="hint" id="f-rem-h">${t("until_done")} · ${t("e_once")}</span>
@@ -297,7 +297,7 @@ class RemindoCard extends HTMLElement {
       <div class="frow" id="f-lim-row"><span class="chk"></span>
         <span class="grp">${t("stop")} <select id="f-lim">${opt("", t("stop_never"), lim)}${opt("count", t("stop_count"), lim)}${opt("until", t("stop_until"), lim)}</select>
           <input id="f-lim-n" type="number" min="1" value="${(edit && task.max_reminders) || 3}" />
-          <input id="f-lim-dt" type="datetime-local" value="${edit ? local(task.remind_until) : ""}" data-was="${edit ? local(task.remind_until) : ""}" /></span>
+          <input id="f-lim-dt" type="datetime-local" min="${local(new Date())}" value="${edit ? local(task.remind_until) : ""}" data-was="${edit ? local(task.remind_until) : ""}" /></span>
       </div>
       <div class="frow">
         <label class="chk"><input type="checkbox" id="f-rep-on" ${rec ? "checked" : ""} /> ${t("repeat")}</label>
@@ -315,6 +315,7 @@ class RemindoCard extends HTMLElement {
         <label><input type="checkbox" id="f-keep" ${keep ? "checked" : ""} /> ${t("keep")}</label>
         <span class="hint">${t("keep_hint")}</span>
       </div>
+      <div class="err" id="f-err" style="display:none"></div>
       <div class="frow end">
         ${edit ? `<button class="no" data-a="delete" data-uid="${task.uid}" title="${t(rec ? "del_title_rec" : "del_title")}">${TRASH} ${t("del")}</button><span class="spacer"></span>` : ""}
         <button data-a="cancel">${t("cancel")}</button>
@@ -338,25 +339,30 @@ class RemindoCard extends HTMLElement {
     const remind = $("f-rem").checked;
     const when = $("f-when").value;
     let start = null;
+    let startAt = new Date();  // the due time as a date, for the checks below
     if (remind) {
       const d = new Date();
-      if (when === "1h") start = toIso(Date.now() + 3600e3);
-      else if (when === "evening") { d.setHours(19, 0, 0, 0); start = toIso(d); }
-      else if (when === "custom" && $("f-dt").value) start = toIso($("f-dt").value);
+      if (when === "1h") { startAt = new Date(Date.now() + 3600e3); start = toIso(startAt); }
+      else if (when === "evening") { d.setHours(19, 0, 0, 0); startAt = d; start = toIso(d); }
+      else if (when === "custom" && $("f-dt").value) { startAt = new Date($("f-dt").value); start = toIso($("f-dt").value); }
       else start = "now";
     }
     const interval = remind ? Math.max(0, Number($("f-int").value || 0)) * Number($("f-int-u").value) : 0;
     const rep = remind && $("f-rep-on").checked ? $("f-rep").value : "none";
     const every = Math.max(1, Number($("f-every").value || 1));
-    const lim = interval ? $("f-lim").value : "";
+    // "at a time" also matters for "remind once": a recurring task skips its date after it
+    const lim = remind ? $("f-lim").value : "";
     const n = Math.max(1, Number($("f-lim-n").value || 1)), until = $("f-lim-dt").value;
     const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
     const keep = $("f-keep").checked;
+    const past = (input) => input.value && (!task || input.value !== input.dataset.was) && new Date(input.value) <= new Date();
+    if ((remind && when === "custom" && past($("f-dt"))) || (lim === "until" && past($("f-lim-dt")))) return this._formError(t("pick_past"));
+    if (lim === "until" && until && new Date(until) <= startAt) return this._formError(t("until_before"));
     if (!task) {
       const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk"), keep_done: keep };
       const list = this._fixedList() || $("f-list")?.value.trim();
       if (list) data.list = list;
-      if (lim === "count") data.max_reminders = n;
+      if (lim === "count" && interval) data.max_reminders = n;
       if (lim === "until" && until) data.remind_until = toIso(until);
       if (rep !== "none") { data.repeat = rep; data.repeat_every = every; }
       this._formOpen = false; this._forceRender = true; this._render();
@@ -389,6 +395,12 @@ class RemindoCard extends HTMLElement {
     this._call("update", data);
   }
 
+  // a message inside the open form: redrawing the card would wipe what was typed
+  _formError(message) {
+    const box = this.shadowRoot.getElementById("f-err");
+    if (box) { box.textContent = message; box.style.display = ""; }
+  }
+
   _onClick(ev) {
     const b = ev.target.closest("button, .sec-title");
     if (!b) return;
@@ -419,7 +431,7 @@ class RemindoCard extends HTMLElement {
       case "cancel": this._formOpen = false; this._edit = null; this._forceRender = true; return this._render();
       case "save": return this._save(uid);
       case "err": this._error = null; this._forceRender = true; return this._render();
-      case "filter": this._filter = b.dataset.l || null; this._forceRender = true; return this._render();
+      case "filter": this._filter = b.dataset.l || null; this._edit = null; this._pick = null; this._forceRender = true; return this._render();
       case "sec": this._collapsed[b.dataset.k] = !this._collapsed[b.dataset.k]; this._forceRender = true; return this._render();
     }
   }
