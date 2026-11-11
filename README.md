@@ -61,7 +61,17 @@ type: custom:remindo-card
 title: Tasks       # optional, defaults to "Tasks" / "Zadania"
 show_done: true    # Done / Skipped sections (collapsed)
 show_form: true    # "＋ Add task" button
+list: Aquarium     # optional: show and add only this list
 ```
+
+### Lists
+
+At the start there is one general list, and the card looks as shown above. To keep e.g. aquarium tasks apart, type a list name in the task form ("List:", with suggestions of the lists in use), in a rule or in `remindo.add` (`list: Aquarium`). Upper / lower case does not matter. Once there is at least one list:
+
+- the card that shows everything gets filter buttons at the top (*All · Aquarium · Garden*) and a small label with the list name next to each task;
+- a card set to one list (the visual editor's "Show only this list", or `list: Aquarium` in YAML) shows and adds only that list's tasks, without the filter; its title defaults to the list's name.
+
+`todo.remindo` keeps all tasks of every list.
 
 The add form:
 
@@ -171,8 +181,8 @@ If a rule watches an entity that no longer exists (renamed or removed), or compa
 
 | Action | Fields |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
-| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`. Only the fields you send change; `null` clears a field. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `list` (e.g. `Aquarium`), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
+| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`. Only the fields you send change; `null` clears a field. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time; a second close within 30 s (another phone, the card) is ignored, so a date is never skipped by accident. |
 | `remindo.reopen` | `uid`: opens a done or skipped task again; a task with a due time reminds again right away |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |

@@ -34,6 +34,7 @@ from .const import (
     ATTR_INTERVAL,
     ATTR_KEEP_DONE,
     ATTR_KEY,
+    ATTR_LIST,
     ATTR_MAX_REMINDERS,
     ATTR_MINUTES,
     ATTR_NOTIFY_DATA,
@@ -101,6 +102,7 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_KEEP_DONE): cv.boolean,
         vol.Optional(ATTR_DONE_MESSAGE): cv.string,
         vol.Optional(ATTR_NOTIFY_DATA): vol.Any(None, dict),
+        vol.Optional(ATTR_LIST): vol.Any(None, cv.string),
     }
 )
 TARGET = {vol.Optional(ATTR_UID): cv.string, vol.Optional(ATTR_KEY): cv.string}
@@ -130,6 +132,7 @@ UPDATE_FIELDS = {
     vol.Optional(ATTR_REMIND_UNTIL): vol.Any(None, _when),
     vol.Optional(ATTR_KEEP_DONE): vol.Any(None, cv.boolean),
     vol.Optional(ATTR_NOTIFY_DATA): vol.Any(None, dict),
+    vol.Optional(ATTR_LIST): vol.Any(None, cv.string),
 }
 UPDATE_SCHEMA = vol.All(vol.Schema({**TARGET, **UPDATE_FIELDS}), _HAS_TARGET)
 CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
@@ -246,6 +249,7 @@ def _register_services(hass: HomeAssistant) -> None:
             keep_done=data.get(ATTR_KEEP_DONE),
             done_message=data.get(ATTR_DONE_MESSAGE),
             notify_data=data.get(ATTR_NOTIFY_DATA),
+            list_name=data.get(ATTR_LIST),
             templates=await _may_use_templates(hass, call),
             source="service",
             context=call.context,
@@ -325,6 +329,7 @@ async def ws_subscribe(
                 "keep_done": manager.options.get(CONF_KEEP_DONE, True),
                 "phones": [{"id": p, "name": manager.phone_label(p)} for p in manager.all_phones()],
                 "speakers": [{"id": s, "name": manager.speaker_label(s)} for s in manager.all_speakers()],
+                "lists": manager.lists(),
             },
         }
 

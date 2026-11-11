@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "0.11.0";
+const VERSION = "0.12.0";
 
 const I18N = {
   en: {
@@ -18,7 +18,9 @@ const I18N = {
     u_min: ["minute", "minutes", "minutes"], u_hour: ["hour", "hours", "hours"], u_day: ["day", "days", "days"],
     u_week: ["week", "weeks", "weeks"], u_month: ["month", "months", "months"], u_year: ["year", "years", "years"],
     description: "Task list with reminders: tick off, snooze, add",
-    ed_title: "Title", ed_title_hint: "Empty = \"Tasks\"", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
+    ed_title: "Title", ed_title_hint: "Empty = \"Tasks\" (or the list's name)", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
+    ed_list: "Show only this list", ed_list_hint: "Empty = all tasks (with a filter once there are lists)",
+    all: "All", f_list: "List:", f_list_hint: "empty = general",
   },
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
@@ -36,7 +38,9 @@ const I18N = {
     u_min: ["minutę", "minuty", "minut"], u_hour: ["godzinę", "godziny", "godzin"], u_day: ["dzień", "dni", "dni"],
     u_week: ["tydzień", "tygodnie", "tygodni"], u_month: ["miesiąc", "miesiące", "miesięcy"], u_year: ["rok", "lata", "lat"],
     description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
-    ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania”", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
+    ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania” (albo nazwa listy)", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
+    ed_list: "Pokaż tylko listę", ed_list_hint: "Puste = wszystkie zadania (z filtrem, gdy są listy)",
+    all: "Wszystkie", f_list: "Lista:", f_list_hint: "puste = ogólna",
   },
 };
 let LANG = "en";
@@ -79,6 +83,7 @@ const ago = (iso) => {
   const h = Math.floor(min / 60);
   return h < 24 ? t("h_ago", { n: h }) : t("d_ago", { n: Math.floor(h / 24) });
 };
+const same = (a, b) => String(a || "").toLowerCase() === String(b || "").toLowerCase();
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const pad = (n) => String(n).padStart(2, "0");
 const localIso = (d) =>
@@ -158,15 +163,34 @@ class RemindoCard extends HTMLElement {
     catch (err) { this._error = err.message || String(err); this._render(); }
   }
 
+  // a card set to one list shows only it; otherwise the filter picked at the top (if any)
+  _fixedList() { return this._config.list || null; }
+  _lists() { return this._opts?.lists || []; }
+  _activeList() {
+    if (this._fixedList()) return this._fixedList();
+    if (this._filter && !this._lists().some((l) => same(l, this._filter))) this._filter = null;  // list gone
+    return this._filter || null;
+  }
+
+  // filter buttons: only on a card that shows everything, and only once there are lists
+  _chips() {
+    if (this._fixedList() || !this._lists().length) return "";
+    const active = this._activeList();
+    const chip = (value, label) => `<button class="chip${same(value, active) ? " on" : ""}" data-a="filter" data-l="${esc(value)}">${esc(label)}</button>`;
+    return `<div class="chips">${chip("", t("all"))}${this._lists().map((l) => chip(l, l)).join("")}</div>`;
+  }
+
   _groups() {
-    const open = this._tasks.filter((t) => t.status === "open");
+    const active = this._activeList();
+    const tasks = active ? this._tasks.filter((x) => same(x.list, active)) : this._tasks;
+    const open = tasks.filter((t) => t.status === "open");
     const by = (k) => (a, b) => (a[k] || "9999").localeCompare(b[k] || "9999");
     return {
       now: open.filter((t) => t.active).sort(by("last_reminded")),
       planned: open.filter((t) => !t.active && t.start).sort(by("next_reminder")),
       notes: open.filter((t) => !t.start).sort(by("created")),
-      done: this._tasks.filter((t) => t.status === "done").sort((a, b) => (b.closed || "").localeCompare(a.closed || "")).slice(0, 5),
-      dismissed: this._tasks.filter((t) => t.status === "dismissed").sort((a, b) => (b.closed || "").localeCompare(a.closed || "")).slice(0, 10),
+      done: tasks.filter((t) => t.status === "done").sort((a, b) => (b.closed || "").localeCompare(a.closed || "")).slice(0, 5),
+      dismissed: tasks.filter((t) => t.status === "dismissed").sort((a, b) => (b.closed || "").localeCompare(a.closed || "")).slice(0, 10),
     };
   }
 
@@ -208,7 +232,7 @@ class RemindoCard extends HTMLElement {
         ${recurring ? "" : `<button class="no" data-a="delete" data-uid="${task.uid}" title="${t("del_title")}">${TRASH}</button>`}
       </div>`;
     return `<div class="task ${kind}">
-      <div class="txt"><div class="sum">${esc(task.summary)}</div>
+      <div class="txt"><div class="sum">${esc(task.summary)}${task.list && !this._activeList() ? `<span class="tag">${esc(task.list)}</span>` : ""}</div>
         ${when ? `<div class="when">${esc(when)}</div>` : ""}
         ${task.description ? `<div class="desc">${esc(task.description)}</div>` : ""}
         <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}${this._edit === task.uid ? this._taskForm(task) : ""}</div>`;
@@ -254,6 +278,9 @@ class RemindoCard extends HTMLElement {
     const on = (list, id, enabled) => (enabled !== false && (list == null || list.includes(id)) ? "checked" : "");
     return `<div class="form${edit ? " editor" : ""}">
       <input id="f-sum" placeholder="${t("what")}" value="${edit ? esc(task.summary) : ""}" />
+      ${this._fixedList() ? "" : `<div class="frow"><span>${t("f_list")}</span>
+        <input id="f-list" list="f-lists" placeholder="${t("f_list_hint")}" value="${esc(edit ? task.list || "" : this._filter || "")}" data-was="${esc(edit ? task.list || "" : "")}" />
+        <datalist id="f-lists">${this._lists().map((l) => `<option value="${esc(l)}"></option>`).join("")}</datalist></div>`}
       <div class="frow">
         <label class="chk"><input type="checkbox" id="f-rem" ${!edit || task.start ? "checked" : ""} /> ${t("remind")}</label>
         <span class="grp" id="f-rem-g"><select id="f-when">
@@ -327,6 +354,8 @@ class RemindoCard extends HTMLElement {
     const keep = $("f-keep").checked;
     if (!task) {
       const data = { summary, start, interval, phones: pick(".f-phone"), speakers: pick(".f-spk"), keep_done: keep };
+      const list = this._fixedList() || $("f-list")?.value.trim();
+      if (list) data.list = list;
       if (lim === "count") data.max_reminders = n;
       if (lim === "until" && until) data.remind_until = toIso(until);
       if (rep !== "none") { data.repeat = rep; data.repeat_every = every; }
@@ -335,6 +364,7 @@ class RemindoCard extends HTMLElement {
     }
     // editing: only what changed is sent, so e.g. fixing the text never moves the reminder
     const data = { uid, summary };
+    if ($("f-list") && $("f-list").value.trim() !== $("f-list").dataset.was) data.list = $("f-list").value.trim() || null;
     if (!remind) { if (task.start) data.start = null; }
     else if (!task.start || when !== "custom" || $("f-dt").value !== $("f-dt").dataset.was) data.start = start;
     if (remind && interval !== Number(task.interval || 0)) data.interval = interval;
@@ -389,6 +419,7 @@ class RemindoCard extends HTMLElement {
       case "cancel": this._formOpen = false; this._edit = null; this._forceRender = true; return this._render();
       case "save": return this._save(uid);
       case "err": this._error = null; this._forceRender = true; return this._render();
+      case "filter": this._filter = b.dataset.l || null; this._forceRender = true; return this._render();
       case "sec": this._collapsed[b.dataset.k] = !this._collapsed[b.dataset.k]; this._forceRender = true; return this._render();
     }
   }
@@ -431,8 +462,9 @@ class RemindoCard extends HTMLElement {
     const empty = !g.now.length && !g.planned.length && !g.notes.length;
     this.shadowRoot.innerHTML = `<style>${RemindoCard.styles}</style>
       <ha-card>
-        <div class="head"><span>${esc(this._config.title ?? t("title"))}</span>${g.now.length ? `<span class="badge">${g.now.length}</span>` : ""}
+        <div class="head"><span>${esc(this._config.title ?? (this._lists().find((l) => same(l, this._fixedList())) || this._fixedList() || t("title")))}</span>${g.now.length ? `<span class="badge">${g.now.length}</span>` : ""}
 </div>
+        ${this._chips()}
         ${this._error ? `<div class="err">${esc(this._error)} <button data-a="err">OK</button></div>` : ""}
         ${this._section(t("sec_now"), g.now, "now")}
         ${this._section(t("sec_planned"), g.planned, "planned")}
@@ -497,16 +529,23 @@ RemindoCard.styles = `
   .spacer { flex:1; }
   .picker { flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding-top:6px; }
   .picker span { font-size:13px; color: var(--secondary-text-color); }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:-2px 0 6px; }
+  .chip { min-height:32px; padding:4px 12px; border-radius:16px; font-size:13px; }
+  .chip.on { background: var(--primary-color); border-color: transparent; color:#fff; }
+  .tag { display:inline-block; margin-left:8px; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:500; vertical-align:middle;
+         background: color-mix(in srgb, var(--primary-color) 14%, transparent); color: var(--primary-color); }
   .err { background: color-mix(in srgb, var(--error-color, #db4437) 15%, transparent); padding:8px; border-radius:8px; margin-bottom:8px; }
 `;
 
 // Visual editor of the card options (HA's own form, so it looks like any other card)
-const EDITOR_SCHEMA = [
+const editorSchema = (lists) => [
+  { name: "list", selector: { select: { options: lists, custom_value: true, mode: "dropdown" } } },
   { name: "title", selector: { text: {} } },
   { name: "show_form", selector: { boolean: {} } },
   { name: "show_done", selector: { boolean: {} } },
 ];
-const EDITOR_LABELS = { title: "ed_title", show_form: "ed_form", show_done: "ed_done" };
+const EDITOR_LABELS = { list: "ed_list", title: "ed_title", show_form: "ed_form", show_done: "ed_done" };
+const EDITOR_HELP = { list: "ed_list_hint", title: "ed_title_hint" };
 
 class RemindoCardEditor extends HTMLElement {
   setConfig(config) { this._config = config; this._update(); }
@@ -518,17 +557,26 @@ class RemindoCardEditor extends HTMLElement {
     if (!this._form) {
       this._form = document.createElement("ha-form");
       this._form.computeLabel = (field) => t(EDITOR_LABELS[field.name]);
-      this._form.computeHelper = (field) => (field.name === "title" ? t("ed_title_hint") : "");
+      this._form.computeHelper = (field) => (EDITOR_HELP[field.name] ? t(EDITOR_HELP[field.name]) : "");
       this._form.addEventListener("value-changed", (ev) => {
         const config = { ...ev.detail.value };
         if (!config.title) delete config.title;
+        if (!config.list) delete config.list;
         this._config = config;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
       });
       this.appendChild(this._form);
     }
+    if (!this._lists) {
+      // the lists in use, once (the same data the card gets)
+      this._lists = [];
+      this._hass.connection.subscribeMessage((msg) => {
+        this._lists = msg.options?.lists || [];
+        this._form.schema = editorSchema(this._lists);
+      }, { type: "remindo/subscribe" }).then((unsub) => setTimeout(unsub, 0)).catch(() => {});
+    }
     this._form.hass = this._hass;
-    this._form.schema = EDITOR_SCHEMA;
+    this._form.schema = editorSchema(this._lists);
     this._form.data = { show_form: true, show_done: true, ...this._config };
   }
 }

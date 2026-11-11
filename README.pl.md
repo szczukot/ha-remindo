@@ -61,7 +61,17 @@ type: custom:remindo-card
 title: Zadania     # opcjonalnie, domyślnie „Zadania” / „Tasks”
 show_done: true    # sekcje Zrobione / Odrzucone (zwinięte)
 show_form: true    # przycisk „＋ Dodaj zadanie”
+list: Akwarium     # opcjonalnie: pokazuj i dodawaj tylko tę listę
 ```
+
+### Listy
+
+Na start jest jedna, ogólna lista i karta wygląda jak powyżej. Żeby trzymać osobno np. zadania akwarium, wpisz nazwę listy w formularzu zadania („Lista:”, z podpowiedziami list w użyciu), w regule albo w `remindo.add` (`list: Akwarium`). Wielkość liter nie ma znaczenia. Gdy jest choć jedna lista:
+
+- karta pokazująca wszystko dostaje u góry przyciski filtra (*Wszystkie · Akwarium · Ogród*), a przy każdym zadaniu małą etykietę z nazwą listy;
+- karta ustawiona na jedną listę („Pokaż tylko listę” w edytorze wizualnym albo `list: Akwarium` w YAML) pokazuje i dodaje tylko zadania tej listy, bez filtra; jej tytuł to domyślnie nazwa listy.
+
+`todo.remindo` zawiera wszystkie zadania ze wszystkich list.
 
 Formularz dodawania:
 
@@ -171,8 +181,8 @@ Jeśli reguła obserwuje encję, której już nie ma (zmiana nazwy albo usunięc
 
 | Usługa | Pola |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
-| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `list` (np. `Akwarium`), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
+| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
 | `remindo.done`, `remindo.dismiss` | `uid` albo `key`. Zadanie cykliczne obie przesuwają na następny termin; drugie zamknięcie w ciągu 30 s (inny telefon, karta) jest pomijane, więc termin nie przepada przypadkiem. |
 | `remindo.reopen` | `uid`: otwiera ponownie zadanie zrobione albo odrzucone; zadanie z terminem od razu znowu przypomina |
 | `remindo.delete` | `uid` albo `key`: usuwa zadanie na stałe, także cykliczne |

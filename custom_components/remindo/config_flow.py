@@ -298,7 +298,10 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             data["max_reminders"] = int(data["max_reminders"]) if data.get("max_reminders") else None
             data.pop("remind", None)
             # a field left empty is not sent at all: clear it instead of keeping the old value
-            for key in ("max_reminders", "done_message", "tts_message", "notify_data"):
+            # the spelling of an existing list is reused ("aquarium" → "Aquarium")
+            manager = getattr(self._get_entry(), "runtime_data", None)
+            data["list"] = manager.norm_list(data.get("list")) if manager else str(data.get("list") or "").strip() or None
+            for key in ("max_reminders", "done_message", "tts_message", "notify_data", "list"):
                 if key not in user_input:
                     data[key] = None
             # no channel configured yet → None = "all configured" once there are some
@@ -345,6 +348,12 @@ class RuleSubentryFlow(ConfigSubentryFlow):
         if self._data.get("mode") != "calendar":
             schema[vol.Optional("done_message")] = selector.TextSelector()
         schema[vol.Required("keep_done", default=self._data.get("keep_done", options[CONF_KEEP_DONE]))] = selector.BooleanSelector()
+        manager = getattr(self._get_entry(), "runtime_data", None)
+        schema[vol.Optional("list")] = selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=manager.lists() if manager else [], custom_value=True, mode=selector.SelectSelectorMode.DROPDOWN
+            )
+        )
         if phones:
             schema[vol.Optional("notify_data")] = selector.ObjectSelector()
         return self.async_show_form(

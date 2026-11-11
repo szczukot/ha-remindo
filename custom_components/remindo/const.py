@@ -61,6 +61,7 @@ ATTR_REMIND_UNTIL = "remind_until"
 ATTR_KEEP_DONE = "keep_done"
 ATTR_DONE_MESSAGE = "done_message"
 ATTR_NOTIFY_DATA = "notify_data"
+ATTR_LIST = "list"
 
 REPEAT_NONE = "none"
 REPEAT_OPTIONS = [REPEAT_NONE, "hourly", "daily", "weekly", "monthly", "yearly"]

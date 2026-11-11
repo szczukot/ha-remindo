@@ -180,6 +180,7 @@ class Task:
     notify_data: dict[str, Any] | None = None  # extra data for the HA app notification
     templates: bool = False  # texts come from a trusted source and may be HA templates
     template: str | None = None  # summary template, rendered at every reminder
+    list_name: str | None = None  # a list ("Aquarium") for cards that show one list; None = general
     status: str = STATUS_OPEN
     active: bool = False  # already reminded (shown under "Now")
     reminders: int = 0
@@ -292,6 +293,19 @@ class TaskManager:
     def open_tasks(self) -> list[Task]:
         return [t for t in self.tasks.values() if t.status == STATUS_OPEN]
 
+    def lists(self) -> list[str]:
+        """Names of the lists in use (by tasks and rules), for suggestions and the card's filter."""
+        names = {t.list_name for t in self.tasks.values() if t.list_name}
+        names |= {r.list_name for r in self.rules.rules.values() if r.list_name}
+        return sorted(names, key=str.casefold)
+
+    def norm_list(self, name: Any) -> str | None:
+        """Trim the name and reuse the spelling of an existing list ("aquarium" → "Aquarium")."""
+        name = str(name or "").strip()
+        if not name:
+            return None
+        return next((n for n in self.lists() if n.casefold() == name.casefold()), name)
+
     def find(self, uid: str | None = None, key: str | None = None) -> Task | None:
         if uid and uid in self.tasks:
             return self.tasks[uid]
@@ -348,6 +362,7 @@ class TaskManager:
         keep_done: bool | None = None,
         done_message: str | None = None,
         notify_data: dict[str, Any] | None = None,
+        list_name: str | None = None,
         templates: bool = False,
         restart: bool = False,
         source: str = "service",
@@ -403,6 +418,7 @@ class TaskManager:
             notify_data=dict(notify_data) if notify_data else None,
             templates=templates,
             template=template,
+            list_name=self.norm_list(list_name),
         )
         self.tasks[task.uid] = task
         self._schedule(task)
@@ -458,6 +474,8 @@ class TaskManager:
             task.keep_done = changes["keep_done"]
         if "notify_data" in changes:
             task.notify_data = dict(changes["notify_data"]) if changes["notify_data"] else None
+        if "list" in changes:
+            task.list_name = self.norm_list(changes["list"])
         if was_active and not task.active:
             # moved to a later time: the notification with buttons is out of date
             await self._clear_notifications(task)
@@ -950,6 +968,7 @@ class TaskManager:
     def serialize(self, task: Task) -> dict[str, Any]:
         """Task as sent to the card."""
         data = task.as_dict()
+        data["list"] = data.pop("list_name")
         data["phone_labels"] = [self.phone_label(p) for p in self.phones_for(task)]
         data["speaker_labels"] = [self.speaker_label(s) for s in self.speakers_for(task)]
         return data

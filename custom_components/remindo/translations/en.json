@@ -150,6 +150,10 @@
         "notify_data": {
           "name": "Notification data",
           "description": "Extra data for the HA app notification (icon, Android Auto, priority…)."
+        },
+        "list": {
+          "name": "List",
+          "description": "Optional list, e.g. \"Aquarium\". A card set to that list shows only its tasks. Empty = the general list."
         }
       }
     },
@@ -286,6 +290,10 @@
         "notify_data": {
           "name": "Notification data",
           "description": "Extra data for the HA app notification (icon, Android Auto, priority…)."
+        },
+        "list": {
+          "name": "List",
+          "description": "Optional list, e.g. \"Aquarium\". A card set to that list shows only its tasks. Empty = the general list."
         }
       }
     },
@@ -403,7 +411,8 @@
             "done_message": "Message when resolved",
             "keep_done": "Keep on the list after done",
             "tts_message": "Spoken text",
-            "notify_data": "Extra notification data"
+            "notify_data": "Extra notification data",
+            "list": "List"
           },
           "data_description": {
             "remind": "Off = remind once.",
@@ -413,7 +422,8 @@
             "done_message": "Sent to the same targets when the task closes itself, e.g. \"Garage door closed ✅\". {state} and {name} work here too. Empty = nothing.",
             "keep_done": "Off = disappears once done.",
             "tts_message": "What is said aloud instead of the task text, e.g. \"The dishwasher is done, please open it.\" {state} and {name} work here too (for calendars: {event}). Empty = the task text.",
-            "notify_data": "Advanced. Extra data for the HA app notification of this rule, e.g. car_ui: true, priority: high."
+            "notify_data": "Advanced. Extra data for the HA app notification of this rule, e.g. car_ui: true, priority: high.",
+            "list": "Optional, e.g. \"Aquarium\": a card set to that list shows only its tasks. Pick an existing list or type a new name. Empty = the general list."
           }
         }
       },

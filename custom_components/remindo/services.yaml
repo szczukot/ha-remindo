@@ -80,6 +80,10 @@ add:
       example: '{"car_ui": true, "priority": "high", "ttl": 0}'
       selector:
         object:
+    list:
+      example: "Aquarium"
+      selector:
+        text:
 done:
   fields: &target
     uid:
@@ -158,6 +162,10 @@ update:
     notify_data:
       selector:
         object:
+    list:
+      example: "Aquarium"
+      selector:
+        text:
 snooze:
   fields:
     uid:

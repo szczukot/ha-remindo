@@ -654,3 +654,41 @@ async def test_update_repeat(hass: HomeAssistant) -> None:
         DOMAIN, "update", {"uid": note, "repeat": "daily", "start": "2027-01-01 08:00:00"}, blocking=True
     )
     assert manager.find(note).recurring
+
+
+async def test_lists(hass: HomeAssistant, hass_ws_client) -> None:
+    """Optional lists: a name is reused case-insensitively, rules pass theirs on, the card gets them."""
+    entry, _ = await setup_integration(hass)
+    manager = entry.runtime_data
+    fish = await add_task(hass, summary="Feed the fish", list=" Aquarium ")
+    again = await add_task(hass, summary="Clean the filter", list="aquarium")
+    plain = await add_task(hass, summary="Buy milk")
+    assert manager.find(fish).list_name == manager.find(again).list_name == "Aquarium"
+    assert manager.find(plain).list_name is None
+    await hass.services.async_call(DOMAIN, "update", {"uid": plain, "list": "Garden"}, blocking=True)
+    assert manager.find(plain).list_name == "Garden"
+    await hass.services.async_call(DOMAIN, "update", {"uid": plain, "list": None}, blocking=True)
+    assert manager.find(plain).list_name is None
+    # a rule with a list
+    hass.states.async_set("sensor.tank", "26")
+    flow = await hass.config_entries.subentries.async_init((entry.entry_id, "rule"), context={"source": "user"})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"summary": "Tank too warm", "entity_id": "sensor.tank", "mode": "above"}
+    )
+    flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], {"value": 28, "for_minutes": 0})
+    flow = await hass.config_entries.subentries.async_configure(
+        flow["flow_id"], {"remind": True, "interval": 30, "auto_close": True, "list": "aquarium"}
+    )
+    assert flow["type"] == FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    manager = entry.runtime_data
+    hass.states.async_set("sensor.tank", "29")
+    await hass.async_block_till_done()
+    warm = next(t for t in manager.open_tasks() if t.summary == "Tank too warm")
+    assert warm.list_name == "Aquarium"
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "remindo/subscribe"})
+    await client.receive_json()
+    msg = await client.receive_json()
+    assert msg["event"]["options"]["lists"] == ["Aquarium"]
+    assert {t["summary"]: t["list"] for t in msg["event"]["tasks"]}["Feed the fish"] == "Aquarium"

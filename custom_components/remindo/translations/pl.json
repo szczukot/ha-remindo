@@ -150,6 +150,10 @@
         "notify_data": {
           "name": "Dane powiadomienia",
           "description": "Dodatkowe dane powiadomienia w aplikacji HA (ikona, Android Auto, priorytet…)."
+        },
+        "list": {
+          "name": "Lista",
+          "description": "Opcjonalna lista, np. „Akwarium”. Karta ustawiona na tę listę pokaże tylko jej zadania. Puste = lista ogólna."
         }
       }
     },
@@ -286,6 +290,10 @@
         "notify_data": {
           "name": "Dane powiadomienia",
           "description": "Dodatkowe dane powiadomienia w aplikacji HA (ikona, Android Auto, priorytet…)."
+        },
+        "list": {
+          "name": "Lista",
+          "description": "Opcjonalna lista, np. „Akwarium”. Karta ustawiona na tę listę pokaże tylko jej zadania. Puste = lista ogólna."
         }
       }
     },
@@ -403,7 +411,8 @@
             "done_message": "Komunikat po załatwieniu",
             "keep_done": "Zostaw na liście po wykonaniu",
             "tts_message": "Tekst mówiony",
-            "notify_data": "Dodatkowe dane powiadomienia"
+            "notify_data": "Dodatkowe dane powiadomienia",
+            "list": "Lista"
           },
           "data_description": {
             "remind": "Wyłączone = przypomni tylko raz.",
@@ -413,7 +422,8 @@
             "done_message": "Wysyłany na te same kanały, gdy zadanie zamknie się samo, np. „Brama zamknięta ✅”. Tu też działa {state} i {name}. Puste = nic.",
             "keep_done": "Wyłączone = znika po wykonaniu.",
             "tts_message": "Co zostanie powiedziane na głos zamiast treści zadania, np. „Zmywarka skończyła, otwórz ją”. Tu też działa {state} i {name} (przy kalendarzu: {event}). Puste = treść zadania.",
-            "notify_data": "Zaawansowane. Dodatkowe dane powiadomienia w aplikacji HA dla tej reguły, np. car_ui: true, priority: high."
+            "notify_data": "Zaawansowane. Dodatkowe dane powiadomienia w aplikacji HA dla tej reguły, np. car_ui: true, priority: high.",
+            "list": "Opcjonalnie, np. „Akwarium”: karta ustawiona na tę listę pokaże tylko jej zadania. Wybierz istniejącą listę albo wpisz nową nazwę. Puste = lista ogólna."
           }
         }
       },

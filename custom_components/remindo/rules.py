@@ -101,6 +101,7 @@ class Rule:
     keep_done: bool | None = None
     done_message: str | None = None
     notify_data: dict[str, Any] | None = None
+    list_name: str | None = None  # stored as "list"
     # calendar only
     days_before: int = 1
     at_time: str = "18:00"
@@ -108,6 +109,7 @@ class Rule:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Rule:
+        data = {**data, "list_name": data.get("list") or None}
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
     @property
@@ -322,6 +324,7 @@ class RuleEngine:
             keep_done=rule.keep_done,
             done_message=_tokens(rule.done_message, rule.entity_id),
             notify_data=rule.notify_data,
+            list_name=rule.list_name,
             templates=True,  # rule texts are written by an administrator
             restart=True,
             source="rule",
@@ -397,6 +400,7 @@ class RuleEngine:
             max_reminders=rule.max_reminders,
             keep_done=rule.keep_done,
             notify_data=rule.notify_data,
+            list_name=rule.list_name,
             # nobody ticked it off: drop the task once the event day is over
             expires=day + timedelta(days=1) if rule.auto_close else None,
             templates=False,  # event names come from outside: never run them as templates
