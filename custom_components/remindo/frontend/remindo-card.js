@@ -200,7 +200,7 @@ class RemindoCard extends HTMLElement {
         ${kind !== "notes" ? `<button data-a="pick" data-uid="${task.uid}" title="${t("btn_pick_hint")}">${t("btn_pick")}</button>` : ""}
         <button data-a="edit" data-uid="${task.uid}" title="${t("edit")}">✎</button>
         <button class="no" data-a="dismiss" data-uid="${task.uid}" title="${t(recurring ? "btn_skip_once" : "btn_dismiss")}">✕</button>
-        <button class="no" data-a="delete" data-uid="${task.uid}" title="${t(recurring ? "del_title_rec" : "del_title")}">${TRASH}</button>
+        ${recurring ? "" : `<button class="no" data-a="delete" data-uid="${task.uid}" title="${t("del_title")}">${TRASH}</button>`}
       </div>`;
     return `<div class="task ${kind}">
       <div class="txt"><div class="sum">${esc(task.summary)}</div>
@@ -227,7 +227,7 @@ class RemindoCard extends HTMLElement {
         ${(this._opts?.speakers || []).map((s) => `<label><input type="checkbox" class="e-spk" value="${esc(s.id)}" ${task.tts === false ? "" : checked(task.speakers, s.id)} /> 🔊 ${esc(s.name)}</label>`).join("")}
       </div>
       <div class="frow">
-        <button class="no" data-a="delete" data-uid="${task.uid}">${TRASH} ${t("del")}</button>
+        <button class="no" data-a="delete" data-uid="${task.uid}" title="${t(task.repeat && task.repeat !== "none" ? "del_title_rec" : "del_title")}">${TRASH} ${t("del")}</button>
         <span class="spacer"></span>
         <button data-a="edit-cancel">${t("cancel")}</button>
         <button class="ok" data-a="edit-save" data-uid="${task.uid}">${t("e_save")}</button>
