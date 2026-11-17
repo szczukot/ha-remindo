@@ -1,0 +1,86 @@
+{
+  "texts": {
+    "title": "📋 Zadanie",
+    "done": "✅ Zrobione",
+    "snooze": "⏰ +{minutes} min",
+    "dismiss": "❌ Nie robię",
+    "task": "Zadanie: {summary}",
+    "ev_created": "dodano",
+    "ev_reminded": "przypomniano",
+    "ev_done": "zrobione",
+    "ev_snoozed": "odłożono",
+    "ev_dismissed": "nie robię",
+    "src_phone": "z telefonu",
+    "src_card": "z karty",
+    "src_todo": "z listy To-do",
+    "src_auto": "automatycznie",
+    "src_rule": "z reguły",
+    "src_expired": "termin minął",
+    "src_rule_removed": "reguła usunięta",
+    "nth": ", {count}. raz"
+  },
+  "units": {
+    "hourly": {
+      "one": "godzinę",
+      "few": "godziny",
+      "many": "godzin"
+    },
+    "daily": {
+      "one": "dzień",
+      "few": "dni",
+      "many": "dni"
+    },
+    "weekly": {
+      "one": "tydzień",
+      "few": "tygodnie",
+      "many": "tygodni"
+    },
+    "monthly": {
+      "one": "miesiąc",
+      "few": "miesiące",
+      "many": "miesięcy"
+    },
+    "yearly": {
+      "one": "rok",
+      "few": "lata",
+      "many": "lat"
+    }
+  },
+  "days": [
+    "pn",
+    "wt",
+    "śr",
+    "czw",
+    "pt",
+    "sob",
+    "nd"
+  ],
+  "days_full": [
+    "poniedziałek",
+    "wtorek",
+    "środa",
+    "czwartek",
+    "piątek",
+    "sobota",
+    "niedziela"
+  ],
+  "every": "co",
+  "nth": [
+    "1.",
+    "2.",
+    "3.",
+    "4."
+  ],
+  "on_nth": "{n} {day}",
+  "last_days": [
+    "ostatni poniedziałek",
+    "ostatni wtorek",
+    "ostatnia środa",
+    "ostatni czwartek",
+    "ostatni piątek",
+    "ostatnia sobota",
+    "ostatnia niedziela"
+  ],
+  "last_day": "ostatniego dnia",
+  "from_done": "od odhaczenia"
+}

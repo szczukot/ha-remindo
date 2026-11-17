@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -10,7 +11,8 @@ from typing import Any
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.components import frontend, websocket_api
-from homeassistant.components.http import StaticPathConfig
+from aiohttp import web
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import (
@@ -158,16 +160,38 @@ CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the Lovelace card, the services and the card's data stream."""
     integration = await async_get_integration(hass, DOMAIN)
-    path = Path(__file__).parent / "frontend" / "remindo-card.js"
-    # The URL carries a hash of the file, so browsers never keep an old card
-    digest = await hass.async_add_executor_job(lambda: hashlib.sha1(path.read_bytes()).hexdigest()[:8])
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL, str(path), cache_headers=False)]
-    )
+    body = await hass.async_add_executor_job(_card_source)
+    hass.http.register_view(CardView(body))
+    # The URL carries a hash of the card, so browsers never keep an old one
+    digest = hashlib.sha1(body).hexdigest()[:8]
     frontend.add_extra_js_url(hass, f"{CARD_URL}?v={integration.version}-{digest}")
     websocket_api.async_register_command(hass, ws_subscribe)
     _register_services(hass)
     return True
+
+
+def _card_source() -> bytes:
+    """The card with its texts (frontend/i18n/<language>.json) in front of it."""
+    folder = Path(__file__).parent / "frontend"
+    texts = {f.stem: json.loads(f.read_text("utf-8")) for f in sorted((folder / "i18n").glob("*.json"))}
+    head = "const REMINDO_I18N = " + json.dumps(texts, ensure_ascii=False, separators=(",", ":")) + ";\n"
+    return (head + (folder / "remindo-card.js").read_text("utf-8")).encode()
+
+
+class CardView(HomeAssistantView):
+    """Serves the Lovelace card (public, like any frontend file)."""
+
+    url = CARD_URL
+    name = "remindo:card"
+    requires_auth = False
+
+    def __init__(self, body: bytes) -> None:
+        self._body = body
+
+    async def get(self, request: web.Request) -> web.Response:
+        return web.Response(
+            body=self._body, content_type="application/javascript", headers={"Cache-Control": "no-cache"}
+        )
 
 
 def _manager(hass: HomeAssistant) -> TaskManager:

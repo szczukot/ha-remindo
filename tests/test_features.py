@@ -126,8 +126,19 @@ def test_services_yaml_translated() -> None:
 
 
 def test_backend_texts_complete() -> None:
-    assert set(texts._TEXTS["en"]) == set(texts._TEXTS["pl"])
-    assert set(texts._UNITS["en"]) == set(texts._UNITS["pl"])
+    """Every language has every text, with the same {placeholders}, and the plural forms it needs."""
+    en = texts._MESSAGES["en"]
+    for lang, msgs in texts._MESSAGES.items():
+        assert set(msgs) == set(en), lang
+        assert set(msgs["texts"]) == set(en["texts"]), lang
+        for key, value in en["texts"].items():
+            assert set(re.findall(r"{(\w+)}", msgs["texts"][key])) == set(re.findall(r"{(\w+)}", value)), (lang, key)
+        assert set(msgs["units"]) == set(en["units"]), lang
+        for forms in msgs["units"].values():
+            needed = {texts.plural_category(lang, n) for n in range(1, 30)}
+            assert needed <= set(forms), (lang, forms)
+        assert len(msgs["days"]) == len(msgs["days_full"]) == len(msgs["last_days"]) == 7, lang
+        assert len(msgs["nth"]) == 4, lang
 
 
 @pytest.mark.parametrize(

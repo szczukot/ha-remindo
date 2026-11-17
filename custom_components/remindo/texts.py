@@ -1,114 +1,62 @@
 """Texts sent outside the HA frontend (push, persistent notification, logbook, todo
-description). They follow the language set in Settings → System → General."""
+description), from messages/<language>.json. They follow the language set in
+Settings → System → General; a language without a file falls back to English."""
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from typing import Any
+
 from homeassistant.core import HomeAssistant
 
-_TEXTS: dict[str, dict[str, str]] = {
-    "en": {
-        "title": "📋 Task",
-        "done": "✅ Done",
-        "snooze": "⏰ +{minutes} min",
-        "dismiss": "❌ Skip",
-        "task": "Task: {summary}",
-        "ev_created": "added",
-        "ev_reminded": "reminded",
-        "ev_done": "done",
-        "ev_snoozed": "snoozed",
-        "ev_dismissed": "skipped",
-        "src_phone": "from phone",
-        "src_card": "from card",
-        "src_todo": "from To-do list",
-        "src_auto": "automatically",
-        "src_rule": "by rule",
-        "src_expired": "date passed",
-        "src_rule_removed": "rule deleted",
-        "nth": ", time #{count}",
-    },
-    "pl": {
-        "title": "📋 Zadanie",
-        "done": "✅ Zrobione",
-        "snooze": "⏰ +{minutes} min",
-        "dismiss": "❌ Nie robię",
-        "task": "Zadanie: {summary}",
-        "ev_created": "dodano",
-        "ev_reminded": "przypomniano",
-        "ev_done": "zrobione",
-        "ev_snoozed": "odłożono",
-        "ev_dismissed": "nie robię",
-        "src_phone": "z telefonu",
-        "src_card": "z karty",
-        "src_todo": "z listy To-do",
-        "src_auto": "automatycznie",
-        "src_rule": "z reguły",
-        "src_expired": "termin minął",
-        "src_rule_removed": "reguła usunięta",
-        "nth": ", {count}. raz",
-    },
-}
-
-# repeat unit: (one, few, many) — English uses one/many
-_UNITS: dict[str, dict[str, tuple[str, str, str]]] = {
-    "en": {
-        "hourly": ("hour", "hours", "hours"),
-        "daily": ("day", "days", "days"),
-        "weekly": ("week", "weeks", "weeks"),
-        "monthly": ("month", "months", "months"),
-        "yearly": ("year", "years", "years"),
-    },
-    "pl": {
-        "hourly": ("godzinę", "godziny", "godzin"),
-        "daily": ("dzień", "dni", "dni"),
-        "weekly": ("tydzień", "tygodnie", "tygodni"),
-        "monthly": ("miesiąc", "miesiące", "miesięcy"),
-        "yearly": ("rok", "lata", "lat"),
-    },
+# read once when the integration is imported (Home Assistant imports it outside the event loop)
+_MESSAGES: dict[str, dict[str, Any]] = {
+    f.stem: json.loads(f.read_text("utf-8")) for f in sorted((Path(__file__).parent / "messages").glob("*.json"))
 }
 
 
 def language(hass: HomeAssistant | None) -> str:
+    """'de-CH' → 'de' when there is no 'de-ch' file; English when the language is missing."""
     lang = (getattr(getattr(hass, "config", None), "language", None) or "en").lower()
-    return "pl" if lang.startswith("pl") else "en"
+    if lang in _MESSAGES:
+        return lang
+    base = lang.split("-")[0]
+    return base if base in _MESSAGES else "en"
+
+
+def _get(lang: str, key: str) -> Any:
+    return _MESSAGES[lang].get(key, _MESSAGES["en"][key])
 
 
 def text(hass: HomeAssistant | None, key: str, **kwargs) -> str:
-    return _TEXTS[language(hass)][key].format(**kwargs)
+    texts = _MESSAGES[language(hass)]["texts"]
+    return texts.get(key, _MESSAGES["en"]["texts"][key]).format(**kwargs)
 
 
-def _plural_pl(n: int) -> int:
-    if n == 1:
-        return 0
-    if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
-        return 1
-    return 2
+def plural_category(lang: str, n: int) -> str:
+    """CLDR plural category for whole numbers, for the languages that have files."""
+    if lang == "pl":
+        if n == 1:
+            return "one"
+        return "few" if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14 else "many"
+    if lang == "fr":
+        return "one" if n in (0, 1) else "other"
+    return "one" if n == 1 else "other"
+
+
+def _form(forms: dict[str, str], lang: str, n: int) -> str:
+    return forms.get(plural_category(lang, n)) or forms.get("other") or forms.get("many") or forms["one"]
 
 
 def repeat_label(hass: HomeAssistant | None, repeat: str, every: int) -> str:
     """'every 3 months' / 'co 3 miesiące'; 'every day' / 'co dzień'."""
     lang = language(hass)
-    forms = _UNITS[lang].get(repeat, (repeat, repeat, repeat))
-    word = "every" if lang == "en" else "co"
+    forms = _get(lang, "units").get(repeat) or {"other": repeat}
+    word = _get(lang, "every")
     if every <= 1:
-        return f"{word} {forms[0]}"
-    idx = (0 if every == 1 else 2) if lang == "en" else _plural_pl(every)
-    return f"{word} {every} {forms[idx]}"
-
-
-_DAYS = {
-    "en": (["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-           ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
-    "pl": (["pn", "wt", "śr", "czw", "pt", "sob", "nd"],
-           ["poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela"]),
-}
-_PATTERN = {
-    "en": {"nth": "{n}{suffix} {day}", "last_weekday": "last {day}", "last_day": "last day",
-           "from_done": "from ticking off"},
-    "pl": {"nth": "{n}. {day}", "last_weekday": "ostatni {day}", "last_day": "ostatniego dnia",
-           "from_done": "od odhaczenia"},
-}
-# "ostatni wtorek" / "ostatnia środa" (feminine weekdays in Polish)
-_PL_LAST = {2: "ostatnia", 4: "ostatni", 5: "ostatnia", 6: "ostatnia"}
+        return f"{word} {_form(forms, lang, 1)}"
+    return f"{word} {every} {_form(forms, lang, every)}"
 
 
 def pattern_label(
@@ -116,21 +64,16 @@ def pattern_label(
 ) -> str:
     """The part after "every week" / "every month": ": Mon, Thu", ", 3rd Tuesday", " (from ticking off)"."""
     lang = language(hass)
-    short, full = _DAYS[lang]
-    words = _PATTERN[lang]
     if repeat == "weekly" and days:
-        return ": " + ", ".join(short[d] for d in sorted(days))
+        return ": " + ", ".join(_get(lang, "days")[d] for d in sorted(days))
     if repeat == "monthly" and on and on != "day" and task_start is not None:
         weekday = task_start.weekday()
         if on == "last_day":
-            return ", " + words["last_day"]
+            return ", " + _get(lang, "last_day")
         nth = (task_start.day - 1) // 7 + 1
         if on == "last_weekday" or nth == 5:
-            if lang == "pl":
-                return f", {_PL_LAST.get(weekday, 'ostatni')} {full[weekday]}"
-            return ", " + words["last_weekday"].format(day=full[weekday])
-        suffix = {1: "st", 2: "nd", 3: "rd"}.get(nth, "th")
-        return ", " + words["nth"].format(n=nth, suffix=suffix, day=full[weekday])
+            return ", " + _get(lang, "last_days")[weekday]
+        return ", " + _get(lang, "on_nth").format(n=_get(lang, "nth")[nth - 1], day=_get(lang, "days_full")[weekday])
     if from_done:
-        return f" ({words['from_done']})"
+        return f" ({_get(lang, 'from_done')})"
     return ""
