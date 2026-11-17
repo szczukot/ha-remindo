@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .manager import Task, TaskManager, _dt, next_occurrence
+from .manager import Task, TaskManager, _dt
 
 # an event needs an end: a task without "stop reminding at" is shown this long
 DEFAULT_LENGTH = timedelta(hours=1)
@@ -53,7 +53,7 @@ def task_events(task: Task, start: datetime, end: datetime) -> list[CalendarEven
     while current < end and len(events) < MAX_OCCURRENCES:
         if current + length > start:
             events.append(_event(task, current))
-        current = next_occurrence(due, task.repeat, task.repeat_every, current)
+        current = task.next_after(current)  # weekdays and monthly patterns included
     return events
 
 

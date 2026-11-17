@@ -59,3 +59,14 @@ async def test_rule_cannot_watch_own_calendar(hass: HomeAssistant) -> None:
     hass.states.async_set("calendar.bins", "off")
     await add_rule(hass, entry, {"summary": "Bins", "entity_id": "calendar.bins", "days_before": 1, "at_time": "18:00"})
     assert not [i for (d, i) in ir.async_get(hass).issues if d == DOMAIN]
+
+
+async def test_calendar_follows_patterns(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to("2026-11-16 08:00:00+01:00")  # Monday
+    await setup_integration(hass)
+    await add_task(hass, summary="Bins", start="2026-11-16 19:00:00", repeat="weekly", repeat_days="mon, thu")
+    await add_task(hass, summary="Meeting", start="2026-11-17 18:00:00", repeat="monthly", repeat_on="weekday")
+    events = [(e[0], e[1][:10]) for e in await _events(hass, days=31)]
+    bins = [d for name, d in events if name == "Bins"]
+    assert bins[:4] == ["2026-11-16", "2026-11-19", "2026-11-23", "2026-11-26"]  # Mondays and Thursdays only
+    assert [d for name, d in events if name == "Meeting"] == ["2026-11-17", "2026-12-15"]  # 3rd Tuesdays
