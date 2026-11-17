@@ -67,10 +67,14 @@ def _tokens(text: str | None, entity_id: str) -> str | None:
     return text.replace("{state}", state).replace("{name}", name)
 
 
-def rule_problem(mode: str, entity_id: str, state: State | None, exists: bool) -> str | None:
-    """Why a rule can never work, or None. Shared by the rule form and the Repairs check."""
+def rule_problem(mode: str, entity_id: str, state: State | None, exists: bool, own: bool = False) -> str | None:
+    """Why a rule can never work, or None. Shared by the rule form and the Repairs check.
+
+    `own`: Remindo's own calendar (it shows the tasks: a rule on it would add tasks from tasks)."""
     if not exists:
         return "rule_entity_missing"
+    if own:
+        return "rule_own_entity"
     if mode == MODE_CALENDAR and not entity_id.startswith("calendar."):
         return "rule_not_calendar"
     if mode in (MODE_ABOVE, MODE_BELOW) and state is not None and state.state not in _IGNORED:
@@ -216,8 +220,10 @@ class RuleEngine:
                 ir.async_delete_issue(self.hass, DOMAIN, issue_id)
 
     def _problem(self, rule: Rule, registry: er.EntityRegistry) -> str | None:
-        exists = self.hass.states.get(rule.entity_id) is not None or registry.async_get(rule.entity_id) is not None
-        return rule_problem(rule.mode, rule.entity_id, self.hass.states.get(rule.entity_id), exists)
+        entry = registry.async_get(rule.entity_id)
+        exists = self.hass.states.get(rule.entity_id) is not None or entry is not None
+        own = entry is not None and entry.platform == DOMAIN and entry.domain == "calendar"
+        return rule_problem(rule.mode, rule.entity_id, self.hass.states.get(rule.entity_id), exists, own)
 
     @callback
     def stop(self) -> None:

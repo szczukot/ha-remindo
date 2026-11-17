@@ -446,7 +446,8 @@
         "not_mapping": "Wpisz pary klucz: wartość, np. car_ui: true",
         "rule_entity_missing": "Ta encja nie istnieje.",
         "rule_not_calendar": "„Wydarzenie w kalendarzu” wymaga encji kalendarza.",
-        "rule_not_numeric": "„Powyżej / poniżej” wymaga encji, której stan jest liczbą (teraz: tekst)."
+        "rule_not_numeric": "„Powyżej / poniżej” wymaga encji, której stan jest liczbą (teraz: tekst).",
+        "rule_own_entity": "Kalendarz samego Remindo pokazuje zadania, reguła nie może go obserwować."
       }
     }
   },
@@ -489,6 +490,10 @@
     "rule_not_numeric": {
       "title": "Reguła Remindo „{rule}”: to nie liczba",
       "description": "Reguła „{rule}” porównuje {entity} z liczbą, ale jej stan jest tekstem. Reguła nie doda żadnego zadania. Popraw ją w Ustawienia → Urządzenia i usługi → Remindo."
+    },
+    "rule_own_entity": {
+      "title": "Reguła „{rule}” obserwuje kalendarz samego Remindo",
+      "description": "Reguła „{rule}” obserwuje {entity}, czyli kalendarz samego Remindo z zadaniami, więc dodawałaby zadania z zadań. Wskaż w regule inny kalendarz albo ją usuń."
     }
   }
 }

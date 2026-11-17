@@ -215,6 +215,7 @@ Reminders that were due while Home Assistant was down are sent about 30 seconds 
 
 - `todo.remindo` (shown as *Remindo*): the list. Its state is the number of open tasks, as for every To-do list in Home Assistant. Ticking off in the regular To-do card closes the task and clears notifications.
 - `sensor.remindo_active` (shown as *Remindo reminding now*): how many tasks are reminding right now, i.e. are under *Now* in the card (attribute `tasks` with their names, `scheduled` with the number of tasks waiting for their time). Useful e.g. for a badge on the dashboard or for "show the tasks page when something is reminding".
+- `calendar.remindo` (shown as *Remindo*): a read-only calendar with the open tasks that have a due time, so they show up on any calendar card. A task lasts until its "stop reminding at", otherwise an hour; a recurring task is on every date (every-N-hours tasks only on the next one). A calendar rule cannot watch this calendar (it would add tasks from tasks).
 - events `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, described in the logbook.
 
 ### Your own reaction to a reminder
