@@ -39,6 +39,21 @@ add:
           min: 1
           max: 365
           mode: box
+    repeat_days:
+      example: "mon, thu"
+      selector:
+        select:
+          options: [mon, tue, wed, thu, fri, sat, sun]
+          multiple: true
+          translation_key: weekday
+    repeat_on:
+      selector:
+        select:
+          options: [day, weekday, last_weekday, last_day]
+          translation_key: repeat_on
+    repeat_from_done:
+      selector:
+        boolean:
     tts:
       selector:
         boolean:
@@ -140,6 +155,21 @@ update:
           min: 1
           max: 365
           mode: box
+    repeat_days:
+      example: "mon, thu"
+      selector:
+        select:
+          options: [mon, tue, wed, thu, fri, sat, sun]
+          multiple: true
+          translation_key: weekday
+    repeat_on:
+      selector:
+        select:
+          options: [day, weekday, last_weekday, last_day]
+          translation_key: repeat_on
+    repeat_from_done:
+      selector:
+        boolean:
     phones:
       example: "notify.mobile_app_phone"
       selector:
