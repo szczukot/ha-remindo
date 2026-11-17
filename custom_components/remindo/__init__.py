@@ -32,6 +32,7 @@ from .const import (
     ATTR_DESCRIPTION,
     ATTR_DONE_MESSAGE,
     ATTR_ICON,
+    ATTR_IMPORTANT,
     ATTR_INTERVAL,
     ATTR_KEEP_DONE,
     ATTR_KEY,
@@ -105,6 +106,7 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_NOTIFY_DATA): vol.Any(None, dict),
         vol.Optional(ATTR_LIST): vol.Any(None, cv.string),
         vol.Optional(ATTR_ICON): vol.Any(None, cv.icon),
+        vol.Optional(ATTR_IMPORTANT, default=False): cv.boolean,
     }
 )
 TARGET = {vol.Optional(ATTR_UID): cv.string, vol.Optional(ATTR_KEY): cv.string}
@@ -136,6 +138,7 @@ UPDATE_FIELDS = {
     vol.Optional(ATTR_NOTIFY_DATA): vol.Any(None, dict),
     vol.Optional(ATTR_LIST): vol.Any(None, cv.string),
     vol.Optional(ATTR_ICON): vol.Any(None, cv.icon),
+    vol.Optional(ATTR_IMPORTANT): cv.boolean,
 }
 UPDATE_SCHEMA = vol.All(vol.Schema({**TARGET, **UPDATE_FIELDS}), _HAS_TARGET)
 CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
@@ -254,6 +257,7 @@ def _register_services(hass: HomeAssistant) -> None:
             notify_data=data.get(ATTR_NOTIFY_DATA),
             list_name=data.get(ATTR_LIST),
             icon=data.get(ATTR_ICON),
+            important=data.get(ATTR_IMPORTANT, False),
             templates=await _may_use_templates(hass, call),
             source="service",
             context=call.context,

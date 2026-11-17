@@ -20,7 +20,7 @@ const I18N = {
     description: "Task list with reminders: tick off, snooze, add",
     ed_title: "Title", ed_title_hint: "Empty = \"Tasks\" (or the list's name)", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
     ed_list: "Show only this list", ed_list_hint: "Empty = all tasks (with a filter once there are lists)",
-    all: "All", f_icon: "Icon:", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
+    all: "All", important: "❗ Important", important_hint: "loud on the phone (alarm), also when silenced and in the quiet hours", f_icon: "Icon:", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
   },
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
@@ -40,7 +40,7 @@ const I18N = {
     description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
     ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania” (albo nazwa listy)", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
     ed_list: "Pokaż tylko listę", ed_list_hint: "Puste = wszystkie zadania (z filtrem, gdy są listy)",
-    all: "Wszystkie", f_icon: "Ikona:", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
+    all: "Wszystkie", important: "❗ Ważne", important_hint: "głośno na telefonie (alarm), także przy wyciszeniu i w ciszy nocnej", f_icon: "Ikona:", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
   },
 };
 let LANG = "en";
@@ -233,7 +233,7 @@ class RemindoCard extends HTMLElement {
         ${recurring ? "" : `<button class="no" data-a="delete" data-uid="${task.uid}" title="${t("del_title")}">${TRASH}</button>`}
       </div>`;
     return `<div class="task ${kind}">
-      <div class="txt"><div class="sum">${task.icon ? `<ha-icon class="ticon" icon="${esc(task.icon)}"></ha-icon>` : ""}${esc(task.summary)}${task.list && !this._activeList() ? `<span class="tag">${esc(task.list)}</span>` : ""}</div>
+      <div class="txt"><div class="sum">${task.important ? `<span class="imp" title="${t("important")}">!</span>` : ""}${task.icon ? `<ha-icon class="ticon" icon="${esc(task.icon)}"></ha-icon>` : ""}${esc(task.summary)}${task.list && !this._activeList() ? `<span class="tag">${esc(task.list)}</span>` : ""}</div>
         ${when ? `<div class="when">${esc(when)}</div>` : ""}
         ${task.description ? `<div class="desc">${esc(task.description)}</div>` : ""}
         <div class="meta">${esc(meta.join(" · "))}</div></div>${btns}${this._pick === task.uid ? this._picker(task) : ""}${this._edit === task.uid ? this._taskForm(task) : ""}</div>`;
@@ -318,6 +318,10 @@ class RemindoCard extends HTMLElement {
         <label><input type="checkbox" id="f-keep" ${keep ? "checked" : ""} /> ${t("keep")}</label>
         <span class="hint">${t("keep_hint")}</span>
       </div>
+      <div class="frow">
+        <label><input type="checkbox" id="f-imp" ${edit && task.important ? "checked" : ""} /> ${t("important")}</label>
+        <span class="hint">${t("important_hint")}</span>
+      </div>
       <div class="err" id="f-err" style="display:none"></div>
       <div class="frow end">
         ${edit ? `<button class="no" data-a="delete" data-uid="${task.uid}" title="${t(rec ? "del_title_rec" : "del_title")}">${TRASH} ${t("del")}</button><span class="spacer"></span>` : ""}
@@ -369,6 +373,7 @@ class RemindoCard extends HTMLElement {
       const list = this._fixedList() || $("f-list")?.value.trim();
       if (list) data.list = list;
       if (this._iconValue()) data.icon = this._iconValue();
+      if ($("f-imp").checked) data.important = true;
       if (lim === "count" && interval) data.max_reminders = n;
       if (lim === "until" && until) data.remind_until = toIso(until);
       if (rep !== "none") { data.repeat = rep; data.repeat_every = every; }
@@ -399,6 +404,7 @@ class RemindoCard extends HTMLElement {
     if (String(pick(".f-phone")) !== String(was(".f-phone"))) data.phones = pick(".f-phone");
     if (String(pick(".f-spk")) !== String(was(".f-spk"))) data.speakers = pick(".f-spk");
     if (keep !== $("f-keep").defaultChecked) data.keep_done = keep;
+    if ($("f-imp").checked !== !!task.important) data.important = $("f-imp").checked;
     this._edit = null; this._forceRender = true; this._render();
     this._call("update", data);
   }
@@ -602,6 +608,7 @@ RemindoCard.styles = `
   .chip.on { background: var(--primary-color); border-color: transparent; color:#fff; }
   .tag { display:inline-block; margin-left:8px; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:500; vertical-align:middle;
          background: color-mix(in srgb, var(--primary-color) 14%, transparent); color: var(--primary-color); }
+  .imp { display: inline-block; min-width: 18px; margin-right: 6px; padding: 0 4px; border-radius: 9px; text-align: center; font-weight: 700; font-size: 0.85em; line-height: 18px; vertical-align: 1px; color: #fff; background: var(--error-color, #db4437); }
   .ticon { --mdc-icon-size: 22px; margin-right: 6px; vertical-align: -4px; color: var(--secondary-text-color); }
   .task.now .ticon { color: var(--warning-color, #ff9800); }
   #f-icon { flex: 1 1 220px; min-width: 0; max-width: 320px; }

@@ -103,6 +103,7 @@ class Rule:
     notify_data: dict[str, Any] | None = None
     list_name: str | None = None  # stored as "list"
     icon: str | None = None
+    important: bool = False
     # calendar only
     days_before: int = 1
     at_time: str = "18:00"
@@ -327,6 +328,7 @@ class RuleEngine:
             notify_data=rule.notify_data,
             list_name=rule.list_name,
             icon=rule.icon,
+            important=rule.important,
             templates=True,  # rule texts are written by an administrator
             restart=True,
             source="rule",
@@ -404,6 +406,7 @@ class RuleEngine:
             notify_data=rule.notify_data,
             list_name=rule.list_name,
             icon=rule.icon,
+            important=rule.important,
             # nobody ticked it off: drop the task once the event day is over
             expires=day + timedelta(days=1) if rule.auto_close else None,
             templates=False,  # event names come from outside: never run them as templates

@@ -71,7 +71,9 @@ async def add_rule(hass: HomeAssistant, entry, data: dict) -> str:
     flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], cond)
     assert flow["step_id"] == "notify", flow
     flow = await hass.config_entries.subentries.async_configure(
-        flow["flow_id"], {"remind": True, "interval": 30, "auto_close": data.get("auto_close", True)}
+        flow["flow_id"],
+        {"remind": True, "interval": 30, "auto_close": data.get("auto_close", True),
+         **{k: data[k] for k in ("important",) if k in data}},
     )
     assert flow["type"] == "create_entry", flow
     await hass.async_block_till_done()
