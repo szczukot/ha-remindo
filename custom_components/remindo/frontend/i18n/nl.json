@@ -52,7 +52,7 @@
   "remind": "Herinneren",
   "from_now": "vanaf nu",
   "in_1h": "over 1 u",
-  "tonight": "vandaag 19:00",
+  "tonight": "vandaag {t}",
   "pick": "kies een moment…",
   "every": "elke",
   "until_done": "tot ik het afvink",
