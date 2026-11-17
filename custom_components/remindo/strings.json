@@ -7,6 +7,8 @@
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
+          "tts_language": "Announcement language",
+          "tts_voice": "Announcement voice",
           "media_player": "Media players for announcements",
           "screen_switch": "Screen switch to turn on first",
           "presence_entity": "Presence entity",
@@ -29,7 +31,9 @@
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
           "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
           "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
-          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task."
+          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task.",
+          "tts_language": "Optional, e.g. en-GB. Empty = the language of your voice assistant (Settings → Voice assistants) if it uses the same engine, otherwise the engine's default.",
+          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default."
         }
       }
     },
@@ -48,6 +52,8 @@
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
+          "tts_language": "Announcement language",
+          "tts_voice": "Announcement voice",
           "media_player": "Media players for announcements",
           "screen_switch": "Screen switch to turn on first",
           "presence_entity": "Presence entity",
@@ -70,7 +76,9 @@
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
           "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
           "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
-          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task."
+          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task.",
+          "tts_language": "Optional, e.g. en-GB. Empty = the language of your voice assistant (Settings → Voice assistants) if it uses the same engine, otherwise the engine's default.",
+          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default."
         }
       }
     },

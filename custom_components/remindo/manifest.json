@@ -4,7 +4,8 @@
   "after_dependencies": [
     "mobile_app",
     "tts",
-    "logbook"
+    "logbook",
+    "assist_pipeline"
   ],
   "categories": [
     "productivity_information.calendars_todos",
