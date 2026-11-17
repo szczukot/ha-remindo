@@ -7,6 +7,8 @@
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
+          "tts_language": "Język komunikatów",
+          "tts_voice": "Głos komunikatów",
           "media_player": "Głośniki / tablety do komunikatów",
           "screen_switch": "Włącz ekran tabletu przed komunikatem",
           "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
@@ -29,7 +31,9 @@
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
           "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
           "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
-          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika."
+          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika.",
+          "tts_language": "Opcjonalnie, np. pl-PL. Puste = język Twojego asystenta głosowego (Ustawienia → Asystenci głosowi), jeśli używa tego samego silnika, a inaczej domyślny silnika.",
+          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika."
         }
       }
     },
@@ -48,6 +52,8 @@
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
+          "tts_language": "Język komunikatów",
+          "tts_voice": "Głos komunikatów",
           "media_player": "Głośniki / tablety do komunikatów",
           "screen_switch": "Włącz ekran tabletu przed komunikatem",
           "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
@@ -70,7 +76,9 @@
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
           "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
           "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
-          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika."
+          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika.",
+          "tts_language": "Opcjonalnie, np. pl-PL. Puste = język Twojego asystenta głosowego (Ustawienia → Asystenci głosowi), jeśli używa tego samego silnika, a inaczej domyślny silnika.",
+          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika."
         }
       }
     },

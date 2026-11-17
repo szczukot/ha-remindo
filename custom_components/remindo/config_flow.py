@@ -34,6 +34,8 @@ from .const import (
     CONF_SCREEN_SWITCH,
     CONF_TTS_DEFAULT,
     CONF_TTS_ENTITY,
+    CONF_TTS_LANGUAGE,
+    CONF_TTS_VOICE,
     DEFAULTS,
     DOMAIN,
 )
@@ -75,6 +77,8 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_PERSISTENT, default=values[CONF_PERSISTENT]): selector.BooleanSelector(),
             opt(CONF_TTS_ENTITY): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),
+            opt(CONF_TTS_LANGUAGE): selector.TextSelector(),
+            opt(CONF_TTS_VOICE): selector.TextSelector(),
             opt(CONF_MEDIA_PLAYER): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="media_player", multiple=True)
             ),

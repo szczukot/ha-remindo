@@ -45,6 +45,8 @@ from .const import (
     CONF_SCREEN_SWITCH,
     CONF_TTS_DEFAULT,
     CONF_TTS_ENTITY,
+    CONF_TTS_LANGUAGE,
+    CONF_TTS_VOICE,
     DEFAULTS,
     EVENT_CREATED,
     EVENT_DISMISSED,
@@ -946,12 +948,36 @@ class TaskManager:
         # only the spoken text from the rule / automation is a template; the summary was
         # rendered already, and may have been edited by someone who must not run templates
         message = self._render(task.tts_message) if task.templates and task.tts_message else task.tts_message or task.summary
-        spoken = await self._call(
-            "tts",
-            "speak",
-            {"entity_id": tts_entity, "media_player_entity_id": speakers, "message": message, "cache": True},
-        )
+        data: dict[str, Any] = {"entity_id": tts_entity, "media_player_entity_id": speakers, "message": message, "cache": True}
+        language, voice = self._tts_voice(tts_entity)
+        if language:
+            data["language"] = language
+        if voice:
+            data["options"] = {"voice": voice}
+        spoken = await self._call("tts", "speak", data)
         return message if spoken else None
+
+    def _tts_voice(self, tts_entity: str) -> tuple[str | None, str | None]:
+        """Language and voice for the announcements: from the integration options, otherwise
+        from the preferred voice assistant when it uses the same engine. tts.speak alone
+        would use the engine's default (for Home Assistant Cloud: US English)."""
+        language = (self.options.get(CONF_TTS_LANGUAGE) or "").strip() or None
+        voice = (self.options.get(CONF_TTS_VOICE) or "").strip() or None
+        if language or voice:
+            return language, voice
+        pipeline = self._assistant()
+        if pipeline is None or pipeline.tts_engine != tts_entity:
+            return None, None
+        return pipeline.tts_language, pipeline.tts_voice
+
+    def _assistant(self) -> Any:
+        """The preferred voice assistant (Assist pipeline), or None."""
+        try:
+            from homeassistant.components.assist_pipeline import async_get_pipeline  # noqa: PLC0415
+
+            return async_get_pipeline(self.hass)
+        except Exception:  # noqa: BLE001 - no voice assistant set up: the engine's default
+            return None
 
     async def _clear_notifications(self, task: Task, *, force: bool = False) -> None:
         if task.reminders == 0 and not force:
