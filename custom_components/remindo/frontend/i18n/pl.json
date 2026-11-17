@@ -52,7 +52,7 @@
   "remind": "Przypominaj",
   "from_now": "od teraz",
   "in_1h": "za 1 h",
-  "tonight": "dziś 19:00",
+  "tonight": "dziś {t}",
   "pick": "wybierz termin…",
   "every": "co",
   "until_done": "dopóki nie odhaczę",

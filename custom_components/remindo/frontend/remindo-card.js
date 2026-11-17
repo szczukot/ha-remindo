@@ -20,14 +20,29 @@ const forms = (key) => tv(key);
 const T = () => I18N[LANG] || I18N.en;
 // a list or a set of forms, from English when the language does not have it
 const tv = (key) => T()[key] ?? I18N.en[key];
-const locale = () => (LANG === "en" ? undefined : LANG);
+// dates and times as in the user's HA profile: its language (e.g. en-GB) and its
+// 12 / 24 h choice (Profile → Time format), not the browser's defaults
+let FMT = { locale: undefined, hour12: undefined };
+const fmtFrom = (hass) => {
+  const l = hass?.locale || {};
+  const language = l.language || hass?.language;
+  const system = l.time_format === "system";
+  return {
+    locale: system ? undefined : language,
+    hour12: l.time_format === "12" ? true : l.time_format === "24" ? false : undefined,
+  };
+};
+const locale = () => FMT.locale;
+const timeOpts = () => ({ hour: "2-digit", minute: "2-digit", ...(FMT.hour12 === undefined ? {} : { hour12: FMT.hour12 }) });
+// "09:00" (or 9:00 AM) for a time of day given as "HH:MM"
+const clock = (hhmm) => { const [h, m] = String(hhmm).split(":").map(Number); const d = new Date(); d.setHours(h || 0, m || 0, 0, 0); return d.toLocaleTimeString(locale(), timeOpts()); };
 
 const fmtTime = (iso) => {
   if (!iso) return "";
   const d = new Date(iso);
   const now = new Date();
   const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-  const hm = d.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" });
+  const hm = d.toLocaleTimeString(locale(), timeOpts());
   if (d.toDateString() === now.toDateString()) return `${t("today")} ${hm}`;
   if (d.toDateString() === tomorrow.toDateString()) return `${t("tomorrow")} ${hm}`;
   const opts = { day: "numeric", month: "short" };
@@ -60,7 +75,7 @@ const repeatLabel = (task) => {
   else if (task.repeat_from_done) label += ` (${t("from_done_short")})`;
   return label;
 };
-const hm = (iso) => (iso ? new Date(iso).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : "");
+const hm = (iso) => (iso ? new Date(iso).toLocaleTimeString(locale(), timeOpts()) : "");
 const ago = (iso) => {
   if (!iso) return "";
   const min = Math.round((Date.now() - new Date(iso)) / 60000);
@@ -98,7 +113,11 @@ class RemindoCard extends HTMLElement {
     const first = !this._hass;
     this._hass = hass;
     const lang = pickLang(hass);
-    if (lang !== LANG) { LANG = lang; this._forceRender = !(this._formOpen || this._edit); this._render(); }
+    const fmt = fmtFrom(hass);
+    if (lang !== LANG || fmt.locale !== FMT.locale || fmt.hour12 !== FMT.hour12) {
+      LANG = lang; FMT = fmt;
+      this._forceRender = !(this._formOpen || this._edit); this._render();
+    }
     // not while a retry is waiting: hass changes many times a second
     if (!this._unsub && !this._retry) this._subscribe();
   }
@@ -226,7 +245,7 @@ class RemindoCard extends HTMLElement {
   }
 
   _morning() {
-    return String(this._opts?.default_time || "09:00").slice(0, 5);
+    return clock(String(this._opts?.default_time || "09:00").slice(0, 5));
   }
 
   _picker(task) {
@@ -274,7 +293,7 @@ class RemindoCard extends HTMLElement {
         <label class="chk"><input type="checkbox" id="f-rem" ${!edit || task.start ? "checked" : ""} /> ${t("remind")}</label>
         <span class="grp" id="f-rem-g"><select id="f-when">
           ${opt("now", t("from_now"), when)}${opt("1h", t("in_1h"), when)}
-          ${new Date().getHours() < 19 ? opt("evening", t("tonight"), when) : ""}
+          ${new Date().getHours() < 19 ? opt("evening", t("tonight", { t: clock("19:00") }), when) : ""}
           ${opt("custom", t("pick"), when)}
         </select>
         <input id="f-dt" type="datetime-local" min="${local(new Date())}" value="${local(due)}" data-was="${local(due)}" />
