@@ -111,6 +111,18 @@
           "name": "Every",
           "description": "E.g. 3 with monthly = every 3 months."
         },
+        "repeat_days": {
+          "name": "On weekdays",
+          "description": "Weekly only: on these days of every (N-th) week, e.g. mon, thu. Empty = the weekday of the due date."
+        },
+        "repeat_on": {
+          "name": "Monthly on",
+          "description": "Monthly only, taken from the due date: day = the same day number (default), weekday = the same weekday of the month (e.g. the 3rd Tuesday), last_weekday = the last such weekday (e.g. the last Friday), last_day = the last day of the month."
+        },
+        "repeat_from_done": {
+          "name": "Count from ticking off",
+          "description": "On = the next date is counted from when the task was ticked off (e.g. every 3 months after the filter was really changed), at the usual time of day. Off = a fixed schedule. Not used with weekdays or a monthly pattern."
+        },
         "tts": {
           "name": "Spoken",
           "description": "Speak on the tablet when someone is home."
@@ -271,6 +283,18 @@
           "name": "Every how many units",
           "description": "E.g. 3 with \"monthly\" = every 3 months."
         },
+        "repeat_days": {
+          "name": "On weekdays",
+          "description": "Weekly only: on these days of every (N-th) week, e.g. mon, thu. Empty = the weekday of the due date."
+        },
+        "repeat_on": {
+          "name": "Monthly on",
+          "description": "Monthly only, taken from the due date: day = the same day number (default), weekday = the same weekday of the month (e.g. the 3rd Tuesday), last_weekday = the last such weekday (e.g. the last Friday), last_day = the last day of the month."
+        },
+        "repeat_from_done": {
+          "name": "Count from ticking off",
+          "description": "On = the next date is counted from when the task was ticked off (e.g. every 3 months after the filter was really changed), at the usual time of day. Off = a fixed schedule. Not used with weekdays or a monthly pattern."
+        },
         "phones": {
           "name": "Channels",
           "description": "Where to send the notification (empty list = nowhere; null = all configured)."
@@ -337,6 +361,25 @@
         "above": "Is above",
         "below": "Is below",
         "calendar": "Has a calendar event"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "The same day of the month",
+        "weekday": "The same weekday (e.g. 3rd Tuesday)",
+        "last_weekday": "The last such weekday",
+        "last_day": "The last day of the month"
       }
     }
   },

@@ -111,6 +111,18 @@
           "name": "Co ile jednostek",
           "description": "Np. 3 przy 'monthly' = co 3 miesiące."
         },
+        "repeat_days": {
+          "name": "W dni tygodnia",
+          "description": "Tylko co tydzień: w te dni każdego (N-tego) tygodnia, np. mon, thu. Puste = dzień tygodnia z terminu."
+        },
+        "repeat_on": {
+          "name": "Co miesiąc w",
+          "description": "Tylko co miesiąc, według terminu: day = ten sam dzień miesiąca (domyślnie), weekday = ten sam dzień tygodnia w miesiącu (np. 3. wtorek), last_weekday = ostatni taki dzień tygodnia (np. ostatni piątek), last_day = ostatni dzień miesiąca."
+        },
+        "repeat_from_done": {
+          "name": "Licz od odhaczenia",
+          "description": "Włączone = następny termin liczy się od odhaczenia (np. co 3 miesiące od faktycznej wymiany filtra), o zwykłej godzinie. Wyłączone = stały kalendarz. Nie działa z dniami tygodnia ani wzorem miesięcznym."
+        },
         "tts": {
           "name": "Komunikat głosowy",
           "description": "Mów na tablecie, gdy ktoś jest w domu."
@@ -271,6 +283,18 @@
           "name": "Co ile jednostek",
           "description": "Np. 3 przy „monthly” = co 3 miesiące."
         },
+        "repeat_days": {
+          "name": "W dni tygodnia",
+          "description": "Tylko co tydzień: w te dni każdego (N-tego) tygodnia, np. mon, thu. Puste = dzień tygodnia z terminu."
+        },
+        "repeat_on": {
+          "name": "Co miesiąc w",
+          "description": "Tylko co miesiąc, według terminu: day = ten sam dzień miesiąca (domyślnie), weekday = ten sam dzień tygodnia w miesiącu (np. 3. wtorek), last_weekday = ostatni taki dzień tygodnia (np. ostatni piątek), last_day = ostatni dzień miesiąca."
+        },
+        "repeat_from_done": {
+          "name": "Licz od odhaczenia",
+          "description": "Włączone = następny termin liczy się od odhaczenia (np. co 3 miesiące od faktycznej wymiany filtra), o zwykłej godzinie. Wyłączone = stały kalendarz. Nie działa z dniami tygodnia ani wzorem miesięcznym."
+        },
         "phones": {
           "name": "Kanały",
           "description": "Gdzie wysłać powiadomienie (pusta lista = nigdzie; null = wszystkie z ustawień)."
@@ -337,6 +361,25 @@
         "above": "Jest powyżej progu",
         "below": "Jest poniżej progu",
         "calendar": "Ma wydarzenie w kalendarzu"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Poniedziałek",
+        "tue": "Wtorek",
+        "wed": "Środa",
+        "thu": "Czwartek",
+        "fri": "Piątek",
+        "sat": "Sobota",
+        "sun": "Niedziela"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "Ten sam dzień miesiąca",
+        "weekday": "Ten sam dzień tygodnia (np. 3. wtorek)",
+        "last_weekday": "Ostatni taki dzień tygodnia",
+        "last_day": "Ostatni dzień miesiąca"
       }
     }
   },
