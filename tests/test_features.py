@@ -109,14 +109,53 @@ def test_strings_equal_english() -> None:
     assert strings == en
 
 
-def test_polish_matches_english() -> None:
+LANGUAGES = sorted(f.stem for f in (COMPONENT / "translations").glob("*.json"))
+
+
+def test_all_languages_everywhere() -> None:
+    """A language is added in three places: HA texts, the card and the phone / logbook texts."""
+    card = sorted(f.stem for f in (COMPONENT / "frontend" / "i18n").glob("*.json"))
+    messages = sorted(f.stem for f in (COMPONENT / "messages").glob("*.json"))
+    assert LANGUAGES == card == messages
+    assert {"en", "pl", "de", "fr", "nl", "it", "es"} <= set(LANGUAGES)
+
+
+@pytest.mark.parametrize("lang", LANGUAGES)
+def test_translation_matches_english(lang: str) -> None:
     en = json.loads((COMPONENT / "translations" / "en.json").read_text(encoding="utf-8"))
-    pl = json.loads((COMPONENT / "translations" / "pl.json").read_text(encoding="utf-8"))
-    assert _keys(en) == _keys(pl)
-    pl_values = dict(_leaves(pl))
+    other = json.loads((COMPONENT / "translations" / f"{lang}.json").read_text(encoding="utf-8"))
+    assert _keys(en) == _keys(other)
+    values = dict(_leaves(other))
     for key, value in _leaves(en):
         placeholders = set(re.findall(r"\{(\w+)\}", value))
-        assert placeholders == set(re.findall(r"\{(\w+)\}", pl_values[key])), key
+        assert placeholders == set(re.findall(r"\{(\w+)\}", values[key])), key
+
+
+@pytest.mark.parametrize("lang", LANGUAGES)
+def test_card_texts_match_english(lang: str) -> None:
+    folder = COMPONENT / "frontend" / "i18n"
+    en = json.loads((folder / "en.json").read_text(encoding="utf-8"))
+    other = json.loads((folder / f"{lang}.json").read_text(encoding="utf-8"))
+    assert set(other) == set(en), lang
+    for key, value in en.items():
+        if isinstance(value, str) and isinstance(other[key], str):
+            assert set(re.findall(r"\{(\w+)\}", value)) == set(re.findall(r"\{(\w+)\}", other[key])), key
+        elif isinstance(value, list) and key != "on_nth":
+            assert len(other[key]) == len(value), key
+    for key in ("days", "days_full", "on_last_days"):
+        assert len(other[key]) == 7, key
+    for key in [k for k in en if k.startswith("u_")]:
+        assert other[key].get("other") or other[key].get("many"), key
+
+
+async def test_card_is_served_with_texts(hass: HomeAssistant, hass_client_no_auth) -> None:
+    await setup_integration(hass)
+    client = await hass_client_no_auth()
+    response = await client.get("/remindo_static/remindo-card.js")
+    assert response.status == 200
+    body = await response.text()
+    assert body.startswith("const REMINDO_I18N = ")
+    assert '"de":{' in body and "customElements.define" in body
 
 
 def test_services_yaml_translated() -> None:
@@ -126,8 +165,19 @@ def test_services_yaml_translated() -> None:
 
 
 def test_backend_texts_complete() -> None:
-    assert set(texts._TEXTS["en"]) == set(texts._TEXTS["pl"])
-    assert set(texts._UNITS["en"]) == set(texts._UNITS["pl"])
+    """Every language has every text, with the same {placeholders}, and the plural forms it needs."""
+    en = texts._MESSAGES["en"]
+    for lang, msgs in texts._MESSAGES.items():
+        assert set(msgs) == set(en), lang
+        assert set(msgs["texts"]) == set(en["texts"]), lang
+        for key, value in en["texts"].items():
+            assert set(re.findall(r"{(\w+)}", msgs["texts"][key])) == set(re.findall(r"{(\w+)}", value)), (lang, key)
+        assert set(msgs["units"]) == set(en["units"]), lang
+        for forms in msgs["units"].values():
+            needed = {texts.plural_category(lang, n) for n in range(1, 30)}
+            assert needed <= set(forms), (lang, forms)
+        assert len(msgs["days"]) == len(msgs["days_full"]) == len(msgs["last_days"]) == 7, lang
+        assert len(msgs["nth"]) == 4, lang
 
 
 @pytest.mark.parametrize(
@@ -140,7 +190,11 @@ def test_backend_texts_complete() -> None:
         ("pl", "weekly", 5, "co 5 tygodni"),
         ("pl", "yearly", 22, "co 22 lata"),
         ("pl", "hourly", 12, "co 12 godzin"),
-        ("de", "weekly", 2, "every 2 weeks"),
+        ("de", "weekly", 2, "alle 2 Wochen"),
+        ("de", "daily", 1, "jeden Tag"),
+        ("fr", "weekly", 3, "toutes les 3 semaines"),
+        ("it", "monthly", 1, "ogni mese"),
+        ("ja", "weekly", 2, "every 2 weeks"),
     ],
 )
 def test_repeat_label(hass: HomeAssistant, lang, repeat, every, expected) -> None:

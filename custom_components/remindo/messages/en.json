@@ -1,0 +1,81 @@
+{
+  "texts": {
+    "title": "📋 Task",
+    "done": "✅ Done",
+    "snooze": "⏰ +{minutes} min",
+    "dismiss": "❌ Skip",
+    "task": "Task: {summary}",
+    "ev_created": "added",
+    "ev_reminded": "reminded",
+    "ev_done": "done",
+    "ev_snoozed": "snoozed",
+    "ev_dismissed": "skipped",
+    "src_phone": "from phone",
+    "src_card": "from card",
+    "src_todo": "from To-do list",
+    "src_auto": "automatically",
+    "src_rule": "by rule",
+    "src_expired": "date passed",
+    "src_rule_removed": "rule deleted",
+    "nth": ", time #{count}"
+  },
+  "units": {
+    "hourly": {
+      "one": "hour",
+      "other": "hours"
+    },
+    "daily": {
+      "one": "day",
+      "other": "days"
+    },
+    "weekly": {
+      "one": "week",
+      "other": "weeks"
+    },
+    "monthly": {
+      "one": "month",
+      "other": "months"
+    },
+    "yearly": {
+      "one": "year",
+      "other": "years"
+    }
+  },
+  "days": [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun"
+  ],
+  "days_full": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+  ],
+  "every": "every",
+  "nth": [
+    "1st",
+    "2nd",
+    "3rd",
+    "4th"
+  ],
+  "on_nth": "{n} {day}",
+  "last_days": [
+    "last Monday",
+    "last Tuesday",
+    "last Wednesday",
+    "last Thursday",
+    "last Friday",
+    "last Saturday",
+    "last Sunday"
+  ],
+  "last_day": "last day",
+  "from_done": "from ticking off"
+}

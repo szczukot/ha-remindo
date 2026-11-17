@@ -1,0 +1,91 @@
+{
+  "texts": {
+    "title": "📋 Aufgabe",
+    "done": "✅ Erledigt",
+    "snooze": "⏰ +{minutes} Min.",
+    "dismiss": "❌ Überspringen",
+    "task": "Aufgabe: {summary}",
+    "ev_created": "hinzugefügt",
+    "ev_reminded": "erinnert",
+    "ev_done": "erledigt",
+    "ev_snoozed": "verschoben",
+    "ev_dismissed": "übersprungen",
+    "src_phone": "vom Handy",
+    "src_card": "von der Karte",
+    "src_todo": "aus der To-do-Liste",
+    "src_auto": "automatisch",
+    "src_rule": "durch Regel",
+    "src_expired": "Termin vorbei",
+    "src_rule_removed": "Regel gelöscht",
+    "nth": ", {count}. Mal"
+  },
+  "units": {
+    "hourly": {
+      "one": "Stunde",
+      "other": "Stunden",
+      "every_one": "jede Stunde",
+      "every_n": "alle {n} Stunden"
+    },
+    "daily": {
+      "one": "Tag",
+      "other": "Tage",
+      "every_one": "jeden Tag",
+      "every_n": "alle {n} Tage"
+    },
+    "weekly": {
+      "one": "Woche",
+      "other": "Wochen",
+      "every_one": "jede Woche",
+      "every_n": "alle {n} Wochen"
+    },
+    "monthly": {
+      "one": "Monat",
+      "other": "Monate",
+      "every_one": "jeden Monat",
+      "every_n": "alle {n} Monate"
+    },
+    "yearly": {
+      "one": "Jahr",
+      "other": "Jahre",
+      "every_one": "jedes Jahr",
+      "every_n": "alle {n} Jahre"
+    }
+  },
+  "days": [
+    "Mo",
+    "Di",
+    "Mi",
+    "Do",
+    "Fr",
+    "Sa",
+    "So"
+  ],
+  "days_full": [
+    "Montag",
+    "Dienstag",
+    "Mittwoch",
+    "Donnerstag",
+    "Freitag",
+    "Samstag",
+    "Sonntag"
+  ],
+  "every": "alle",
+  "nth": [
+    "1.",
+    "2.",
+    "3.",
+    "4."
+  ],
+  "on_nth": "am {n} {day}",
+  "last_days": [
+    "am letzten Montag",
+    "am letzten Dienstag",
+    "am letzten Mittwoch",
+    "am letzten Donnerstag",
+    "am letzten Freitag",
+    "am letzten Samstag",
+    "am letzten Sonntag"
+  ],
+  "last_day": "am letzten Tag",
+  "from_done": "ab dem Abhaken"
+}

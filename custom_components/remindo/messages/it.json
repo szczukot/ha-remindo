@@ -1,0 +1,99 @@
+{
+  "texts": {
+    "title": "📋 Attività",
+    "done": "✅ Fatto",
+    "snooze": "⏰ +{minutes} min",
+    "dismiss": "❌ Salta",
+    "task": "Attività: {summary}",
+    "ev_created": "aggiunta",
+    "ev_reminded": "ricordata",
+    "ev_done": "fatta",
+    "ev_snoozed": "rimandata",
+    "ev_dismissed": "saltata",
+    "src_phone": "dal telefono",
+    "src_card": "dalla scheda",
+    "src_todo": "dalla lista attività",
+    "src_auto": "automaticamente",
+    "src_rule": "da regola",
+    "src_expired": "data passata",
+    "src_rule_removed": "regola eliminata",
+    "nth": ", {count}ª volta"
+  },
+  "units": {
+    "hourly": {
+      "one": "ora",
+      "other": "ore",
+      "every_one": "ogni ora",
+      "every_n": "ogni {n} ore"
+    },
+    "daily": {
+      "one": "giorno",
+      "other": "giorni",
+      "every_one": "ogni giorno",
+      "every_n": "ogni {n} giorni"
+    },
+    "weekly": {
+      "one": "settimana",
+      "other": "settimane",
+      "every_one": "ogni settimana",
+      "every_n": "ogni {n} settimane"
+    },
+    "monthly": {
+      "one": "mese",
+      "other": "mesi",
+      "every_one": "ogni mese",
+      "every_n": "ogni {n} mesi"
+    },
+    "yearly": {
+      "one": "anno",
+      "other": "anni",
+      "every_one": "ogni anno",
+      "every_n": "ogni {n} anni"
+    }
+  },
+  "days": [
+    "lun",
+    "mar",
+    "mer",
+    "gio",
+    "ven",
+    "sab",
+    "dom"
+  ],
+  "days_full": [
+    "lunedì",
+    "martedì",
+    "mercoledì",
+    "giovedì",
+    "venerdì",
+    "sabato",
+    "domenica"
+  ],
+  "every": "ogni",
+  "nth": [
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "on_nth": [
+    "il {n}° lunedì",
+    "il {n}° martedì",
+    "il {n}° mercoledì",
+    "il {n}° giovedì",
+    "il {n}° venerdì",
+    "il {n}° sabato",
+    "la {n}ª domenica"
+  ],
+  "last_days": [
+    "l'ultimo lunedì",
+    "l'ultimo martedì",
+    "l'ultimo mercoledì",
+    "l'ultimo giovedì",
+    "l'ultimo venerdì",
+    "l'ultimo sabato",
+    "l'ultima domenica"
+  ],
+  "last_day": "l'ultimo giorno",
+  "from_done": "dal completamento"
+}

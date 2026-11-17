@@ -1,0 +1,91 @@
+{
+  "texts": {
+    "title": "📋 Tarea",
+    "done": "✅ Hecho",
+    "snooze": "⏰ +{minutes} min",
+    "dismiss": "❌ Omitir",
+    "task": "Tarea: {summary}",
+    "ev_created": "añadida",
+    "ev_reminded": "recordada",
+    "ev_done": "hecha",
+    "ev_snoozed": "pospuesta",
+    "ev_dismissed": "omitida",
+    "src_phone": "desde el teléfono",
+    "src_card": "desde la tarjeta",
+    "src_todo": "desde la lista de tareas",
+    "src_auto": "automáticamente",
+    "src_rule": "por una regla",
+    "src_expired": "fecha pasada",
+    "src_rule_removed": "regla eliminada",
+    "nth": ", {count}.ª vez"
+  },
+  "units": {
+    "hourly": {
+      "one": "hora",
+      "other": "horas",
+      "every_one": "cada hora",
+      "every_n": "cada {n} horas"
+    },
+    "daily": {
+      "one": "día",
+      "other": "días",
+      "every_one": "cada día",
+      "every_n": "cada {n} días"
+    },
+    "weekly": {
+      "one": "semana",
+      "other": "semanas",
+      "every_one": "cada semana",
+      "every_n": "cada {n} semanas"
+    },
+    "monthly": {
+      "one": "mes",
+      "other": "meses",
+      "every_one": "cada mes",
+      "every_n": "cada {n} meses"
+    },
+    "yearly": {
+      "one": "año",
+      "other": "años",
+      "every_one": "cada año",
+      "every_n": "cada {n} años"
+    }
+  },
+  "days": [
+    "lun",
+    "mar",
+    "mié",
+    "jue",
+    "vie",
+    "sáb",
+    "dom"
+  ],
+  "days_full": [
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+    "domingo"
+  ],
+  "every": "cada",
+  "nth": [
+    "1.er",
+    "2.º",
+    "3.er",
+    "4.º"
+  ],
+  "on_nth": "el {n} {day}",
+  "last_days": [
+    "el último lunes",
+    "el último martes",
+    "el último miércoles",
+    "el último jueves",
+    "el último viernes",
+    "el último sábado",
+    "el último domingo"
+  ],
+  "last_day": "el último día",
+  "from_done": "desde que se marcó"
+}

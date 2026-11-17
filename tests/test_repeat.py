@@ -82,3 +82,22 @@ async def test_count_from_done(hass: HomeAssistant, freezer: FrozenDateTimeFacto
     items = {i.summary: i.description for i in hass.data["entity_components"]["todo"].get_entity("todo.remindo").todo_items}
     assert items["Gym"] == "🔁 every week: Mon"
     assert items["Filter"] == "🔁 every 3 months (from ticking off)"
+
+
+async def test_pattern_labels_in_other_languages(hass: HomeAssistant) -> None:
+    from datetime import datetime
+
+    from custom_components.remindo import texts
+
+    sunday = datetime(2026, 11, 15, 9, 0)  # 3rd Sunday
+    cases = {
+        "it": (", la 3ª domenica", ", l'ultima domenica"),
+        "de": (", am 3. Sonntag", ", am letzten Sonntag"),
+        "pl": (", 3. niedziela", ", ostatnia niedziela"),
+    }
+    for lang, (nth, last) in cases.items():
+        hass.config.language = lang
+        assert texts.pattern_label(hass, sunday, "monthly", None, "weekday", False) == nth
+        assert texts.pattern_label(hass, sunday, "monthly", None, "last_weekday", False) == last
+    hass.config.language = "fr"
+    assert texts.pattern_label(hass, sunday, "weekly", [0, 3], None, False) == ": lun, jeu"

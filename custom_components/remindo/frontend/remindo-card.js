@@ -1,61 +1,26 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
 const VERSION = "1.1.0";
 
-const I18N = {
-  en: {
-    title: "Tasks", today: "today", tomorrow: "tomorrow", just_now: "just now", min_ago: "{n} min ago", h_ago: "{n} h ago", d_ago: "{n} d ago",
-    now: "now", now_again: "now · again {t}", now_no_more: "now · no more reminders", dismissed_ago: "skipped {t}", snoozed_until: "snoozed until ",
-    done_ago: "done {t}", reminding_since: "reminding since {t}", every_min: "every {n}", then_every: "then every {n} again", snooze_hint: "Remind in {t}", snooze_hint_then: "Remind in {t}, then every {n} again", snoozed_n: "snoozed {n}×",
-    max_n: "max {n}× (so far {m})", until: "reminds until {t}", no_notify: "no notifications", ha_only: "notification in HA only", restore: "Restore (open it again)", del_title: "Delete (no trace, cannot be restored)", del_title_rec: "Delete with all future dates",
-    btn_done: "Done", btn_tomorrow: "tomorrow {t}", btn_tomorrow_hint: "Remind again tomorrow at {t}", btn_tomorrow_hint_then: "Remind again tomorrow at {t}, then every {n} again", btn_pick: "📅", btn_pick_hint: "Pick when to remind again", pick_label: "Remind again:", pick_ok: "Snooze", pick_past: "Pick a time in the future", btn_dismiss: "Skip", btn_skip_once: "Skip this date (the task comes back next time)", edit: "Edit", e_once: "0 = once", del: "Delete", del_confirm: "Really delete?", e_save: "Save",
-    sec_now: "Now", sec_planned: "Scheduled", sec_notes: "Notes", sec_done: "Done", sec_dismissed: "Skipped", empty: "Nothing to do 🎉",
-    add: "＋ Add task", what: "What needs doing?", remind: "Remind", from_now: "from now", in_1h: "in 1 h", tonight: "today 19:00",
-    pick: "pick a time…", every: "every", until_done: "until I tick it off", note_hint: "no reminders — just a note on the list",
-    stop: "stop reminding:", stop_never: "never (until ticked off)", stop_count: "after … times", stop_until: "at a specific time",
-    repeat: "Repeat", repeat_hint: "after ticking off it comes back at the next due time", where: "Remind on:",
-    where_hint: "🔊 speaks only when someone is home and outside quiet hours", cancel: "Cancel", save: "Add",
-    repeat_needs_start: "A recurring task needs a due time", keep: "Keep on the list after done", keep_hint: "off = disappears once ticked off",
-    u_min: ["minute", "minutes", "minutes"], u_hour: ["hour", "hours", "hours"], u_day: ["day", "days", "days"],
-    u_week: ["week", "weeks", "weeks"], u_month: ["month", "months", "months"], u_year: ["year", "years", "years"],
-    description: "Task list with reminders: tick off, snooze, add",
-    ed_title: "Title", ed_title_hint: "Empty = \"Tasks\" (or the list's name)", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
-    ed_list: "Show only this list", ed_list_hint: "Empty = all tasks (with a filter once there are lists)",
-    all: "All", days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], days_full: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], on_day: "on day {d}", on_nth: "on the {n} {day}", on_last: "on the last {day}", on_last_day: "on the last day", nth: ["1st", "2nd", "3rd", "4th"], from_done: "count from ticking off", from_done_hint: "e.g. every 3 months after it was really done", from_done_short: "from ticking off", important: "❗ Important", important_hint: "loud on the phone (alarm), also when silenced and in the quiet hours", f_icon: "Icon:", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
-  },
-  pl: {
-    title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
-    now: "teraz", now_again: "teraz · znowu {t}", now_no_more: "teraz · już nie przypomina", dismissed_ago: "odrzucone {t}", snoozed_until: "odłożone do ",
-    done_ago: "zrobione {t}", reminding_since: "przypomina od {t}", every_min: "co {n}", then_every: "potem znowu co {n}", snooze_hint: "Przypomnij za {t}", snooze_hint_then: "Przypomnij za {t}, potem znowu co {n}", snoozed_n: "odłożone {n}×",
-    max_n: "maks. {n}× (było {m})", until: "przypomina do {t}", no_notify: "bez powiadomień", ha_only: "tylko powiadomienie w HA", restore: "Przywróć (otwórz ponownie)", del_title: "Usuń (bez śladu, nie da się przywrócić)", del_title_rec: "Usuń razem ze wszystkimi kolejnymi terminami",
-    btn_done: "Zrobione", btn_tomorrow: "jutro {t}", btn_tomorrow_hint: "Przypomnij jutro o {t}", btn_tomorrow_hint_then: "Przypomnij jutro o {t}, potem znowu co {n}", btn_pick: "📅", btn_pick_hint: "Wybierz, kiedy przypomnieć ponownie", pick_label: "Przypomnij ponownie:", pick_ok: "Odłóż", pick_past: "Wybierz termin w przyszłości", btn_dismiss: "Nie robię", btn_skip_once: "Pomiń ten termin (zadanie wróci w następnym)", edit: "Zmień", e_once: "0 = raz", del: "Usuń", del_confirm: "Na pewno usunąć?", e_save: "Zapisz",
-    sec_now: "Teraz", sec_planned: "Zaplanowane", sec_notes: "Notatki", sec_done: "Zrobione", sec_dismissed: "Odrzucone", empty: "Nic do zrobienia 🎉",
-    add: "＋ Dodaj zadanie", what: "Co trzeba zrobić?", remind: "Przypominaj", from_now: "od teraz", in_1h: "za 1 h", tonight: "dziś 19:00",
-    pick: "wybierz termin…", every: "co", until_done: "dopóki nie odhaczę", note_hint: "bez przypomnień — zwykła notatka na liście",
-    stop: "przestań przypominać:", stop_never: "nigdy (aż odhaczę)", stop_count: "po … razach", stop_until: "o konkretnej porze",
-    repeat: "Powtarzaj", repeat_hint: "po odhaczeniu wróci w następnym terminie", where: "Gdzie przypominać:",
-    where_hint: "🔊 mówi tylko, gdy ktoś jest w domu i nie trwa cisza nocna", cancel: "Anuluj", save: "Dodaj",
-    repeat_needs_start: "Zadanie cykliczne musi mieć termin", keep: "Zostaw na liście po wykonaniu", keep_hint: "wyłączone = znika po odhaczeniu",
-    u_min: ["minutę", "minuty", "minut"], u_hour: ["godzinę", "godziny", "godzin"], u_day: ["dzień", "dni", "dni"],
-    u_week: ["tydzień", "tygodnie", "tygodni"], u_month: ["miesiąc", "miesiące", "miesięcy"], u_year: ["rok", "lata", "lat"],
-    description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
-    ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania” (albo nazwa listy)", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
-    ed_list: "Pokaż tylko listę", ed_list_hint: "Puste = wszystkie zadania (z filtrem, gdy są listy)",
-    all: "Wszystkie", days: ["pn", "wt", "śr", "czw", "pt", "sob", "nd"], days_full: ["poniedziałek", "wtorek", "środę", "czwartek", "piątek", "sobotę", "niedzielę"], on_day: "dnia {d}.", on_nth: "w {n} {day}", on_last: "w ostatni{a} {day}", on_last_day: "ostatniego dnia", nth: ["1.", "2.", "3.", "4."], from_done: "licz od odhaczenia", from_done_hint: "np. co 3 miesiące od faktycznego wykonania", from_done_short: "od odhaczenia", important: "❗ Ważne", important_hint: "głośno na telefonie (alarm), także przy wyciszeniu i w ciszy nocnej", f_icon: "Ikona:", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
-  },
-};
+// texts: frontend/i18n/<language>.json, added in front of this file when it is served
+const I18N = typeof REMINDO_I18N !== "undefined" ? REMINDO_I18N : { en: {} };
 let LANG = "en";
+// the HA user's language if the card has it ("de-CH" → "de"), otherwise English
 const pickLang = (hass) => {
   const l = String(hass?.locale?.language || hass?.language || navigator.language || "en").toLowerCase();
-  return l.startsWith("pl") ? "pl" : "en";
+  return I18N[l] ? l : I18N[l.split("-")[0]] ? l.split("-")[0] : "en";
 };
 const t = (key, vars = {}) => String((I18N[LANG] || I18N.en)[key] ?? I18N.en[key] ?? key).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "");
+// unit names by the language's plural rules: { one, few, many, other }
 const plural = (n, forms) => {
-  if (LANG !== "pl") return n === 1 ? forms[0] : forms[2];
-  return forms[n === 1 ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 1 : 2];
+  if (!forms) return "";
+  const cat = new Intl.PluralRules(LANG).select(n);
+  return forms[cat] ?? forms.other ?? forms.many ?? forms.one;
 };
-const forms = (key) => (I18N[LANG] || I18N.en)[key] || I18N.en[key];
+const forms = (key) => tv(key);
 const T = () => I18N[LANG] || I18N.en;
-const locale = () => (LANG === "pl" ? "pl-PL" : undefined);
+// a list or a set of forms, from English when the language does not have it
+const tv = (key) => T()[key] ?? I18N.en[key];
+const locale = () => (LANG === "en" ? undefined : LANG);
 
 const fmtTime = (iso) => {
   if (!iso) return "";
@@ -75,17 +40,22 @@ const dayIndex = (d) => (d.getDay() + 6) % 7;  // 0 = Monday
 // "on the 3rd Tuesday" etc., taken from the due date (as the integration does)
 const monthlyLabel = (on, due) => {
   const wd = dayIndex(due), nth = Math.floor((due.getDate() - 1) / 7) + 1;
-  const day = (T()["days_full"] || [])[wd];
+  const day = (tv("days_full") || [])[wd];
   if (on === "last_day") return t("on_last_day");
-  if (on === "last_weekday" || (on === "weekday" && nth === 5)) return t("on_last", { day, a: [2, 5, 6].includes(wd) ? "ą" : "" });
-  if (on === "weekday") return t("on_nth", { n: T().nth[nth - 1], day });
+  if (on === "last_weekday" || (on === "weekday" && nth === 5)) return (tv("on_last_days") || [])[wd] || "";
+  if (on === "weekday") {
+    // one phrase, or one per weekday where the words depend on it ("il 3° martedì", "la 3ª domenica")
+    const tpl = Array.isArray(tv("on_nth")) ? tv("on_nth")[wd] : tv("on_nth");
+    return String(tpl).replace("{n}", tv("nth")[nth - 1]).replace("{day}", day);
+  }
   return t("on_day", { d: due.getDate() });
 };
 const repeatLabel = (task) => {
   const n = Number(task.repeat_every || 1);
-  const f = forms(UNIT[task.repeat]) || [task.repeat, task.repeat, task.repeat];
-  let label = n <= 1 ? `${t("every")} ${f[0]}` : `${t("every")} ${n} ${plural(n, f)}`;
-  if (task.repeat === "weekly" && task.repeat_days?.length) label += ": " + task.repeat_days.map((d) => T().days[d]).join(", ");
+  const f = forms(UNIT[task.repeat]) || { other: task.repeat };
+  // a unit may carry its own phrases where "every" changes with it ("jeden Tag", "toutes les 3 semaines")
+  let label = n <= 1 ? f.every_one || `${t("every")} ${plural(1, f)}` : (f.every_n || `${t("every")} {n} ${plural(n, f)}`).replace("{n}", n);
+  if (task.repeat === "weekly" && task.repeat_days?.length) label += ": " + task.repeat_days.map((d) => tv("days")[d]).join(", ");
   else if (task.repeat === "monthly" && task.repeat_on && task.repeat_on !== "day" && task.start) label += ", " + monthlyLabel(task.repeat_on, new Date(task.start));
   else if (task.repeat_from_done) label += ` (${t("from_done_short")})`;
   return label;
@@ -322,7 +292,7 @@ class RemindoCard extends HTMLElement {
         <label class="chk"><input type="checkbox" id="f-rep-on" ${rec ? "checked" : ""} /> ${t("repeat")}</label>
         <span class="grp" id="f-rep-g">${t("every")} <input id="f-every" type="number" min="1" value="${edit ? Number(task.repeat_every || 1) : 1}" />
           <select id="f-rep">${Object.keys(UNIT).map((u) => opt(u, "", rec ? task.repeat : "daily")).join("")}</select>
-          <span id="f-days">${WEEKDAYS.map((d, i) => `<label class="day"><input type="checkbox" class="f-day" value="${d}" ${edit && (task.repeat_days || []).includes(i) ? "checked" : ""} />${T().days[i]}</label>`).join("")}</span>
+          <span id="f-days">${WEEKDAYS.map((d, i) => `<label class="day"><input type="checkbox" class="f-day" value="${d}" ${edit && (task.repeat_days || []).includes(i) ? "checked" : ""} />${tv("days")[i]}</label>`).join("")}</span>
           <select id="f-mon" data-was="${edit ? task.repeat_on || "day" : "day"}">${["day", "weekday", "last_weekday", "last_day"].map((o) => opt(o, "", edit ? task.repeat_on || "day" : "day")).join("")}</select></span>
         <span class="hint" id="f-rep-h">${t("repeat_hint")}</span>
       </div>

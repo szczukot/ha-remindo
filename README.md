@@ -13,7 +13,7 @@ A Home Assistant integration that turns "remember to…" into tasks that **keep 
 - 🗂️ **Lovelace card** shipped with the integration: Now / Scheduled / Notes / Done / Skipped, one-tap snooze, adding tasks by hand.
 - 📣 **Any channel**: the HA mobile app (with buttons) plus Telegram, e-mail, SMS and any other notifier you have in HA (text only).
 - ✅ **Message when resolved**: e.g. "Garage door closed ✅" when a task closes itself.
-- 🌍 English and Polish.
+- 🌍 English, Polish, German, French, Dutch, Italian and Spanish.
 
 <p align="center"><img src="docs/images/demo-en.gif" width="520" alt="Remindo in action: ticking off, adding a recurring task, editing"></p>
 
@@ -246,7 +246,19 @@ To react to one task only, add a condition on the text, e.g. `{{ 'dishwasher' in
 
 ## Language
 
-Configuration screens, actions, error messages, push notifications and the logbook are available in English and Polish. Push, logbook and the To-do description use the language set in *Settings → System → General*; the card uses the user's profile language.
+Remindo speaks **English, Polish, German, French, Dutch, Italian and Spanish** (configuration screens, actions, error messages, the card, push buttons and the logbook). Push, logbook and the To-do description use the language set in *Settings → System → General*; the card uses the user's profile language. Any other language falls back to English.
+
+German, French, Dutch, Italian and Spanish were translated without a native speaker, so some wording may sound off: corrections are very welcome as a pull request (or an issue with the better text).
+
+**Adding a language** is three files named with the language code (e.g. `cs.json`), copied from the English ones and translated:
+
+| File | What it covers |
+|---|---|
+| `custom_components/remindo/translations/<code>.json` | settings, rule form, actions, errors, Repairs (Home Assistant's own format) |
+| `custom_components/remindo/frontend/i18n/<code>.json` | the card |
+| `custom_components/remindo/messages/<code>.json` | push buttons, logbook, the repeat text in the To-do list |
+
+Units have one entry per plural form of the language (`one`, `few`, `many`, `other`, as in [CLDR](https://cldr.unicode.org/index/cldr-spec/plural-rules)); where "every" changes with the unit, add `every_one` / `every_n` (e.g. German `"jeden Tag"`, `"alle {n} Tage"`). The tests check that every language has every text with the same `{placeholders}`.
 
 ## Development
 
