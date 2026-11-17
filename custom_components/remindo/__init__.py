@@ -63,7 +63,7 @@ from .const import (
 )
 from .manager import RemindoError, Task, TaskManager
 
-PLATFORMS = [Platform.TODO, Platform.SENSOR]
+PLATFORMS = [Platform.TODO, Platform.SENSOR, Platform.CALENDAR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type RemindoConfigEntry = ConfigEntry[TaskManager]

@@ -201,9 +201,11 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             elif user_input["mode"] == "calendar" and str(self._data.get("entity_id", "")).startswith("calendar."):
                 # the rule was for a calendar and now watches something else
                 user_input["mode"] = "state"
-            exists = self.hass.states.get(entity_id) is not None or er.async_get(self.hass).async_get(entity_id) is not None
-            if problem := rule_problem(user_input["mode"], entity_id, self.hass.states.get(entity_id), exists):
-                errors["entity_id" if problem == "rule_entity_missing" else "mode"] = problem
+            registered = er.async_get(self.hass).async_get(entity_id)
+            exists = self.hass.states.get(entity_id) is not None or registered is not None
+            own = registered is not None and registered.platform == DOMAIN and registered.domain == "calendar"
+            if problem := rule_problem(user_input["mode"], entity_id, self.hass.states.get(entity_id), exists, own):
+                errors["entity_id" if problem in ("rule_entity_missing", "rule_own_entity") else "mode"] = problem
             self._data.update(user_input)
             if "icon" not in user_input:
                 self._data["icon"] = None  # the field was cleared
