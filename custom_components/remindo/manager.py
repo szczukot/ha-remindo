@@ -45,6 +45,8 @@ from .const import (
     CONF_SCREEN_SWITCH,
     CONF_TTS_DEFAULT,
     CONF_TTS_ENTITY,
+    CONF_TTS_LANGUAGE,
+    CONF_TTS_VOICE,
     DEFAULTS,
     EVENT_CREATED,
     EVENT_DISMISSED,
@@ -122,6 +124,22 @@ def _dt(value: str | None) -> datetime | None:
     return dt_util.as_local(parsed) if parsed else None
 
 
+def _weekdays(values: Any) -> list[int] | None:
+    """["mon", "thu"] / [0, 3] / "mon, thu" → [0, 3]; empty → None."""
+    if not values:
+        return None
+    if isinstance(values, str):
+        values = values.split(",")
+    out = set()
+    for value in values:
+        if isinstance(value, int) or str(value).strip().isdigit():
+            if 0 <= int(value) <= 6:
+                out.add(int(value))
+        elif (name := str(value).strip().lower()[:3]) in WEEKDAYS:
+            out.add(WEEKDAYS.index(name))
+    return sorted(out) or None
+
+
 def _parse_time(value: str | time | None, fallback: str) -> time:
     if isinstance(value, time):
         return value
@@ -138,10 +156,62 @@ def add_months(value: datetime, months: int) -> datetime:
     return value.replace(year=year, month=month, day=day)
 
 
-def next_occurrence(base: datetime, repeat: str, every: int, after: datetime) -> datetime:
-    """First occurrence after `after`, counted from `base` in steps of `every` units."""
+WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+# monthly: on the same day number, the same "nth weekday" (3rd Tuesday), the last such
+# weekday (last Friday) or the last day of the month; taken from the first due date
+MONTHLY_ON = ["day", "weekday", "last_weekday", "last_day"]
+
+
+def _at(day: date, base: datetime) -> datetime:
+    """`day` at the wall-clock time of `base` (also across daylight-saving changes)."""
+    return datetime.combine(day, base.time(), base.tzinfo)
+
+
+def _month_day(year: int, month: int, base: datetime, on: str) -> date:
+    last = calendar.monthrange(year, month)[1]
+    if on == "last_day":
+        return date(year, month, last)
+    weekday = base.weekday()
+    nth = (base.day - 1) // 7 + 1
+    if on == "last_weekday" or nth == 5:
+        day = last - (date(year, month, last).weekday() - weekday) % 7
+        return date(year, month, day)
+    first = 1 + (weekday - date(year, month, 1).weekday()) % 7
+    return date(year, month, first + 7 * (nth - 1))
+
+
+def next_occurrence(
+    base: datetime,
+    repeat: str,
+    every: int,
+    after: datetime,
+    days: list[int] | None = None,
+    on: str | None = None,
+) -> datetime:
+    """First occurrence after `after`, counted from `base` in steps of `every` units.
+
+    `days`: weekly on these weekdays (0 = Monday) of every `every`-th week.
+    `on`: monthly, see MONTHLY_ON."""
     every = max(1, int(every or 1))
     base = dt_util.as_local(base)
+    after = dt_util.as_local(after)
+    if repeat == "weekly" and days:
+        week0 = base.date() - timedelta(days=base.weekday())
+        day = max(base.date(), after.date())
+        for _ in range(7 * every * 2 + 7):
+            weeks = (day - week0).days // 7
+            if weeks % every == 0 and day.weekday() in days and (when := _at(day, base)) > after and when >= base:
+                return when
+            day += timedelta(days=1)
+        return base  # unreachable with a valid weekday
+    if repeat == "monthly" and on and on != "day":
+        step = 0
+        while True:
+            month_index = base.month - 1 + step
+            when = _at(_month_day(base.year + month_index // 12, month_index % 12 + 1, base, on), base)
+            if when > after and when >= base.replace(day=1, hour=0, minute=0, second=0, microsecond=0):
+                return when
+            step += every
     step = 0
     candidate = base
     while candidate <= after:
@@ -180,6 +250,9 @@ class Task:
     key: str | None = None
     repeat: str = REPEAT_NONE
     repeat_every: int = 1
+    repeat_days: list[int] | None = None  # weekly: on these weekdays (0 = Monday)
+    repeat_on: str | None = None  # monthly: MONTHLY_ON; None = the same day number
+    repeat_from_done: bool = False  # the next date counts from ticking off, not from the schedule
     tts: bool = True
     push: bool = True
     tts_message: str | None = None
@@ -216,6 +289,19 @@ class Task:
     @property
     def recurring(self) -> bool:
         return self.repeat != REPEAT_NONE and bool(self.start)
+
+    @property
+    def fixed_dates(self) -> bool:
+        """Weekdays or a monthly pattern: always the schedule, never "from ticking off"."""
+        return bool(self.repeat_days) or (self.repeat == "monthly" and self.repeat_on not in (None, "day"))
+
+    def next_after(self, after: datetime, base: datetime | None = None) -> datetime:
+        """The next due time after `after`."""
+        return next_occurrence(
+            base or _dt(self.start), self.repeat, self.repeat_every, after,  # type: ignore[arg-type]
+            self.repeat_days if self.repeat == "weekly" else None,
+            self.repeat_on if self.repeat == "monthly" else None,
+        )
 
 
 class TaskManager:
@@ -367,6 +453,9 @@ class TaskManager:
         key: str | None = None,
         repeat: str = REPEAT_NONE,
         repeat_every: int = 1,
+        repeat_days: list[Any] | None = None,
+        repeat_on: str | None = None,
+        repeat_from_done: bool = False,
         tts: bool | None = None,
         push: bool = True,
         tts_message: str | None = None,
@@ -425,6 +514,9 @@ class TaskManager:
             key=key or None,
             repeat=repeat or REPEAT_NONE,
             repeat_every=max(1, int(repeat_every or 1)),
+            repeat_days=_weekdays(repeat_days),
+            repeat_on=repeat_on if repeat_on in MONTHLY_ON and repeat_on != "day" else None,
+            repeat_from_done=bool(repeat_from_done),
             tts=self.options[CONF_TTS_DEFAULT] if tts is None else tts,
             push=push,
             tts_message=tts_message,
@@ -442,6 +534,7 @@ class TaskManager:
             icon=icon or None,
             important=bool(important),
         )
+        self._fit_pattern(task, dt_util.now())
         self.tasks[task.uid] = task
         self._schedule(task)
         self._schedule_expiry(task)
@@ -480,6 +573,13 @@ class TaskManager:
             task.repeat = repeat
         if changes.get("repeat_every"):
             task.repeat_every = max(1, int(changes["repeat_every"]))
+        if "repeat_days" in changes:
+            task.repeat_days = _weekdays(changes["repeat_days"])
+        if "repeat_on" in changes:
+            on = changes["repeat_on"]
+            task.repeat_on = on if on in MONTHLY_ON and on != "day" else None
+        if "repeat_from_done" in changes:
+            task.repeat_from_done = bool(changes["repeat_from_done"])
         if "interval" in changes and changes["interval"] is not None:
             task.interval = max(0, int(changes["interval"]))
             if task.active:
@@ -506,6 +606,8 @@ class TaskManager:
             task.icon = changes["icon"] or None
         if "important" in changes:
             task.important = bool(changes["important"])
+        if changes.keys() & {"start", "repeat", "repeat_every", "repeat_days", "repeat_on"}:
+            self._fit_pattern(task, now)
         if changes.keys() & {"start", "remind_until", "repeat"}:
             task.until_override = None  # set by a snooze for the old schedule
         if was_active and not task.active:
@@ -515,6 +617,20 @@ class TaskManager:
         self._schedule_expiry(task)
         self._save()
         return task
+
+    @staticmethod
+    def _fit_pattern(task: Task, now: datetime) -> None:
+        """The first date must itself fit the pattern (Mon + Thu set on a Wednesday → Thursday)."""
+        if not task.recurring or not task.fixed_dates:
+            return
+        start = _dt(task.start)
+        first = task.next_after(start - timedelta(seconds=1))  # type: ignore[operator]
+        if first == start:
+            return
+        if until := _dt(task.remind_until):
+            task.remind_until = _iso(until + (first - start))  # type: ignore[operator]
+        task.start = task.next_reminder = _iso(first)
+        task.active = bool(first <= now and task.active)
 
     @staticmethod
     def _check_until(start: datetime | None, until: datetime | None) -> None:
@@ -567,7 +683,13 @@ class TaskManager:
         if task.recurring:
             # Recurring: stays on the list and moves to the next due time
             due = _dt(task.start)
-            nxt = next_occurrence(due, task.repeat, task.repeat_every, max(now, due))  # type: ignore[arg-type]
+            if task.repeat_from_done and not task.fixed_dates:
+                # counted from now: every 3 months after the filter was actually changed,
+                # at the usual time of day (every N hours: from this moment)
+                anchor = now if task.repeat == "hourly" else _at(now.date(), due)  # type: ignore[arg-type]
+                nxt = task.next_after(anchor, anchor)
+            else:
+                nxt = task.next_after(max(now, due))  # type: ignore[arg-type]
             if until := _dt(task.remind_until):
                 # "stop reminding at" moves together with the due time
                 task.remind_until = _iso(nxt + (until - due))  # type: ignore[operator]
@@ -965,12 +1087,36 @@ class TaskManager:
         # only the spoken text from the rule / automation is a template; the summary was
         # rendered already, and may have been edited by someone who must not run templates
         message = self._render(task.tts_message) if task.templates and task.tts_message else task.tts_message or task.summary
-        spoken = await self._call(
-            "tts",
-            "speak",
-            {"entity_id": tts_entity, "media_player_entity_id": speakers, "message": message, "cache": True},
-        )
+        data: dict[str, Any] = {"entity_id": tts_entity, "media_player_entity_id": speakers, "message": message, "cache": True}
+        language, voice = self._tts_voice(tts_entity)
+        if language:
+            data["language"] = language
+        if voice:
+            data["options"] = {"voice": voice}
+        spoken = await self._call("tts", "speak", data)
         return message if spoken else None
+
+    def _tts_voice(self, tts_entity: str) -> tuple[str | None, str | None]:
+        """Language and voice for the announcements: from the integration options, otherwise
+        from the preferred voice assistant when it uses the same engine. tts.speak alone
+        would use the engine's default (for Home Assistant Cloud: US English)."""
+        language = (self.options.get(CONF_TTS_LANGUAGE) or "").strip() or None
+        voice = (self.options.get(CONF_TTS_VOICE) or "").strip() or None
+        if language or voice:
+            return language, voice
+        pipeline = self._assistant()
+        if pipeline is None or pipeline.tts_engine != tts_entity:
+            return None, None
+        return pipeline.tts_language, pipeline.tts_voice
+
+    def _assistant(self) -> Any:
+        """The preferred voice assistant (Assist pipeline), or None."""
+        try:
+            from homeassistant.components.assist_pipeline import async_get_pipeline  # noqa: PLC0415
+
+            return async_get_pipeline(self.hass)
+        except Exception:  # noqa: BLE001 - no voice assistant set up: the engine's default
+            return None
 
     async def _clear_notifications(self, task: Task, *, force: bool = False) -> None:
         if task.reminders == 0 and not force:

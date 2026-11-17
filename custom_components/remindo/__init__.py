@@ -44,7 +44,10 @@ from .const import (
     ATTR_PUSH,
     ATTR_REMIND_UNTIL,
     ATTR_REPEAT,
+    ATTR_REPEAT_DAYS,
     ATTR_REPEAT_EVERY,
+    ATTR_REPEAT_FROM_DONE,
+    ATTR_REPEAT_ON,
     ATTR_SPEAKERS,
     ATTR_START,
     ATTR_SUMMARY,
@@ -62,9 +65,9 @@ from .const import (
     REPEAT_OPTIONS,
     SIGNAL_UPDATED,
 )
-from .manager import RemindoError, Task, TaskManager
+from .manager import MONTHLY_ON, WEEKDAYS, RemindoError, Task, TaskManager
 
-PLATFORMS = [Platform.TODO, Platform.SENSOR]
+PLATFORMS = [Platform.TODO, Platform.SENSOR, Platform.CALENDAR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type RemindoConfigEntry = ConfigEntry[TaskManager]
@@ -83,6 +86,8 @@ def _when(value: Any) -> Any:
 _INTERVAL = vol.All(vol.Coerce(int), vol.Range(min=0, max=10080))
 _MAX_REMINDERS = vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)))
 _PHONES = vol.Any(None, cv.ensure_list_csv)
+# weekdays as names (mon … sun) or numbers (0 = Monday)
+_DAYS = vol.All(cv.ensure_list_csv, [vol.Any(vol.All(vol.Coerce(int), vol.Range(min=0, max=6)), vol.All(cv.string, vol.Lower, vol.In(WEEKDAYS)))])
 _SPEAKERS = vol.Any(None, cv.entity_ids)
 
 ADD_SCHEMA = vol.Schema(
@@ -94,6 +99,9 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_KEY): cv.string,
         vol.Optional(ATTR_REPEAT, default=REPEAT_NONE): vol.In(REPEAT_OPTIONS),
         vol.Optional(ATTR_REPEAT_EVERY, default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=365)),
+        vol.Optional(ATTR_REPEAT_DAYS): _DAYS,
+        vol.Optional(ATTR_REPEAT_ON): vol.Any(None, vol.In(MONTHLY_ON)),
+        vol.Optional(ATTR_REPEAT_FROM_DONE, default=False): cv.boolean,
         vol.Optional(ATTR_TTS): cv.boolean,
         vol.Optional(ATTR_TTS_MESSAGE): cv.string,
         vol.Optional(ATTR_PUSH, default=True): cv.boolean,
@@ -130,6 +138,9 @@ UPDATE_FIELDS = {
     vol.Optional(ATTR_INTERVAL): _INTERVAL,
     vol.Optional(ATTR_REPEAT): vol.In(REPEAT_OPTIONS),
     vol.Optional(ATTR_REPEAT_EVERY): vol.All(vol.Coerce(int), vol.Range(min=1, max=365)),
+    vol.Optional(ATTR_REPEAT_DAYS): vol.Any(None, _DAYS),
+    vol.Optional(ATTR_REPEAT_ON): vol.Any(None, vol.In(MONTHLY_ON)),
+    vol.Optional(ATTR_REPEAT_FROM_DONE): cv.boolean,
     vol.Optional(ATTR_PHONES): _PHONES,
     vol.Optional(ATTR_SPEAKERS): _SPEAKERS,
     vol.Optional(ATTR_MAX_REMINDERS): _MAX_REMINDERS,
@@ -245,6 +256,9 @@ def _register_services(hass: HomeAssistant) -> None:
             key=data.get(ATTR_KEY),
             repeat=data.get(ATTR_REPEAT, REPEAT_NONE),
             repeat_every=data.get(ATTR_REPEAT_EVERY, 1),
+            repeat_days=data.get(ATTR_REPEAT_DAYS),
+            repeat_on=data.get(ATTR_REPEAT_ON),
+            repeat_from_done=data.get(ATTR_REPEAT_FROM_DONE, False),
             tts=data.get(ATTR_TTS),
             push=data.get(ATTR_PUSH, True),
             tts_message=data.get(ATTR_TTS_MESSAGE),

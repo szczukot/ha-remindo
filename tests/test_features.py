@@ -814,3 +814,32 @@ async def test_important(hass: HomeAssistant, freezer: FrozenDateTimeFactory) ->
     await hass.async_block_till_done()
     assert next(t for t in entry.runtime_data.open_tasks() if t.summary == "Leak!").important
     assert entry.subentries[rule].data["important"] is True
+
+
+async def test_tts_language_and_voice(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """tts.speak alone uses the engine's default voice (US English on HA Cloud)."""
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    entry, calls = await setup_integration(hass)
+    manager = entry.runtime_data
+    task = manager.find(await add_task(hass, summary="Unload the washer"))
+    engine = manager.options["tts_entity"]
+    # no voice assistant: nothing extra, the engine decides
+    await manager._speak(task, ["media_player.tablet"])
+    assert "language" not in calls["tts"][-1].data and "options" not in calls["tts"][-1].data
+    # the preferred voice assistant with the same engine: its language and voice
+    pipeline = SimpleNamespace(tts_engine=engine, tts_language="en-GB", tts_voice="RyanNeural")
+    with patch.object(type(manager), "_assistant", return_value=pipeline):
+        await manager._speak(task, ["media_player.tablet"])
+        assert calls["tts"][-1].data["language"] == "en-GB"
+        assert calls["tts"][-1].data["options"] == {"voice": "RyanNeural"}
+        # a voice assistant with another engine is not used
+        pipeline.tts_engine = "tts.other"
+        await manager._speak(task, ["media_player.tablet"])
+        assert "language" not in calls["tts"][-1].data
+        # the integration's own settings win
+        manager.options.update(tts_language="pl-PL", tts_voice="MarekNeural")
+        await manager._speak(task, ["media_player.tablet"])
+        assert calls["tts"][-1].data["language"] == "pl-PL"
+        assert calls["tts"][-1].data["options"] == {"voice": "MarekNeural"}

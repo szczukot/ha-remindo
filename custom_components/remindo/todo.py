@@ -69,7 +69,10 @@ class RemindoTodoList(TodoListEntity):
         description = task.description
         if task.recurring:
             # shown in the description, because a to-do item has no field for it
-            label = texts.repeat_label(self.hass, task.repeat, task.repeat_every)
+            label = texts.repeat_label(self.hass, task.repeat, task.repeat_every) + texts.pattern_label(
+                self.hass, dt_util.as_local(dt_util.parse_datetime(task.start)), task.repeat, task.repeat_days, task.repeat_on,
+                task.repeat_from_done and not task.fixed_dates,
+            )
             description = f"🔁 {label}" + (f"\n{description}" if description else "")
         return TodoItem(
             uid=task.uid,

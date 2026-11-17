@@ -7,6 +7,8 @@
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
+          "tts_language": "Język komunikatów",
+          "tts_voice": "Głos komunikatów",
           "media_player": "Głośniki / tablety do komunikatów",
           "screen_switch": "Włącz ekran tabletu przed komunikatem",
           "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
@@ -29,7 +31,9 @@
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
           "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
           "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
-          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika."
+          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika.",
+          "tts_language": "Opcjonalnie, np. pl-PL. Puste = język Twojego asystenta głosowego (Ustawienia → Asystenci głosowi), jeśli używa tego samego silnika, a inaczej domyślny silnika.",
+          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika."
         }
       }
     },
@@ -48,6 +52,8 @@
           "notify_targets": "Telefony (powiadomienia push)",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
+          "tts_language": "Język komunikatów",
+          "tts_voice": "Głos komunikatów",
           "media_player": "Głośniki / tablety do komunikatów",
           "screen_switch": "Włącz ekran tabletu przed komunikatem",
           "presence_entity": "Obecność (komunikat tylko gdy ktoś w domu)",
@@ -70,7 +76,9 @@
           "notify_targets": "Aplikacja HA (z przyciskami) albo inny kanał: Telegram, e-mail, SMS (sam tekst).",
           "quiet_push": "Włączone = w nocy nic nie przychodzi; przypomnienie, które wypadnie w ciszy nocnej, poczeka do jej końca.",
           "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
-          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika."
+          "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika.",
+          "tts_language": "Opcjonalnie, np. pl-PL. Puste = język Twojego asystenta głosowego (Ustawienia → Asystenci głosowi), jeśli używa tego samego silnika, a inaczej domyślny silnika.",
+          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika."
         }
       }
     },
@@ -110,6 +118,18 @@
         "repeat_every": {
           "name": "Co ile jednostek",
           "description": "Np. 3 przy 'monthly' = co 3 miesiące."
+        },
+        "repeat_days": {
+          "name": "W dni tygodnia",
+          "description": "Tylko co tydzień: w te dni każdego (N-tego) tygodnia, np. mon, thu. Puste = dzień tygodnia z terminu."
+        },
+        "repeat_on": {
+          "name": "Co miesiąc w",
+          "description": "Tylko co miesiąc, według terminu: day = ten sam dzień miesiąca (domyślnie), weekday = ten sam dzień tygodnia w miesiącu (np. 3. wtorek), last_weekday = ostatni taki dzień tygodnia (np. ostatni piątek), last_day = ostatni dzień miesiąca."
+        },
+        "repeat_from_done": {
+          "name": "Licz od odhaczenia",
+          "description": "Włączone = następny termin liczy się od odhaczenia (np. co 3 miesiące od faktycznej wymiany filtra), o zwykłej godzinie. Wyłączone = stały kalendarz. Nie działa z dniami tygodnia ani wzorem miesięcznym."
         },
         "tts": {
           "name": "Komunikat głosowy",
@@ -275,6 +295,18 @@
           "name": "Co ile jednostek",
           "description": "Np. 3 przy „monthly” = co 3 miesiące."
         },
+        "repeat_days": {
+          "name": "W dni tygodnia",
+          "description": "Tylko co tydzień: w te dni każdego (N-tego) tygodnia, np. mon, thu. Puste = dzień tygodnia z terminu."
+        },
+        "repeat_on": {
+          "name": "Co miesiąc w",
+          "description": "Tylko co miesiąc, według terminu: day = ten sam dzień miesiąca (domyślnie), weekday = ten sam dzień tygodnia w miesiącu (np. 3. wtorek), last_weekday = ostatni taki dzień tygodnia (np. ostatni piątek), last_day = ostatni dzień miesiąca."
+        },
+        "repeat_from_done": {
+          "name": "Licz od odhaczenia",
+          "description": "Włączone = następny termin liczy się od odhaczenia (np. co 3 miesiące od faktycznej wymiany filtra), o zwykłej godzinie. Wyłączone = stały kalendarz. Nie działa z dniami tygodnia ani wzorem miesięcznym."
+        },
         "phones": {
           "name": "Kanały",
           "description": "Gdzie wysłać powiadomienie (pusta lista = nigdzie; null = wszystkie z ustawień)."
@@ -345,6 +377,25 @@
         "above": "Jest powyżej progu",
         "below": "Jest poniżej progu",
         "calendar": "Ma wydarzenie w kalendarzu"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Poniedziałek",
+        "tue": "Wtorek",
+        "wed": "Środa",
+        "thu": "Czwartek",
+        "fri": "Piątek",
+        "sat": "Sobota",
+        "sun": "Niedziela"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "Ten sam dzień miesiąca",
+        "weekday": "Ten sam dzień tygodnia (np. 3. wtorek)",
+        "last_weekday": "Ostatni taki dzień tygodnia",
+        "last_day": "Ostatni dzień miesiąca"
       }
     }
   },
@@ -456,7 +507,8 @@
         "not_mapping": "Wpisz pary klucz: wartość, np. car_ui: true",
         "rule_entity_missing": "Ta encja nie istnieje.",
         "rule_not_calendar": "„Wydarzenie w kalendarzu” wymaga encji kalendarza.",
-        "rule_not_numeric": "„Powyżej / poniżej” wymaga encji, której stan jest liczbą (teraz: tekst)."
+        "rule_not_numeric": "„Powyżej / poniżej” wymaga encji, której stan jest liczbą (teraz: tekst).",
+        "rule_own_entity": "Kalendarz samego Remindo pokazuje zadania, reguła nie może go obserwować."
       }
     }
   },
@@ -499,6 +551,10 @@
     "rule_not_numeric": {
       "title": "Reguła Remindo „{rule}”: to nie liczba",
       "description": "Reguła „{rule}” porównuje {entity} z liczbą, ale jej stan jest tekstem. Reguła nie doda żadnego zadania. Popraw ją w Ustawienia → Urządzenia i usługi → Remindo."
+    },
+    "rule_own_entity": {
+      "title": "Reguła „{rule}” obserwuje kalendarz samego Remindo",
+      "description": "Reguła „{rule}” obserwuje {entity}, czyli kalendarz samego Remindo z zadaniami, więc dodawałaby zadania z zadań. Wskaż w regule inny kalendarz albo ją usuń."
     }
   }
 }

@@ -8,7 +8,7 @@ Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadani
 - ⏰ **Przypomnienia co X minut/godzin**, aż zareagujesz, z limitem („maks. 3 razy” albo „do 22:00”).
 - 📱 **Push na telefony** z przyciskami ✅ Zrobione / ⏰ Odłóż / ❌ Nie robię. Powiadomienie znika ze wszystkich telefonów po każdej akcji.
 - 🔊 **Komunikat głosowy** (TTS) na tablecie lub głośniku, tylko gdy ktoś jest w domu i poza ciszą nocną. Komunikaty czekają w kolejce: jeśli głośnik akurat coś mówi (np. inna automatyzacja), Remindo poczeka, aż skończy, zamiast mu przerywać.
-- 🔁 **Zadania cykliczne**: co N godzin / dni / tygodni / miesięcy / lat (np. „filtr rekuperatora co 3 miesiące”).
+- 🔁 **Zadania cykliczne**: co N godzin / dni / tygodni / miesięcy / lat, w wybrane dni tygodnia (pn + czw), co miesiąc w 3. wtorek / ostatni piątek / ostatniego dnia, według stałego kalendarza albo licząc od odhaczenia (np. „filtr rekuperatora co 3 miesiące od faktycznej wymiany”).
 - 🤖 **Reguły**: zadanie dodaje się samo, gdy urządzenie osiągnie stan (zmywarka skończyła, brama otwarta 10 min, wilgotność > 70%) albo dzień przed wydarzeniem w kalendarzu (wywóz śmieci). Zamyka się samo, gdy warunek minie.
 - 🗂️ **Karta Lovelace** dostarczana z integracją: Teraz / Zaplanowane / Notatki / Zrobione / Odrzucone, odkładanie jednym kliknięciem, ręczne dodawanie zadań.
 - 📣 **Dowolne kanały**: aplikacja HA (z przyciskami) oraz Telegram, e-mail, SMS i każde inne powiadomienie, które masz w HA (sam tekst).
@@ -46,6 +46,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Kanały powiadomień | aplikacja HA (`notify.mobile_app_*`, z przyciskami) oraz każdy inny kanał z HA: Telegram, e-mail, SMS, encje `notify.*` (sam tekst) |
 | Powiadomienie w HA | dodatkowo dzwoneczek w HA, przy każdym przypomnieniu (także dla zadań bez wybranego telefonu i głośnika) |
 | Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
+| Język i głos komunikatów | opcjonalnie, np. `pl-PL` i `MarekNeural`; puste = język i głos Twojego asystenta głosowego (*Ustawienia → Asystenci głosowi*), jeśli używa tego samego silnika, a inaczej domyślne silnika (Home Assistant Cloud: angielski amerykański) |
 | Włącz ekran tabletu | np. `switch.<tablet>_screen` z Fully Kiosk |
 | Obecność | np. `group.domownicy`; głos tylko gdy ktoś jest w domu |
 | Cisza nocna | bez komunikatów głosowych; push nadal przychodzi |
@@ -101,6 +102,8 @@ Przyciski przy zadaniu: **✓** zrobione, **📅** przypomnij w wybranym termini
 **✎** otwiera ten sam formularz co dodawanie zadania, wypełniony wartościami zadania: można zmienić treść, termin, odstęp przypomnień, kiedy przestać przypominać, powtarzanie, miejsce przypominania i pozostawienie po wykonaniu. Naraz otwarty jest tylko jeden formularz.
 
 Odkładanie zadania: **+10 min**, **+1 h**, **jutro 09:00** (godzina z opcji „godzina dla zadań z samą datą”) albo **📅** dowolny dzień i godzinę. Odłożenie przesuwa tylko najbliższe przypomnienie: potem zadanie znowu przypomina w swoim zwykłym rytmie (np. co 5 min), aż je odhaczysz. Zadania cykliczne zachowują swój harmonogram; po odhaczeniu wracają w następnym terminie. Jeśli zadanie cykliczne ma „przestań przypominać o konkretnej porze” i nikt go do tej pory nie odhaczy, ten termin liczy się jako pominięty, a zadanie czeka na następny. Odłożenie poza tę porę nie przepada: zadanie przypomni o odłożonej godzinie, a koniec przypominania przesuwa się razem z nim, tylko dla tego terminu (zostaje tyle czasu, ile było, co najmniej godzina).
+
+Powtarzanie w formularzu zadania: **co N tygodni** można ograniczyć do wybranych dni (zaznacz np. pn i czw); **co N miesięcy** może wypadać tego samego dnia miesiąca, w ten sam dzień tygodnia („w 3. wtorek”), w ostatni taki dzień tygodnia albo ostatniego dnia miesiąca — wszystko według terminu. **Licz od odhaczenia** liczy następny termin od chwili odhaczenia (o zwykłej godzinie), a nie według stałego kalendarza: odhaczony cztery dni później filtr wróci trzy miesiące od tego dnia.
 
 Karta wyświetla się w języku profilu użytkownika.
 
@@ -194,8 +197,8 @@ Jeśli reguła obserwuje encję, której już nie ma (zmiana nazwy albo usunięc
 
 | Usługa | Pola |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `list` (np. `Akwarium`), `icon` (np. `mdi:package-variant`), `important` (głośny alarm / alert krytyczny, także w ciszy nocnej), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
-| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `list` (np. `Akwarium`), `icon` (np. `mdi:package-variant`), `important` (głośny alarm / alert krytyczny, także w ciszy nocnej), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
+| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
 | `remindo.done`, `remindo.dismiss` | `uid` albo `key`. Zadanie cykliczne obie przesuwają na następny termin; drugie zamknięcie w ciągu 30 s (inny telefon, karta) jest pomijane, więc termin nie przepada przypadkiem. |
 | `remindo.reopen` | `uid`: otwiera ponownie zadanie zrobione albo odrzucone; zadanie z terminem od razu znowu przypomina |
 | `remindo.delete` | `uid` albo `key`: usuwa zadanie na stałe, także cykliczne |
@@ -219,6 +222,7 @@ Przypomnienia, które wypadły, gdy Home Assistant był wyłączony, przychodzą
 
 - `todo.remindo` (widoczna jako *Remindo*): lista. Jej stan to liczba otwartych zadań, jak w każdej liście To-do w Home Assistant. Odhaczenie w zwykłej karcie To-do zamyka zadanie i czyści powiadomienia.
 - `sensor.remindo_active` (widoczna jako *Remindo – przypomina teraz*): ile zadań przypomina w tej chwili, czyli jest w sekcji *Teraz* na karcie (atrybut `tasks` z nazwami, `scheduled` z liczbą zadań czekających na swój termin). Przydaje się np. do plakietki na dashboardzie albo do „pokaż stronę z zadaniami, gdy coś przypomina”.
+- `calendar.remindo` (widoczna jako *Remindo*): kalendarz tylko do odczytu z otwartymi zadaniami, które mają termin, więc widać je na każdej karcie kalendarza. Zadanie trwa do „przestań przypominać”, a bez tego godzinę; zadanie cykliczne jest na każdym terminie (zadania co N godzin tylko na najbliższym). Reguła kalendarzowa nie może obserwować tego kalendarza (dodawałaby zadania z zadań).
 - zdarzenia `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, opisane w dzienniku.
 
 ### Własna reakcja na przypomnienie

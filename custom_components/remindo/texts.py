@@ -93,3 +93,44 @@ def repeat_label(hass: HomeAssistant | None, repeat: str, every: int) -> str:
         return f"{word} {forms[0]}"
     idx = (0 if every == 1 else 2) if lang == "en" else _plural_pl(every)
     return f"{word} {every} {forms[idx]}"
+
+
+_DAYS = {
+    "en": (["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+           ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+    "pl": (["pn", "wt", "śr", "czw", "pt", "sob", "nd"],
+           ["poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela"]),
+}
+_PATTERN = {
+    "en": {"nth": "{n}{suffix} {day}", "last_weekday": "last {day}", "last_day": "last day",
+           "from_done": "from ticking off"},
+    "pl": {"nth": "{n}. {day}", "last_weekday": "ostatni {day}", "last_day": "ostatniego dnia",
+           "from_done": "od odhaczenia"},
+}
+# "ostatni wtorek" / "ostatnia środa" (feminine weekdays in Polish)
+_PL_LAST = {2: "ostatnia", 4: "ostatni", 5: "ostatnia", 6: "ostatnia"}
+
+
+def pattern_label(
+    hass: HomeAssistant | None, task_start, repeat: str, days: list[int] | None, on: str | None, from_done: bool
+) -> str:
+    """The part after "every week" / "every month": ": Mon, Thu", ", 3rd Tuesday", " (from ticking off)"."""
+    lang = language(hass)
+    short, full = _DAYS[lang]
+    words = _PATTERN[lang]
+    if repeat == "weekly" and days:
+        return ": " + ", ".join(short[d] for d in sorted(days))
+    if repeat == "monthly" and on and on != "day" and task_start is not None:
+        weekday = task_start.weekday()
+        if on == "last_day":
+            return ", " + words["last_day"]
+        nth = (task_start.day - 1) // 7 + 1
+        if on == "last_weekday" or nth == 5:
+            if lang == "pl":
+                return f", {_PL_LAST.get(weekday, 'ostatni')} {full[weekday]}"
+            return ", " + words["last_weekday"].format(day=full[weekday])
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(nth, "th")
+        return ", " + words["nth"].format(n=nth, suffix=suffix, day=full[weekday])
+    if from_done:
+        return f" ({words['from_done']})"
+    return ""

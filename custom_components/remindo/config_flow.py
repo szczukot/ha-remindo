@@ -34,6 +34,8 @@ from .const import (
     CONF_SCREEN_SWITCH,
     CONF_TTS_DEFAULT,
     CONF_TTS_ENTITY,
+    CONF_TTS_LANGUAGE,
+    CONF_TTS_VOICE,
     DEFAULTS,
     DOMAIN,
 )
@@ -75,6 +77,8 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
             ),
             vol.Optional(CONF_PERSISTENT, default=values[CONF_PERSISTENT]): selector.BooleanSelector(),
             opt(CONF_TTS_ENTITY): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),
+            opt(CONF_TTS_LANGUAGE): selector.TextSelector(),
+            opt(CONF_TTS_VOICE): selector.TextSelector(),
             opt(CONF_MEDIA_PLAYER): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="media_player", multiple=True)
             ),
@@ -201,9 +205,11 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             elif user_input["mode"] == "calendar" and str(self._data.get("entity_id", "")).startswith("calendar."):
                 # the rule was for a calendar and now watches something else
                 user_input["mode"] = "state"
-            exists = self.hass.states.get(entity_id) is not None or er.async_get(self.hass).async_get(entity_id) is not None
-            if problem := rule_problem(user_input["mode"], entity_id, self.hass.states.get(entity_id), exists):
-                errors["entity_id" if problem == "rule_entity_missing" else "mode"] = problem
+            registered = er.async_get(self.hass).async_get(entity_id)
+            exists = self.hass.states.get(entity_id) is not None or registered is not None
+            own = registered is not None and registered.platform == DOMAIN and registered.domain == "calendar"
+            if problem := rule_problem(user_input["mode"], entity_id, self.hass.states.get(entity_id), exists, own):
+                errors["entity_id" if problem in ("rule_entity_missing", "rule_own_entity") else "mode"] = problem
             self._data.update(user_input)
             if "icon" not in user_input:
                 self._data["icon"] = None  # the field was cleared

@@ -8,7 +8,7 @@ A Home Assistant integration that turns "remember to…" into tasks that **keep 
 - ⏰ **Reminders every X minutes/hours** until you react, with a limit ("at most 3 times" or "until 22:00").
 - 📱 **Push to phones** with ✅ Done / ⏰ Snooze / ❌ Skip buttons. After any action the notification disappears from every phone.
 - 🔊 **Spoken announcement** (TTS) on a tablet or speaker, only when someone is home and outside quiet hours. Announcements queue up: Remindo waits until the speaker is quiet (e.g. another automation is talking) instead of cutting it off.
-- 🔁 **Recurring tasks**: every N hours / days / weeks / months / years (e.g. "HRV filter every 3 months").
+- 🔁 **Recurring tasks**: every N hours / days / weeks / months / years, on chosen weekdays (Mon + Thu), monthly on the 3rd Tuesday / last Friday / last day, and either on a fixed schedule or counted from when you ticked it off (e.g. "HRV filter every 3 months after it was really changed").
 - 🤖 **Rules**: a task adds itself when a device reaches a state (dishwasher finished, garage open for 10 min, humidity > 70%) or the day before a calendar event (bin collection). It closes itself when the condition ends.
 - 🗂️ **Lovelace card** shipped with the integration: Now / Scheduled / Notes / Done / Skipped, one-tap snooze, adding tasks by hand.
 - 📣 **Any channel**: the HA mobile app (with buttons) plus Telegram, e-mail, SMS and any other notifier you have in HA (text only).
@@ -46,6 +46,7 @@ When adding the integration (and later under *Configure*) you set:
 | Notification channels | the HA app (`notify.mobile_app_*`, with buttons) and any other channel in HA: Telegram, e-mail, SMS, `notify.*` entities (text only) |
 | Persistent notification in HA | also show the bell notification in HA, for every reminder (also for tasks with no phone and no speaker selected) |
 | TTS engine, media players | where announcements are spoken |
+| Announcement language, voice | optional, e.g. `en-GB` and `RyanNeural`; empty = the language and voice of your voice assistant (*Settings → Voice assistants*) if it uses the same engine, otherwise the engine's default (Home Assistant Cloud: US English) |
 | Screen switch to turn on first | e.g. `switch.<tablet>_screen` from Fully Kiosk |
 | Presence entity | e.g. a group of people; speech only when someone is home |
 | Quiet hours | no spoken announcements; push still arrives |
@@ -101,6 +102,8 @@ Buttons on a task: **✓** done, **📅** remind at a chosen time, **✎** edit,
 **✎** opens the same form as adding a task, filled in with the task's values: text, due time, reminder interval, when to stop reminding, repeating, where to remind and keeping it after done can all be changed. Only one form is open at a time.
 
 Snoozing a task: **+10 min**, **+1 h**, **tomorrow 09:00** (the "time for date-only tasks" option) or **📅** for any date and time. A snooze only moves the next reminder: after it the task reminds again at its normal interval (e.g. every 5 min) until you tick it off. Recurring tasks keep their schedule; after ticking off they come back at the next due time. If a recurring task has "stop reminding at" and nobody ticks it off by then, that date counts as skipped and the task waits for the next one. A snooze past that time is not lost: the task reminds at the snoozed time and, for this date only, the end moves along (leaving as much time as there was, at least an hour).
+
+Repeating in the task form: **every N weeks** can be limited to chosen weekdays (tick e.g. Mon and Thu); **every N months** can fall on the same day number, the same weekday of the month ("on the 3rd Tuesday"), the last such weekday or the last day of the month, all taken from the due date. **Count from ticking off** moves the next date from the moment you tick the task off (at its usual time of day) instead of keeping a fixed schedule: ticked off four days late, the filter comes back three months after that day.
 
 The card follows the language of the user's profile.
 
@@ -194,8 +197,8 @@ If a rule watches an entity that no longer exists (renamed or removed), or compa
 
 | Action | Fields |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `list` (e.g. `Aquarium`), `icon` (e.g. `mdi:package-variant`), `important` (loud alarm / critical alert, also in the quiet hours), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
-| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`. Only the fields you send change; `null` clears a field. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `list` (e.g. `Aquarium`), `icon` (e.g. `mdi:package-variant`), `important` (loud alarm / critical alert, also in the quiet hours), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
+| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`. Only the fields you send change; `null` clears a field. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time; a second close within 30 s (another phone, the card) is ignored, so a date is never skipped by accident. |
 | `remindo.reopen` | `uid`: opens a done or skipped task again; a task with a due time reminds again right away |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |
@@ -219,6 +222,7 @@ Reminders that were due while Home Assistant was down are sent about 30 seconds 
 
 - `todo.remindo` (shown as *Remindo*): the list. Its state is the number of open tasks, as for every To-do list in Home Assistant. Ticking off in the regular To-do card closes the task and clears notifications.
 - `sensor.remindo_active` (shown as *Remindo reminding now*): how many tasks are reminding right now, i.e. are under *Now* in the card (attribute `tasks` with their names, `scheduled` with the number of tasks waiting for their time). Useful e.g. for a badge on the dashboard or for "show the tasks page when something is reminding".
+- `calendar.remindo` (shown as *Remindo*): a read-only calendar with the open tasks that have a due time, so they show up on any calendar card. A task lasts until its "stop reminding at", otherwise an hour; a recurring task is on every date (every-N-hours tasks only on the next one). A calendar rule cannot watch this calendar (it would add tasks from tasks).
 - events `remindo_created`, `remindo_reminded`, `remindo_done`, `remindo_snoozed`, `remindo_dismissed`, described in the logbook.
 
 ### Your own reaction to a reminder

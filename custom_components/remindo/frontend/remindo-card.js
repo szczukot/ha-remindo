@@ -20,7 +20,7 @@ const I18N = {
     description: "Task list with reminders: tick off, snooze, add",
     ed_title: "Title", ed_title_hint: "Empty = \"Tasks\" (or the list's name)", ed_form: "\"+ Add task\" button", ed_done: "Done and Skipped sections",
     ed_list: "Show only this list", ed_list_hint: "Empty = all tasks (with a filter once there are lists)",
-    all: "All", important: "❗ Important", important_hint: "loud on the phone (alarm), also when silenced and in the quiet hours", f_icon: "Icon:", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
+    all: "All", days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], days_full: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], on_day: "on day {d}", on_nth: "on the {n} {day}", on_last: "on the last {day}", on_last_day: "on the last day", nth: ["1st", "2nd", "3rd", "4th"], from_done: "count from ticking off", from_done_hint: "e.g. every 3 months after it was really done", from_done_short: "from ticking off", important: "❗ Important", important_hint: "loud on the phone (alarm), also when silenced and in the quiet hours", f_icon: "Icon:", f_list: "List:", f_list_hint: "empty = general", until_before: "\"Stop reminding\" must be later than the due time",
   },
   pl: {
     title: "Zadania", today: "dziś", tomorrow: "jutro", just_now: "przed chwilą", min_ago: "{n} min temu", h_ago: "{n} h temu", d_ago: "{n} d temu",
@@ -40,7 +40,7 @@ const I18N = {
     description: "Lista zadań z przypomnieniami: odhaczanie, odkładanie, dodawanie",
     ed_title: "Tytuł", ed_title_hint: "Puste = „Zadania” (albo nazwa listy)", ed_form: "Przycisk „+ Dodaj zadanie”", ed_done: "Sekcje Zrobione i Odrzucone",
     ed_list: "Pokaż tylko listę", ed_list_hint: "Puste = wszystkie zadania (z filtrem, gdy są listy)",
-    all: "Wszystkie", important: "❗ Ważne", important_hint: "głośno na telefonie (alarm), także przy wyciszeniu i w ciszy nocnej", f_icon: "Ikona:", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
+    all: "Wszystkie", days: ["pn", "wt", "śr", "czw", "pt", "sob", "nd"], days_full: ["poniedziałek", "wtorek", "środę", "czwartek", "piątek", "sobotę", "niedzielę"], on_day: "dnia {d}.", on_nth: "w {n} {day}", on_last: "w ostatni{a} {day}", on_last_day: "ostatniego dnia", nth: ["1.", "2.", "3.", "4."], from_done: "licz od odhaczenia", from_done_hint: "np. co 3 miesiące od faktycznego wykonania", from_done_short: "od odhaczenia", important: "❗ Ważne", important_hint: "głośno na telefonie (alarm), także przy wyciszeniu i w ciszy nocnej", f_icon: "Ikona:", f_list: "Lista:", f_list_hint: "puste = ogólna", until_before: "„Przestań przypominać” musi być później niż termin",
   },
 };
 let LANG = "en";
@@ -54,6 +54,7 @@ const plural = (n, forms) => {
   return forms[n === 1 ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 1 : 2];
 };
 const forms = (key) => (I18N[LANG] || I18N.en)[key] || I18N.en[key];
+const T = () => I18N[LANG] || I18N.en;
 const locale = () => (LANG === "pl" ? "pl-PL" : undefined);
 
 const fmtTime = (iso) => {
@@ -69,10 +70,25 @@ const fmtTime = (iso) => {
   return d.toLocaleDateString(locale(), opts) + ` ${hm}`;
 };
 const UNIT = { hourly: "u_hour", daily: "u_day", weekly: "u_week", monthly: "u_month", yearly: "u_year" };
+const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const dayIndex = (d) => (d.getDay() + 6) % 7;  // 0 = Monday
+// "on the 3rd Tuesday" etc., taken from the due date (as the integration does)
+const monthlyLabel = (on, due) => {
+  const wd = dayIndex(due), nth = Math.floor((due.getDate() - 1) / 7) + 1;
+  const day = (T()["days_full"] || [])[wd];
+  if (on === "last_day") return t("on_last_day");
+  if (on === "last_weekday" || (on === "weekday" && nth === 5)) return t("on_last", { day, a: [2, 5, 6].includes(wd) ? "ą" : "" });
+  if (on === "weekday") return t("on_nth", { n: T().nth[nth - 1], day });
+  return t("on_day", { d: due.getDate() });
+};
 const repeatLabel = (task) => {
   const n = Number(task.repeat_every || 1);
   const f = forms(UNIT[task.repeat]) || [task.repeat, task.repeat, task.repeat];
-  return n <= 1 ? `${t("every")} ${f[0]}` : `${t("every")} ${n} ${plural(n, f)}`;
+  let label = n <= 1 ? `${t("every")} ${f[0]}` : `${t("every")} ${n} ${plural(n, f)}`;
+  if (task.repeat === "weekly" && task.repeat_days?.length) label += ": " + task.repeat_days.map((d) => T().days[d]).join(", ");
+  else if (task.repeat === "monthly" && task.repeat_on && task.repeat_on !== "day" && task.start) label += ", " + monthlyLabel(task.repeat_on, new Date(task.start));
+  else if (task.repeat_from_done) label += ` (${t("from_done_short")})`;
+  return label;
 };
 const hm = (iso) => (iso ? new Date(iso).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : "");
 const ago = (iso) => {
@@ -305,8 +321,14 @@ class RemindoCard extends HTMLElement {
       <div class="frow">
         <label class="chk"><input type="checkbox" id="f-rep-on" ${rec ? "checked" : ""} /> ${t("repeat")}</label>
         <span class="grp" id="f-rep-g">${t("every")} <input id="f-every" type="number" min="1" value="${edit ? Number(task.repeat_every || 1) : 1}" />
-          <select id="f-rep">${Object.keys(UNIT).map((u) => opt(u, "", rec ? task.repeat : "daily")).join("")}</select></span>
+          <select id="f-rep">${Object.keys(UNIT).map((u) => opt(u, "", rec ? task.repeat : "daily")).join("")}</select>
+          <span id="f-days">${WEEKDAYS.map((d, i) => `<label class="day"><input type="checkbox" class="f-day" value="${d}" ${edit && (task.repeat_days || []).includes(i) ? "checked" : ""} />${T().days[i]}</label>`).join("")}</span>
+          <select id="f-mon" data-was="${edit ? task.repeat_on || "day" : "day"}">${["day", "weekday", "last_weekday", "last_day"].map((o) => opt(o, "", edit ? task.repeat_on || "day" : "day")).join("")}</select></span>
         <span class="hint" id="f-rep-h">${t("repeat_hint")}</span>
+      </div>
+      <div class="frow" id="f-from-row"><span class="chk"></span>
+        <label><input type="checkbox" id="f-from" ${edit && task.repeat_from_done ? "checked" : ""} /> ${t("from_done")}</label>
+        <span class="hint">${t("from_done_hint")}</span>
       </div>
       <div class="frow where" id="f-where">
         <span>${t("where")}</span>
@@ -361,6 +383,9 @@ class RemindoCard extends HTMLElement {
     const lim = remind ? $("f-lim").value : "";
     const n = Math.max(1, Number($("f-lim-n").value || 1)), until = $("f-lim-dt").value;
     const pick = (cls) => [...this.shadowRoot.querySelectorAll(cls)].filter((c) => c.checked).map((c) => c.value);
+    const days = rep === "weekly" ? pick(".f-day") : [];
+    const monthOn = rep === "monthly" ? $("f-mon").value : "day";
+    const fromDone = rep !== "none" && !days.length && monthOn === "day" && $("f-from").checked;
     const keep = $("f-keep").checked;
     const past = (input) => input.value && (!task || input.value !== input.dataset.was) && new Date(input.value) <= new Date();
     if ((remind && when === "custom" && past($("f-dt"))) || (lim === "until" && past($("f-lim-dt")))) return this._formError(t("pick_past"));
@@ -377,6 +402,9 @@ class RemindoCard extends HTMLElement {
       if (lim === "count" && interval) data.max_reminders = n;
       if (lim === "until" && until) data.remind_until = toIso(until);
       if (rep !== "none") { data.repeat = rep; data.repeat_every = every; }
+      if (days.length) data.repeat_days = days;
+      if (monthOn !== "day") data.repeat_on = monthOn;
+      if (fromDone) data.repeat_from_done = true;
       this._formOpen = false; this._forceRender = true; this._render();
       return this._call("add", data);
     }
@@ -389,6 +417,10 @@ class RemindoCard extends HTMLElement {
     if (remind && interval !== Number(task.interval || 0)) data.interval = interval;
     if (rep !== (task.repeat || "none")) data.repeat = rep;
     if (rep !== "none" && every !== Number(task.repeat_every || 1)) data.repeat_every = every;
+    const wasDays = (task.repeat_days || []).map((i) => WEEKDAYS[i]);
+    if (String(days) !== String(wasDays)) data.repeat_days = days.length ? days : null;
+    if (monthOn !== (task.repeat_on || "day")) data.repeat_on = monthOn === "day" ? null : monthOn;
+    if (fromDone !== !!task.repeat_from_done) data.repeat_from_done = fromDone;
     if (lim === "count") {
       if (n !== task.max_reminders) data.max_reminders = n;
       if (task.remind_until) data.remind_until = null;
@@ -521,8 +553,29 @@ class RemindoCard extends HTMLElement {
     $("f-rem-h").style.display = remind ? "" : "none";
     for (const id of ["f-where", "f-where-h", "f-lim-row"]) $(id).style.display = remind ? "" : "none";
     $("f-keep-row").style.display = $("f-rep-on").checked ? "none" : "";
+    const unit = $("f-rep").value, repOn = $("f-rep-on").checked;
+    $("f-days").style.display = unit === "weekly" ? "" : "none";
+    $("f-mon").style.display = unit === "monthly" ? "" : "none";
+    const due = this._formDue();
+    [...$("f-mon").options].forEach((o) => { o.textContent = monthlyLabel(o.value, due); });
+    // the 5th weekday of a month is its last one: one option is enough
+    const fifth = due.getDate() > 28;
+    $("f-mon").options[1].hidden = fifth;
+    if (fifth && $("f-mon").value === "weekday") $("f-mon").value = "last_weekday";
+    const fixed = (unit === "weekly" && this.shadowRoot.querySelector(".f-day:checked")) || (unit === "monthly" && $("f-mon").value !== "day");
+    $("f-from-row").style.display = repOn && !fixed ? "" : "none";
     $("f-lim-n").style.display = $("f-lim").value === "count" ? "" : "none";
     $("f-lim-dt").style.display = $("f-lim").value === "until" ? "" : "none";
+  }
+
+  // the due time the form would set (for the labels of the monthly patterns)
+  _formDue() {
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const when = $("f-when").value;
+    if (when === "custom" && $("f-dt").value) return new Date($("f-dt").value);
+    if (when === "1h") return new Date(Date.now() + 3600e3);
+    if (when === "evening") { const d = new Date(); d.setHours(19, 0, 0, 0); return d; }
+    return new Date();
   }
 
   _render() {
@@ -609,6 +662,8 @@ RemindoCard.styles = `
   .tag { display:inline-block; margin-left:8px; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:500; vertical-align:middle;
          background: color-mix(in srgb, var(--primary-color) 14%, transparent); color: var(--primary-color); }
   .imp { display: inline-block; min-width: 18px; margin-right: 6px; padding: 0 4px; border-radius: 9px; text-align: center; font-weight: 700; font-size: 0.85em; line-height: 18px; vertical-align: 1px; color: #fff; background: var(--error-color, #db4437); }
+  #f-days { display: inline-flex; flex-wrap: wrap; gap: 2px 8px; }
+  #f-days .day { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
   .ticon { --mdc-icon-size: 22px; margin-right: 6px; vertical-align: -4px; color: var(--secondary-text-color); }
   .task.now .ticon { color: var(--warning-color, #ff9800); }
   #f-icon { flex: 1 1 220px; min-width: 0; max-width: 320px; }

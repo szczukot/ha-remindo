@@ -7,6 +7,8 @@
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
+          "tts_language": "Announcement language",
+          "tts_voice": "Announcement voice",
           "media_player": "Media players for announcements",
           "screen_switch": "Screen switch to turn on first",
           "presence_entity": "Presence entity",
@@ -29,7 +31,9 @@
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
           "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
           "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
-          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task."
+          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task.",
+          "tts_language": "Optional, e.g. en-GB. Empty = the language of your voice assistant (Settings → Voice assistants) if it uses the same engine, otherwise the engine's default.",
+          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default."
         }
       }
     },
@@ -48,6 +52,8 @@
           "notify_targets": "Push notification targets",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
+          "tts_language": "Announcement language",
+          "tts_voice": "Announcement voice",
           "media_player": "Media players for announcements",
           "screen_switch": "Screen switch to turn on first",
           "presence_entity": "Presence entity",
@@ -70,7 +76,9 @@
           "notify_targets": "Mobile app (with buttons) or any other notifier: Telegram, e-mail, SMS (text only).",
           "quiet_push": "On = nothing is sent at night; a reminder that falls into the quiet hours waits until they end.",
           "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
-          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task."
+          "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task.",
+          "tts_language": "Optional, e.g. en-GB. Empty = the language of your voice assistant (Settings → Voice assistants) if it uses the same engine, otherwise the engine's default.",
+          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default."
         }
       }
     },
@@ -110,6 +118,18 @@
         "repeat_every": {
           "name": "Every",
           "description": "E.g. 3 with monthly = every 3 months."
+        },
+        "repeat_days": {
+          "name": "On weekdays",
+          "description": "Weekly only: on these days of every (N-th) week, e.g. mon, thu. Empty = the weekday of the due date."
+        },
+        "repeat_on": {
+          "name": "Monthly on",
+          "description": "Monthly only, taken from the due date: day = the same day number (default), weekday = the same weekday of the month (e.g. the 3rd Tuesday), last_weekday = the last such weekday (e.g. the last Friday), last_day = the last day of the month."
+        },
+        "repeat_from_done": {
+          "name": "Count from ticking off",
+          "description": "On = the next date is counted from when the task was ticked off (e.g. every 3 months after the filter was really changed), at the usual time of day. Off = a fixed schedule. Not used with weekdays or a monthly pattern."
         },
         "tts": {
           "name": "Spoken",
@@ -275,6 +295,18 @@
           "name": "Every how many units",
           "description": "E.g. 3 with \"monthly\" = every 3 months."
         },
+        "repeat_days": {
+          "name": "On weekdays",
+          "description": "Weekly only: on these days of every (N-th) week, e.g. mon, thu. Empty = the weekday of the due date."
+        },
+        "repeat_on": {
+          "name": "Monthly on",
+          "description": "Monthly only, taken from the due date: day = the same day number (default), weekday = the same weekday of the month (e.g. the 3rd Tuesday), last_weekday = the last such weekday (e.g. the last Friday), last_day = the last day of the month."
+        },
+        "repeat_from_done": {
+          "name": "Count from ticking off",
+          "description": "On = the next date is counted from when the task was ticked off (e.g. every 3 months after the filter was really changed), at the usual time of day. Off = a fixed schedule. Not used with weekdays or a monthly pattern."
+        },
         "phones": {
           "name": "Channels",
           "description": "Where to send the notification (empty list = nowhere; null = all configured)."
@@ -345,6 +377,25 @@
         "above": "Is above",
         "below": "Is below",
         "calendar": "Has a calendar event"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "The same day of the month",
+        "weekday": "The same weekday (e.g. 3rd Tuesday)",
+        "last_weekday": "The last such weekday",
+        "last_day": "The last day of the month"
       }
     }
   },
@@ -456,7 +507,8 @@
         "not_mapping": "Enter key: value pairs, e.g. car_ui: true",
         "rule_entity_missing": "This entity does not exist.",
         "rule_not_calendar": "\"Has a calendar event\" needs a calendar entity.",
-        "rule_not_numeric": "\"Is above / below\" needs an entity with a number as its state (now: text)."
+        "rule_not_numeric": "\"Is above / below\" needs an entity with a number as its state (now: text).",
+        "rule_own_entity": "Remindo's own calendar shows the tasks themselves, a rule cannot watch it."
       }
     }
   },
@@ -499,6 +551,10 @@
     "rule_not_numeric": {
       "title": "Remindo rule \"{rule}\": not a number",
       "description": "The rule \"{rule}\" compares {entity} with a number, but its state is text. The rule cannot add tasks. Edit the rule in Settings → Devices & services → Remindo."
+    },
+    "rule_own_entity": {
+      "title": "Rule \"{rule}\" watches Remindo's own calendar",
+      "description": "The rule \"{rule}\" watches {entity}, Remindo's own calendar with the tasks, so it would add tasks from tasks. Point the rule at another calendar or delete it."
     }
   }
 }
