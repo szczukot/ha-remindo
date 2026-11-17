@@ -147,6 +147,8 @@
   "f_icon": "Icono:",
   "f_list": "Lista:",
   "f_list_hint": "vacío = general",
+  "f_list_general": "general",
+  "f_list_new": "＋ nueva lista…",
   "until_before": "\"Dejar de recordar\" debe ser después de la fecha",
   "on_last_days": [
     "el último lunes",
