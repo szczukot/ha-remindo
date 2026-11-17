@@ -1,0 +1,560 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Remindo — tareas con recordatorios",
+        "data": {
+          "notify_targets": "Destinos de las notificaciones push",
+          "persistent_notification": "Notificación persistente en HA",
+          "tts_entity": "Motor TTS",
+          "tts_language": "Idioma de los avisos",
+          "tts_voice": "Voz de los avisos",
+          "media_player": "Reproductores para los avisos",
+          "screen_switch": "Interruptor de pantalla que se enciende antes",
+          "presence_entity": "Entidad de presencia",
+          "tts_default": "Aviso hablado por defecto",
+          "quiet_start": "Inicio de las horas de silencio",
+          "quiet_end": "Fin de las horas de silencio",
+          "default_interval": "Intervalo de recordatorio por defecto",
+          "default_time": "Hora para tareas solo con fecha",
+          "phone_snooze": "Posponer desde el teléfono",
+          "click_url": "Abrir al tocar la notificación",
+          "keep_done": "Mantener las tareas hechas en la lista",
+          "quiet_push": "Horas de silencio también para las notificaciones push",
+          "notify_data": "Datos extra para las notificaciones de la app"
+        },
+        "data_description": {
+          "quiet_start": "Sin avisos hablados durante las horas de silencio. El push se sigue enviando, salvo que la opción de abajo esté activada.",
+          "default_interval": "0 = recordar una vez.",
+          "click_url": "Ruta de HA, p. ej. /lovelace/remindo",
+          "keep_done": "Desactivado = una tarea desaparece al terminarla (queda en el registro). Las tareas recurrentes siempre se quedan. Se puede cambiar por tarea y por regla.",
+          "notify_targets": "App móvil (con botones) o cualquier otro servicio de notificación: Telegram, correo, SMS (solo texto).",
+          "quiet_push": "Activado = por la noche no se envía nada; un recordatorio que cae en las horas de silencio espera a que terminen.",
+          "notify_data": "Avanzado. Se añade a cada notificación de la app de HA, p. ej. car_ui: true (Android Auto), priority: high con ttl: 0 (entregar al instante), notification_icon, color, channel. Se puede sustituir por regla y por tarea.",
+          "persistent_notification": "Se muestra en cada recordatorio, también cuando no hay teléfono ni altavoz elegido para una tarea.",
+          "tts_language": "Opcional, p. ej. es-ES. Vacío = el idioma de tu asistente de voz (Ajustes → Asistentes de voz) si usa el mismo motor; si no, el predeterminado del motor.",
+          "tts_voice": "Opcional, el id de voz del motor, p. ej. ElviraNeural en Home Assistant Cloud. Vacío = la voz de tu asistente de voz si usa el mismo motor; si no, la predeterminada del motor."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Ya está configurado."
+    },
+    "error": {
+      "not_mapping": "Introduce pares clave: valor, p. ej. car_ui: true"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Remindo — tareas con recordatorios",
+        "data": {
+          "notify_targets": "Destinos de las notificaciones push",
+          "persistent_notification": "Notificación persistente en HA",
+          "tts_entity": "Motor TTS",
+          "tts_language": "Idioma de los avisos",
+          "tts_voice": "Voz de los avisos",
+          "media_player": "Reproductores para los avisos",
+          "screen_switch": "Interruptor de pantalla que se enciende antes",
+          "presence_entity": "Entidad de presencia",
+          "tts_default": "Aviso hablado por defecto",
+          "quiet_start": "Inicio de las horas de silencio",
+          "quiet_end": "Fin de las horas de silencio",
+          "default_interval": "Intervalo de recordatorio por defecto",
+          "default_time": "Hora para tareas solo con fecha",
+          "phone_snooze": "Posponer desde el teléfono",
+          "click_url": "Abrir al tocar la notificación",
+          "keep_done": "Mantener las tareas hechas en la lista",
+          "quiet_push": "Horas de silencio también para las notificaciones push",
+          "notify_data": "Datos extra para las notificaciones de la app"
+        },
+        "data_description": {
+          "quiet_start": "Sin avisos hablados durante las horas de silencio. El push se sigue enviando, salvo que la opción de abajo esté activada.",
+          "default_interval": "0 = recordar una vez.",
+          "click_url": "Ruta de HA, p. ej. /lovelace/remindo",
+          "keep_done": "Desactivado = una tarea desaparece al terminarla (queda en el registro). Las tareas recurrentes siempre se quedan. Se puede cambiar por tarea y por regla.",
+          "notify_targets": "App móvil (con botones) o cualquier otro servicio de notificación: Telegram, correo, SMS (solo texto).",
+          "quiet_push": "Activado = por la noche no se envía nada; un recordatorio que cae en las horas de silencio espera a que terminen.",
+          "notify_data": "Avanzado. Se añade a cada notificación de la app de HA, p. ej. car_ui: true (Android Auto), priority: high con ttl: 0 (entregar al instante), notification_icon, color, channel. Se puede sustituir por regla y por tarea.",
+          "persistent_notification": "Se muestra en cada recordatorio, también cuando no hay teléfono ni altavoz elegido para una tarea.",
+          "tts_language": "Opcional, p. ej. es-ES. Vacío = el idioma de tu asistente de voz (Ajustes → Asistentes de voz) si usa el mismo motor; si no, el predeterminado del motor.",
+          "tts_voice": "Opcional, el id de voz del motor, p. ej. ElviraNeural en Home Assistant Cloud. Vacío = la voz de tu asistente de voz si usa el mismo motor; si no, la predeterminada del motor."
+        }
+      }
+    },
+    "error": {
+      "not_mapping": "Introduce pares clave: valor, p. ej. car_ui: true"
+    }
+  },
+  "services": {
+    "add": {
+      "name": "Añadir tarea",
+      "description": "Añade una tarea con recordatorios.",
+      "fields": {
+        "summary": {
+          "name": "Texto",
+          "description": "Texto de la tarea. Se permiten plantillas, p. ej. \"Ventana abierta, fuera {{ states('sensor.outside') }}°C\" (se recalcula en cada recordatorio)."
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Información adicional."
+        },
+        "start": {
+          "name": "Inicio",
+          "description": "Cuándo empiezan los recordatorios: fecha y hora, fecha o 'now'. Vacío = nota."
+        },
+        "interval": {
+          "name": "Intervalo (min)",
+          "description": "Repetir cada N minutos hasta que se atienda. 0 = una vez."
+        },
+        "key": {
+          "name": "Clave",
+          "description": "Evita duplicados; permite el cierre automático."
+        },
+        "repeat": {
+          "name": "Repetir",
+          "description": "Una vez hecha, la tarea vuelve en la siguiente fecha."
+        },
+        "repeat_every": {
+          "name": "Cada",
+          "description": "P. ej. 3 con mensual = cada 3 meses."
+        },
+        "repeat_days": {
+          "name": "Días de la semana",
+          "description": "Solo semanal: estos días de cada (N-ésima) semana, p. ej. mon, thu. Vacío = el día de la semana de la fecha."
+        },
+        "repeat_on": {
+          "name": "Mensual el",
+          "description": "Solo mensual, según la fecha: day = el mismo día del mes (por defecto), weekday = el mismo día de la semana en el mes (p. ej. el 3.er martes), last_weekday = el último de esos días (p. ej. el último viernes), last_day = el último día del mes."
+        },
+        "repeat_from_done": {
+          "name": "Contar desde que se marca",
+          "description": "Activado = la siguiente fecha se cuenta desde que se marcó la tarea (p. ej. cada 3 meses después de cambiar de verdad el filtro), a la hora habitual. Desactivado = calendario fijo. No se usa con días de la semana ni con un patrón mensual."
+        },
+        "tts": {
+          "name": "Hablado",
+          "description": "Hablar en la tableta cuando hay alguien en casa."
+        },
+        "tts_message": {
+          "name": "Texto hablado",
+          "description": "Otro texto para decir en voz alta."
+        },
+        "push": {
+          "name": "Push",
+          "description": "Enviar notificación al teléfono."
+        },
+        "phones": {
+          "name": "Teléfonos",
+          "description": "Qué teléfonos reciben el push (vacío = ninguno; omitido = todos los configurados)."
+        },
+        "speakers": {
+          "name": "Altavoces",
+          "description": "Dónde hablar (omitido = todos los configurados)."
+        },
+        "max_reminders": {
+          "name": "Como máximo",
+          "description": "Dejar de recordar tras este número de recordatorios."
+        },
+        "remind_until": {
+          "name": "Recordar hasta",
+          "description": "Dejar de recordar después de este momento."
+        },
+        "keep_done": {
+          "name": "Mantener al terminar",
+          "description": "Mantener la tarea en Hechas (por defecto: opción de la integración)."
+        },
+        "done_message": {
+          "name": "Mensaje al resolverse",
+          "description": "Se envía cuando la tarea se cierra sola (close_by_key / regla). Se permiten plantillas."
+        },
+        "notify_data": {
+          "name": "Datos de la notificación",
+          "description": "Datos extra para la notificación de la app de HA (icono, Android Auto, prioridad…)."
+        },
+        "list": {
+          "name": "Lista",
+          "description": "Lista opcional, p. ej. \"Acuario\". Una tarjeta ajustada a esa lista solo muestra sus tareas. Vacío = la lista general."
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Icono opcional (p. ej. mdi:package-variant), mostrado junto a la tarea en la tarjeta y en la notificación de Android."
+        },
+        "important": {
+          "name": "Importante",
+          "description": "Fuerte en el teléfono: Android la reproduce como alarma, también con el teléfono en silencio; iPhone como alerta crítica (permite las alertas críticas en la app de HA). El push se envía también en las horas de silencio."
+        }
+      }
+    },
+    "done": {
+      "name": "Hecho",
+      "description": "Marca la tarea como hecha.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id de la tarea."
+        },
+        "key": {
+          "name": "Clave",
+          "description": "Clave indicada al añadir (p. ej. puerta)."
+        }
+      }
+    },
+    "dismiss": {
+      "name": "Omitir",
+      "description": "Descarta la tarea (\"no lo haré\"). Una tarea recurrente solo omite esta fecha; usa Eliminar para quitarla.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id de la tarea."
+        },
+        "key": {
+          "name": "Clave",
+          "description": "Clave indicada al añadir (p. ej. puerta)."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Posponer",
+      "description": "Pospone el siguiente recordatorio.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id de la tarea."
+        },
+        "key": {
+          "name": "Clave",
+          "description": "Clave indicada al añadir (p. ej. puerta)."
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Recordar en N minutos."
+        },
+        "until": {
+          "name": "Hasta",
+          "description": "Hora o fecha concreta."
+        }
+      }
+    },
+    "close_by_key": {
+      "name": "Cerrar por clave",
+      "description": "Cierra la tarea abierta con esta clave.",
+      "fields": {
+        "key": {
+          "name": "Clave",
+          "description": "Clave indicada al añadir (p. ej. puerta)."
+        }
+      }
+    },
+    "delete": {
+      "name": "Eliminar",
+      "description": "Elimina una tarea para siempre, también una recurrente.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id de la tarea."
+        },
+        "key": {
+          "name": "Clave",
+          "description": "Clave indicada al añadir (p. ej. puerta)."
+        }
+      }
+    },
+    "update": {
+      "name": "Modificar",
+      "description": "Modifica una tarea. Solo cambian los campos enviados; un valor vacío borra el campo.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id de la tarea."
+        },
+        "key": {
+          "name": "Clave",
+          "description": "Clave indicada al añadir (p. ej. puerta)."
+        },
+        "summary": {
+          "name": "Texto",
+          "description": "Nuevo texto de la tarea."
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Información adicional (vacío = quitar)."
+        },
+        "start": {
+          "name": "Vencimiento",
+          "description": "Nuevo vencimiento: fecha y hora, o solo una fecha. Vacío = una nota sin recordatorios."
+        },
+        "interval": {
+          "name": "Intervalo (min)",
+          "description": "Repetir cada N minutos hasta que se atienda. 0 = una vez."
+        },
+        "repeat": {
+          "name": "Repetir",
+          "description": "Cada cuánto vuelve la tarea tras marcarla (\"none\" = tarea única). Necesita un vencimiento."
+        },
+        "repeat_every": {
+          "name": "Cada cuántas unidades",
+          "description": "P. ej. 3 con \"monthly\" = cada 3 meses."
+        },
+        "repeat_days": {
+          "name": "Días de la semana",
+          "description": "Solo semanal: estos días de cada (N-ésima) semana, p. ej. mon, thu. Vacío = el día de la semana de la fecha."
+        },
+        "repeat_on": {
+          "name": "Mensual el",
+          "description": "Solo mensual, según la fecha: day = el mismo día del mes (por defecto), weekday = el mismo día de la semana en el mes (p. ej. el 3.er martes), last_weekday = el último de esos días (p. ej. el último viernes), last_day = el último día del mes."
+        },
+        "repeat_from_done": {
+          "name": "Contar desde que se marca",
+          "description": "Activado = la siguiente fecha se cuenta desde que se marcó la tarea (p. ej. cada 3 meses después de cambiar de verdad el filtro), a la hora habitual. Desactivado = calendario fijo. No se usa con días de la semana ni con un patrón mensual."
+        },
+        "phones": {
+          "name": "Canales",
+          "description": "Adónde enviar la notificación (lista vacía = a ningún sitio; null = todos los configurados)."
+        },
+        "speakers": {
+          "name": "Altavoces",
+          "description": "Dónde hablar (lista vacía = en ningún sitio; null = todos los configurados)."
+        },
+        "max_reminders": {
+          "name": "Como máximo",
+          "description": "Dejar de recordar tras este número de recordatorios (vacío = sin límite)."
+        },
+        "remind_until": {
+          "name": "Recordar hasta",
+          "description": "Dejar de recordar después de este momento (vacío = sin límite)."
+        },
+        "keep_done": {
+          "name": "Mantener al terminar",
+          "description": "Mantener la tarea en Hechas (null = opción de la integración)."
+        },
+        "notify_data": {
+          "name": "Datos de la notificación",
+          "description": "Datos extra para la notificación de la app de HA (icono, Android Auto, prioridad…)."
+        },
+        "list": {
+          "name": "Lista",
+          "description": "Lista opcional, p. ej. \"Acuario\". Una tarjeta ajustada a esa lista solo muestra sus tareas. Vacío = la lista general."
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Icono opcional (p. ej. mdi:package-variant), mostrado junto a la tarea en la tarjeta y en la notificación de Android."
+        },
+        "important": {
+          "name": "Importante",
+          "description": "Fuerte en el teléfono: Android la reproduce como alarma, también con el teléfono en silencio; iPhone como alerta crítica (permite las alertas críticas en la app de HA). El push se envía también en las horas de silencio."
+        }
+      }
+    },
+    "reopen": {
+      "name": "Reabrir",
+      "description": "Vuelve a abrir una tarea hecha u omitida. Una tarea con vencimiento recuerda de nuevo enseguida.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id de la tarea."
+        },
+        "key": {
+          "name": "Clave",
+          "description": "Clave indicada al añadir (p. ej. puerta)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "repeat": {
+      "options": {
+        "none": "Única",
+        "hourly": "Cada hora",
+        "daily": "Diaria",
+        "weekly": "Semanal",
+        "monthly": "Mensual",
+        "yearly": "Anual"
+      }
+    },
+    "rule_mode": {
+      "options": {
+        "state": "Tiene un estado",
+        "above": "Está por encima de",
+        "below": "Está por debajo de",
+        "calendar": "Tiene un evento de calendario"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Lunes",
+        "tue": "Martes",
+        "wed": "Miércoles",
+        "thu": "Jueves",
+        "fri": "Viernes",
+        "sat": "Sábado",
+        "sun": "Domingo"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "El mismo día del mes",
+        "weekday": "El mismo día de la semana (p. ej. 3.er martes)",
+        "last_weekday": "El último de esos días",
+        "last_day": "El último día del mes"
+      }
+    }
+  },
+  "config_subentries": {
+    "rule": {
+      "entry_type": "Regla",
+      "initiate_flow": {
+        "user": "Añadir regla",
+        "reconfigure": "Editar regla"
+      },
+      "step": {
+        "trigger": {
+          "title": "Nueva regla — ¿cuándo?",
+          "description": "Se añade una tarea automáticamente cuando la entidad cumple la condición.",
+          "data": {
+            "summary": "Texto de la tarea",
+            "entity_id": "Entidad (dispositivo, sensor, calendario)",
+            "mode": "Condición",
+            "icon": "Icono"
+          },
+          "data_description": {
+            "summary": "P. ej. \"Vaciar el lavavajillas\". Puedes añadir {state} (valor actual con unidad) y {name} (nombre del dispositivo), p. ej. \"Humedad {state}, ventila el baño\". En los calendarios se añaden al final los nombres de los eventos (o pon {event} donde los quieras).",
+            "icon": "Opcional. Se muestra junto a la tarea en la tarjeta y en la notificación de Android."
+          }
+        },
+        "trigger_edit": {
+          "title": "Editar regla \"{rule}\" — ¿cuándo?",
+          "description": "Se añade una tarea automáticamente cuando la entidad cumple la condición.",
+          "data": {
+            "summary": "Texto de la tarea",
+            "entity_id": "Entidad (dispositivo, sensor, calendario)",
+            "mode": "Condición",
+            "icon": "Icono"
+          },
+          "data_description": {
+            "summary": "P. ej. \"Vaciar el lavavajillas\". Puedes añadir {state} (valor actual con unidad) y {name} (nombre del dispositivo), p. ej. \"Humedad {state}, ventila el baño\". En los calendarios se añaden al final los nombres de los eventos (o pon {event} donde los quieras).",
+            "icon": "Opcional. Se muestra junto a la tarea en la tarjeta y en la notificación de Android."
+          }
+        },
+        "condition_state": {
+          "title": "Condición",
+          "description": "Entidad: {entity} (ahora: {current})",
+          "data": {
+            "value": "Tiene el estado",
+            "for_minutes": "Durante al menos (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = al instante."
+          }
+        },
+        "condition_number": {
+          "title": "Condición",
+          "description": "Entidad: {entity} (ahora: {current})",
+          "data": {
+            "value": "Umbral",
+            "for_minutes": "Durante al menos (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = al instante."
+          }
+        },
+        "condition_calendar": {
+          "title": "Calendario",
+          "description": "Calendario: {entity}",
+          "data": {
+            "days_before": "Días antes del evento",
+            "at_time": "A las",
+            "contains": "Solo eventos cuyo nombre contiene (opcional)"
+          },
+          "data_description": {
+            "days_before": "1 = el día anterior, 0 = el mismo día.",
+            "contains": "Un filtro sobre el nombre del evento. P. ej. \"Vidrio\" en un calendario de recogida de basura → un recordatorio solo para la recogida de vidrio; los demás eventos de este calendario se ignoran. No importan mayúsculas / minúsculas. Vacío = todos los eventos."
+          }
+        },
+        "notify": {
+          "title": "Recordatorios",
+          "data": {
+            "remind": "Repetir el recordatorio",
+            "interval": "Cada (min)",
+            "max_reminders": "Como máximo",
+            "phones": "Teléfonos (push)",
+            "speakers": "Altavoces (aviso)",
+            "auto_close": "Cerrar la tarea cuando termine la condición",
+            "done_message": "Mensaje al resolverse",
+            "keep_done": "Mantener en la lista al terminar",
+            "tts_message": "Texto hablado",
+            "notify_data": "Datos extra de notificación",
+            "list": "Lista",
+            "important": "Importante"
+          },
+          "data_description": {
+            "remind": "Desactivado = recordar una vez.",
+            "max_reminders": "Vacío = hasta que esté hecha.",
+            "phones": "Ninguno elegido = sin push para esta regla. La tarea sigue en la lista y aparece como notificación en HA si esa opción está activada en los ajustes de la integración.",
+            "auto_close": "P. ej. la puerta vuelve a estar cerrada, se abrió la puerta del lavavajillas: la tarea se cierra sola (como hecha), sus notificaciones desaparecen y, con \"Mantener en la lista al terminar\" desactivado, sale de la lista. En un calendario: después del día del evento.",
+            "done_message": "Se envía a los mismos destinos cuando la tarea se cierra sola, p. ej. \"Puerta del garaje cerrada ✅\". {state} y {name} también funcionan aquí. Vacío = nada.",
+            "keep_done": "Desactivado = desaparece al terminarla.",
+            "tts_message": "Lo que se dice en voz alta en lugar del texto de la tarea, p. ej. \"El lavavajillas ha terminado, ábrelo por favor.\" {state} y {name} también funcionan aquí (en calendarios: {event}). Vacío = el texto de la tarea.",
+            "notify_data": "Avanzado. Datos extra para la notificación de la app de HA de esta regla, p. ej. car_ui: true, priority: high.",
+            "list": "Opcional, p. ej. \"Acuario\": una tarjeta ajustada a esa lista solo muestra sus tareas. Elige una lista existente o escribe un nombre nuevo. Vacío = la lista general.",
+            "important": "Fuerte en el teléfono: Android la reproduce como alarma, también con el teléfono en silencio; iPhone como alerta crítica (permite las alertas críticas en la app de HA). El push se envía también en las horas de silencio; el aviso hablado las sigue respetando."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Regla guardada."
+      },
+      "error": {
+        "not_mapping": "Introduce pares clave: valor, p. ej. car_ui: true",
+        "rule_entity_missing": "Esta entidad no existe.",
+        "rule_not_calendar": "\"Tiene un evento de calendario\" necesita una entidad de calendario.",
+        "rule_not_numeric": "\"Está por encima / por debajo de\" necesita una entidad cuyo estado sea un número (ahora: texto).",
+        "rule_own_entity": "El calendario de Remindo muestra las propias tareas; una regla no puede vigilarlo."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "active": {
+        "name": "Remindo recordando ahora"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "La integración Remindo no está cargada"
+    },
+    "task_not_found": {
+      "message": "No se encontró ninguna tarea abierta (uid={uid}, key={key})"
+    },
+    "invalid_start": {
+      "message": "Formato de inicio desconocido: {start}. Usa now, una fecha (2026-12-01) o una fecha con hora (2026-12-01T18:00)."
+    },
+    "repeat_needs_start": {
+      "message": "Una tarea recurrente necesita una fecha de inicio"
+    },
+    "task_closed": {
+      "message": "La tarea \"{summary}\" ya está hecha u omitida. Restáurala primero."
+    },
+    "until_before_start": {
+      "message": "\"Recordar hasta\" debe ser posterior al vencimiento."
+    }
+  },
+  "issues": {
+    "rule_entity_missing": {
+      "title": "Regla de Remindo \"{rule}\": entidad no encontrada",
+      "description": "La regla \"{rule}\" vigila {entity}, que no existe (¿renombrada o eliminada?). La regla no puede añadir tareas. Edita la regla en Ajustes → Dispositivos y servicios → Remindo, o elimínala."
+    },
+    "rule_not_calendar": {
+      "title": "Regla de Remindo \"{rule}\": no es un calendario",
+      "description": "La regla \"{rule}\" busca eventos de calendario en {entity}, que no es un calendario. Edita la regla en Ajustes → Dispositivos y servicios → Remindo."
+    },
+    "rule_not_numeric": {
+      "title": "Regla de Remindo \"{rule}\": no es un número",
+      "description": "La regla \"{rule}\" compara {entity} con un número, pero su estado es texto. La regla no puede añadir tareas. Edita la regla en Ajustes → Dispositivos y servicios → Remindo."
+    },
+    "rule_own_entity": {
+      "title": "La regla \"{rule}\" vigila el calendario de Remindo",
+      "description": "La regla \"{rule}\" vigila {entity}, el calendario de Remindo con las tareas, así que añadiría tareas a partir de tareas. Apunta la regla a otro calendario o elimínala."
+    }
+  }
+}

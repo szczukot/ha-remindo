@@ -1,0 +1,91 @@
+{
+  "texts": {
+    "title": "📋 Tâche",
+    "done": "✅ Fait",
+    "snooze": "⏰ +{minutes} min",
+    "dismiss": "❌ Passer",
+    "task": "Tâche : {summary}",
+    "ev_created": "ajoutée",
+    "ev_reminded": "rappelée",
+    "ev_done": "faite",
+    "ev_snoozed": "reportée",
+    "ev_dismissed": "passée",
+    "src_phone": "depuis le téléphone",
+    "src_card": "depuis la carte",
+    "src_todo": "depuis la liste de tâches",
+    "src_auto": "automatiquement",
+    "src_rule": "par une règle",
+    "src_expired": "date dépassée",
+    "src_rule_removed": "règle supprimée",
+    "nth": ", {count}e fois"
+  },
+  "units": {
+    "hourly": {
+      "one": "heure",
+      "other": "heures",
+      "every_one": "toutes les heures",
+      "every_n": "toutes les {n} heures"
+    },
+    "daily": {
+      "one": "jour",
+      "other": "jours",
+      "every_one": "tous les jours",
+      "every_n": "tous les {n} jours"
+    },
+    "weekly": {
+      "one": "semaine",
+      "other": "semaines",
+      "every_one": "toutes les semaines",
+      "every_n": "toutes les {n} semaines"
+    },
+    "monthly": {
+      "one": "mois",
+      "other": "mois",
+      "every_one": "tous les mois",
+      "every_n": "tous les {n} mois"
+    },
+    "yearly": {
+      "one": "an",
+      "other": "ans",
+      "every_one": "tous les ans",
+      "every_n": "tous les {n} ans"
+    }
+  },
+  "days": [
+    "lun",
+    "mar",
+    "mer",
+    "jeu",
+    "ven",
+    "sam",
+    "dim"
+  ],
+  "days_full": [
+    "lundi",
+    "mardi",
+    "mercredi",
+    "jeudi",
+    "vendredi",
+    "samedi",
+    "dimanche"
+  ],
+  "every": "tous les",
+  "nth": [
+    "1er",
+    "2e",
+    "3e",
+    "4e"
+  ],
+  "on_nth": "le {n} {day}",
+  "last_days": [
+    "le dernier lundi",
+    "le dernier mardi",
+    "le dernier mercredi",
+    "le dernier jeudi",
+    "le dernier vendredi",
+    "le dernier samedi",
+    "le dernier dimanche"
+  ],
+  "last_day": "le dernier jour",
+  "from_done": "à partir de la validation"
+}

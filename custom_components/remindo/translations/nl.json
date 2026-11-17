@@ -1,0 +1,560 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Remindo — taken met herinneringen",
+        "data": {
+          "notify_targets": "Doelen voor pushmeldingen",
+          "persistent_notification": "Blijvende melding in HA",
+          "tts_entity": "TTS-engine",
+          "tts_language": "Taal van aankondigingen",
+          "tts_voice": "Stem van aankondigingen",
+          "media_player": "Mediaspelers voor aankondigingen",
+          "screen_switch": "Schermschakelaar die eerst aan moet",
+          "presence_entity": "Aanwezigheidsentiteit",
+          "tts_default": "Standaard gesproken aankondiging",
+          "quiet_start": "Begin stille uren",
+          "quiet_end": "Einde stille uren",
+          "default_interval": "Standaard herinneringsinterval",
+          "default_time": "Tijd voor taken met alleen een datum",
+          "phone_snooze": "Uitstellen vanaf telefoon met",
+          "click_url": "Openen bij tikken op melding",
+          "keep_done": "Afgeronde taken op de lijst houden",
+          "quiet_push": "Stille uren ook voor pushmeldingen",
+          "notify_data": "Extra gegevens voor app-meldingen"
+        },
+        "data_description": {
+          "quiet_start": "Geen gesproken aankondigingen tijdens de stille uren. Push wordt nog steeds verstuurd, tenzij de optie hieronder aan staat.",
+          "default_interval": "0 = één keer herinneren.",
+          "click_url": "HA-pad, bijv. /lovelace/remindo",
+          "keep_done": "Uit = een taak verdwijnt na afronden (ze blijft in het logboek). Terugkerende taken blijven altijd staan. Per taak en per regel aan te passen.",
+          "notify_targets": "Mobiele app (met knoppen) of elke andere meldingsdienst: Telegram, e-mail, sms (alleen tekst).",
+          "quiet_push": "Aan = 's nachts wordt niets verstuurd; een herinnering die in de stille uren valt, wacht tot ze voorbij zijn.",
+          "notify_data": "Geavanceerd. Toegevoegd aan elke melding van de HA-app, bijv. car_ui: true (Android Auto), priority: high met ttl: 0 (direct afleveren), notification_icon, color, channel. Per regel en per taak te overschrijven.",
+          "persistent_notification": "Getoond bij elke herinnering, ook als voor een taak geen telefoon of luidspreker gekozen is.",
+          "tts_language": "Optioneel, bijv. nl-NL. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
+          "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Al ingesteld."
+    },
+    "error": {
+      "not_mapping": "Voer sleutel: waarde-paren in, bijv. car_ui: true"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Remindo — taken met herinneringen",
+        "data": {
+          "notify_targets": "Doelen voor pushmeldingen",
+          "persistent_notification": "Blijvende melding in HA",
+          "tts_entity": "TTS-engine",
+          "tts_language": "Taal van aankondigingen",
+          "tts_voice": "Stem van aankondigingen",
+          "media_player": "Mediaspelers voor aankondigingen",
+          "screen_switch": "Schermschakelaar die eerst aan moet",
+          "presence_entity": "Aanwezigheidsentiteit",
+          "tts_default": "Standaard gesproken aankondiging",
+          "quiet_start": "Begin stille uren",
+          "quiet_end": "Einde stille uren",
+          "default_interval": "Standaard herinneringsinterval",
+          "default_time": "Tijd voor taken met alleen een datum",
+          "phone_snooze": "Uitstellen vanaf telefoon met",
+          "click_url": "Openen bij tikken op melding",
+          "keep_done": "Afgeronde taken op de lijst houden",
+          "quiet_push": "Stille uren ook voor pushmeldingen",
+          "notify_data": "Extra gegevens voor app-meldingen"
+        },
+        "data_description": {
+          "quiet_start": "Geen gesproken aankondigingen tijdens de stille uren. Push wordt nog steeds verstuurd, tenzij de optie hieronder aan staat.",
+          "default_interval": "0 = één keer herinneren.",
+          "click_url": "HA-pad, bijv. /lovelace/remindo",
+          "keep_done": "Uit = een taak verdwijnt na afronden (ze blijft in het logboek). Terugkerende taken blijven altijd staan. Per taak en per regel aan te passen.",
+          "notify_targets": "Mobiele app (met knoppen) of elke andere meldingsdienst: Telegram, e-mail, sms (alleen tekst).",
+          "quiet_push": "Aan = 's nachts wordt niets verstuurd; een herinnering die in de stille uren valt, wacht tot ze voorbij zijn.",
+          "notify_data": "Geavanceerd. Toegevoegd aan elke melding van de HA-app, bijv. car_ui: true (Android Auto), priority: high met ttl: 0 (direct afleveren), notification_icon, color, channel. Per regel en per taak te overschrijven.",
+          "persistent_notification": "Getoond bij elke herinnering, ook als voor een taak geen telefoon of luidspreker gekozen is.",
+          "tts_language": "Optioneel, bijv. nl-NL. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
+          "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine."
+        }
+      }
+    },
+    "error": {
+      "not_mapping": "Voer sleutel: waarde-paren in, bijv. car_ui: true"
+    }
+  },
+  "services": {
+    "add": {
+      "name": "Taak toevoegen",
+      "description": "Voegt een taak met herinneringen toe.",
+      "fields": {
+        "summary": {
+          "name": "Tekst",
+          "description": "Tekst van de taak. Templates toegestaan, bijv. \"Raam open, buiten {{ states('sensor.outside') }}°C\" (bij elke herinnering opnieuw berekend)."
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Extra informatie."
+        },
+        "start": {
+          "name": "Start",
+          "description": "Wanneer herinneringen beginnen: datum en tijd, datum of 'now'. Leeg = notitie."
+        },
+        "interval": {
+          "name": "Interval (min)",
+          "description": "Elke N minuten herhalen tot afgehandeld. 0 = één keer."
+        },
+        "key": {
+          "name": "Sleutel",
+          "description": "Voorkomt dubbele taken; maakt automatisch sluiten mogelijk."
+        },
+        "repeat": {
+          "name": "Herhalen",
+          "description": "Na afronden komt de taak terug op de volgende datum."
+        },
+        "repeat_every": {
+          "name": "Elke",
+          "description": "Bijv. 3 met maandelijks = elke 3 maanden."
+        },
+        "repeat_days": {
+          "name": "Op weekdagen",
+          "description": "Alleen wekelijks: op deze dagen van elke (N-de) week, bijv. mon, thu. Leeg = de weekdag van de datum."
+        },
+        "repeat_on": {
+          "name": "Maandelijks op",
+          "description": "Alleen maandelijks, volgens de datum: day = dezelfde dag van de maand (standaard), weekday = dezelfde weekdag in de maand (bijv. de 3e dinsdag), last_weekday = de laatste zulke weekdag (bijv. de laatste vrijdag), last_day = de laatste dag van de maand."
+        },
+        "repeat_from_done": {
+          "name": "Tellen vanaf het afvinken",
+          "description": "Aan = de volgende datum telt vanaf het moment dat de taak is afgevinkt (bijv. elke 3 maanden nadat het filter echt is vervangen), op het gewone tijdstip. Uit = vast schema. Niet gebruikt met weekdagen of een maandpatroon."
+        },
+        "tts": {
+          "name": "Gesproken",
+          "description": "Spreken op de tablet als er iemand thuis is."
+        },
+        "tts_message": {
+          "name": "Gesproken tekst",
+          "description": "Andere tekst om uit te spreken."
+        },
+        "push": {
+          "name": "Push",
+          "description": "Melding naar de telefoon sturen."
+        },
+        "phones": {
+          "name": "Telefoons",
+          "description": "Welke telefoons de push krijgen (leeg = geen; weggelaten = alle ingestelde)."
+        },
+        "speakers": {
+          "name": "Luidsprekers",
+          "description": "Waar gesproken wordt (weggelaten = alle ingestelde)."
+        },
+        "max_reminders": {
+          "name": "Hoogstens zo vaak",
+          "description": "Stoppen na dit aantal herinneringen."
+        },
+        "remind_until": {
+          "name": "Herinneren tot",
+          "description": "Stoppen met herinneren na dit moment."
+        },
+        "keep_done": {
+          "name": "Bewaren na afronden",
+          "description": "De taak bij Klaar houden (standaard: optie van de integratie)."
+        },
+        "done_message": {
+          "name": "Bericht bij oplossen",
+          "description": "Verstuurd als de taak zichzelf sluit (close_by_key / regel). Templates toegestaan."
+        },
+        "notify_data": {
+          "name": "Meldingsgegevens",
+          "description": "Extra gegevens voor de melding van de HA-app (pictogram, Android Auto, prioriteit…)."
+        },
+        "list": {
+          "name": "Lijst",
+          "description": "Optionele lijst, bijv. \"Aquarium\". Een kaart ingesteld op die lijst toont alleen de taken ervan. Leeg = de algemene lijst."
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "Optioneel pictogram (bijv. mdi:package-variant), getoond naast de taak op de kaart en in de Android-melding."
+        },
+        "important": {
+          "name": "Belangrijk",
+          "description": "Luid op de telefoon: Android speelt het af als alarm, ook als de telefoon op stil staat; iPhone als kritieke melding (sta kritieke meldingen toe in de HA-app). Push wordt ook in de stille uren verstuurd."
+        }
+      }
+    },
+    "done": {
+      "name": "Klaar",
+      "description": "Markeert de taak als klaar.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID van de taak."
+        },
+        "key": {
+          "name": "Sleutel",
+          "description": "Sleutel opgegeven bij het toevoegen (bijv. poort)."
+        }
+      }
+    },
+    "dismiss": {
+      "name": "Overslaan",
+      "description": "Laat de taak vallen (\"doe ik niet\"). Een terugkerende taak slaat alleen deze datum over; gebruik Verwijderen om haar weg te halen.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID van de taak."
+        },
+        "key": {
+          "name": "Sleutel",
+          "description": "Sleutel opgegeven bij het toevoegen (bijv. poort)."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Uitstellen",
+      "description": "Stelt de volgende herinnering uit.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID van de taak."
+        },
+        "key": {
+          "name": "Sleutel",
+          "description": "Sleutel opgegeven bij het toevoegen (bijv. poort)."
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "Herinner over N minuten."
+        },
+        "until": {
+          "name": "Tot",
+          "description": "Bepaalde tijd of datum."
+        }
+      }
+    },
+    "close_by_key": {
+      "name": "Sluiten via sleutel",
+      "description": "Sluit de open taak met deze sleutel.",
+      "fields": {
+        "key": {
+          "name": "Sleutel",
+          "description": "Sleutel opgegeven bij het toevoegen (bijv. poort)."
+        }
+      }
+    },
+    "delete": {
+      "name": "Verwijderen",
+      "description": "Verwijdert een taak definitief, ook een terugkerende.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID van de taak."
+        },
+        "key": {
+          "name": "Sleutel",
+          "description": "Sleutel opgegeven bij het toevoegen (bijv. poort)."
+        }
+      }
+    },
+    "update": {
+      "name": "Wijzigen",
+      "description": "Wijzigt een taak. Alleen de verstuurde velden veranderen; een lege waarde wist het veld.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID van de taak."
+        },
+        "key": {
+          "name": "Sleutel",
+          "description": "Sleutel opgegeven bij het toevoegen (bijv. poort)."
+        },
+        "summary": {
+          "name": "Tekst",
+          "description": "Nieuwe tekst van de taak."
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Extra informatie (leeg = verwijderen)."
+        },
+        "start": {
+          "name": "Vervaldatum",
+          "description": "Nieuwe datum: datum en tijd, of alleen een datum. Leeg = een notitie zonder herinneringen."
+        },
+        "interval": {
+          "name": "Interval (min)",
+          "description": "Elke N minuten herhalen tot afgehandeld. 0 = één keer."
+        },
+        "repeat": {
+          "name": "Herhalen",
+          "description": "Hoe vaak de taak terugkomt na afvinken (\"none\" = eenmalige taak). Heeft een datum nodig."
+        },
+        "repeat_every": {
+          "name": "Om de hoeveel eenheden",
+          "description": "Bijv. 3 met \"monthly\" = elke 3 maanden."
+        },
+        "repeat_days": {
+          "name": "Op weekdagen",
+          "description": "Alleen wekelijks: op deze dagen van elke (N-de) week, bijv. mon, thu. Leeg = de weekdag van de datum."
+        },
+        "repeat_on": {
+          "name": "Maandelijks op",
+          "description": "Alleen maandelijks, volgens de datum: day = dezelfde dag van de maand (standaard), weekday = dezelfde weekdag in de maand (bijv. de 3e dinsdag), last_weekday = de laatste zulke weekdag (bijv. de laatste vrijdag), last_day = de laatste dag van de maand."
+        },
+        "repeat_from_done": {
+          "name": "Tellen vanaf het afvinken",
+          "description": "Aan = de volgende datum telt vanaf het moment dat de taak is afgevinkt (bijv. elke 3 maanden nadat het filter echt is vervangen), op het gewone tijdstip. Uit = vast schema. Niet gebruikt met weekdagen of een maandpatroon."
+        },
+        "phones": {
+          "name": "Kanalen",
+          "description": "Waar de melding heen gaat (lege lijst = nergens; null = alle ingestelde)."
+        },
+        "speakers": {
+          "name": "Luidsprekers",
+          "description": "Waar gesproken wordt (lege lijst = nergens; null = alle ingestelde)."
+        },
+        "max_reminders": {
+          "name": "Hoogstens zo vaak",
+          "description": "Stoppen na dit aantal herinneringen (leeg = geen limiet)."
+        },
+        "remind_until": {
+          "name": "Herinneren tot",
+          "description": "Stoppen met herinneren na dit moment (leeg = geen limiet)."
+        },
+        "keep_done": {
+          "name": "Bewaren na afronden",
+          "description": "De taak bij Klaar houden (null = optie van de integratie)."
+        },
+        "notify_data": {
+          "name": "Meldingsgegevens",
+          "description": "Extra gegevens voor de melding van de HA-app (pictogram, Android Auto, prioriteit…)."
+        },
+        "list": {
+          "name": "Lijst",
+          "description": "Optionele lijst, bijv. \"Aquarium\". Een kaart ingesteld op die lijst toont alleen de taken ervan. Leeg = de algemene lijst."
+        },
+        "icon": {
+          "name": "Pictogram",
+          "description": "Optioneel pictogram (bijv. mdi:package-variant), getoond naast de taak op de kaart en in de Android-melding."
+        },
+        "important": {
+          "name": "Belangrijk",
+          "description": "Luid op de telefoon: Android speelt het af als alarm, ook als de telefoon op stil staat; iPhone als kritieke melding (sta kritieke meldingen toe in de HA-app). Push wordt ook in de stille uren verstuurd."
+        }
+      }
+    },
+    "reopen": {
+      "name": "Heropenen",
+      "description": "Opent een afgeronde of overgeslagen taak opnieuw. Een taak met een datum herinnert meteen weer.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID van de taak."
+        },
+        "key": {
+          "name": "Sleutel",
+          "description": "Sleutel opgegeven bij het toevoegen (bijv. poort)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "repeat": {
+      "options": {
+        "none": "Eenmalig",
+        "hourly": "Elk uur",
+        "daily": "Dagelijks",
+        "weekly": "Wekelijks",
+        "monthly": "Maandelijks",
+        "yearly": "Jaarlijks"
+      }
+    },
+    "rule_mode": {
+      "options": {
+        "state": "Heeft een status",
+        "above": "Is boven",
+        "below": "Is onder",
+        "calendar": "Heeft een agenda-afspraak"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Maandag",
+        "tue": "Dinsdag",
+        "wed": "Woensdag",
+        "thu": "Donderdag",
+        "fri": "Vrijdag",
+        "sat": "Zaterdag",
+        "sun": "Zondag"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "Dezelfde dag van de maand",
+        "weekday": "Dezelfde weekdag (bijv. 3e dinsdag)",
+        "last_weekday": "De laatste zulke weekdag",
+        "last_day": "De laatste dag van de maand"
+      }
+    }
+  },
+  "config_subentries": {
+    "rule": {
+      "entry_type": "Regel",
+      "initiate_flow": {
+        "user": "Regel toevoegen",
+        "reconfigure": "Regel bewerken"
+      },
+      "step": {
+        "trigger": {
+          "title": "Nieuwe regel — wanneer?",
+          "description": "Er wordt automatisch een taak toegevoegd als de entiteit aan de voorwaarde voldoet.",
+          "data": {
+            "summary": "Tekst van de taak",
+            "entity_id": "Entiteit (apparaat, sensor, agenda)",
+            "mode": "Voorwaarde",
+            "icon": "Pictogram"
+          },
+          "data_description": {
+            "summary": "Bijv. \"Vaatwasser uitruimen\". Je kunt {state} (huidige waarde met eenheid) en {name} (naam van het apparaat) toevoegen, bijv. \"Luchtvochtigheid {state}, badkamer luchten\". Bij agenda's worden de namen van de afspraken achteraan toegevoegd (of zet {event} waar je ze wilt).",
+            "icon": "Optioneel. Getoond naast de taak op de kaart en in de Android-melding."
+          }
+        },
+        "trigger_edit": {
+          "title": "Regel \"{rule}\" bewerken — wanneer?",
+          "description": "Er wordt automatisch een taak toegevoegd als de entiteit aan de voorwaarde voldoet.",
+          "data": {
+            "summary": "Tekst van de taak",
+            "entity_id": "Entiteit (apparaat, sensor, agenda)",
+            "mode": "Voorwaarde",
+            "icon": "Pictogram"
+          },
+          "data_description": {
+            "summary": "Bijv. \"Vaatwasser uitruimen\". Je kunt {state} (huidige waarde met eenheid) en {name} (naam van het apparaat) toevoegen, bijv. \"Luchtvochtigheid {state}, badkamer luchten\". Bij agenda's worden de namen van de afspraken achteraan toegevoegd (of zet {event} waar je ze wilt).",
+            "icon": "Optioneel. Getoond naast de taak op de kaart en in de Android-melding."
+          }
+        },
+        "condition_state": {
+          "title": "Voorwaarde",
+          "description": "Entiteit: {entity} (nu: {current})",
+          "data": {
+            "value": "Heeft status",
+            "for_minutes": "Minstens (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = meteen."
+          }
+        },
+        "condition_number": {
+          "title": "Voorwaarde",
+          "description": "Entiteit: {entity} (nu: {current})",
+          "data": {
+            "value": "Drempel",
+            "for_minutes": "Minstens (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = meteen."
+          }
+        },
+        "condition_calendar": {
+          "title": "Agenda",
+          "description": "Agenda: {entity}",
+          "data": {
+            "days_before": "Dagen vóór de afspraak",
+            "at_time": "Om",
+            "contains": "Alleen afspraken waarvan de naam bevat (optioneel)"
+          },
+          "data_description": {
+            "days_before": "1 = de dag ervoor, 0 = op de dag zelf.",
+            "contains": "Een filter op de naam van de afspraak. Bijv. \"Glas\" in een afvalkalender → alleen een herinnering voor de glasophaling, andere afspraken in deze agenda worden genegeerd. Hoofd- / kleine letters maken niet uit. Leeg = alle afspraken."
+          }
+        },
+        "notify": {
+          "title": "Herinneringen",
+          "data": {
+            "remind": "Herinnering herhalen",
+            "interval": "Elke (min)",
+            "max_reminders": "Hoogstens zo vaak",
+            "phones": "Telefoons (push)",
+            "speakers": "Luidsprekers (aankondiging)",
+            "auto_close": "Taak sluiten als de voorwaarde eindigt",
+            "done_message": "Bericht bij oplossen",
+            "keep_done": "Op de lijst houden na afronden",
+            "tts_message": "Gesproken tekst",
+            "notify_data": "Extra meldingsgegevens",
+            "list": "Lijst",
+            "important": "Belangrijk"
+          },
+          "data_description": {
+            "remind": "Uit = één keer herinneren.",
+            "max_reminders": "Leeg = tot klaar.",
+            "phones": "Niets gekozen = geen push voor deze regel. De taak staat wel op de lijst en verschijnt als melding in HA als die optie aan staat in de instellingen van de integratie.",
+            "auto_close": "Bijv. de poort is weer dicht, de deur van de vaatwasser is geopend: de taak sluit zichzelf (als klaar), de meldingen verdwijnen, en met \"Op de lijst houden na afronden\" uit is ze van de lijst. Bij een agenda: na de dag van de afspraak.",
+            "done_message": "Verstuurd naar dezelfde doelen als de taak zichzelf sluit, bijv. \"Garagedeur dicht ✅\". {state} en {name} werken hier ook. Leeg = niets.",
+            "keep_done": "Uit = verdwijnt na afronden.",
+            "tts_message": "Wat hardop gezegd wordt in plaats van de taaktekst, bijv. \"De vaatwasser is klaar, graag openen.\" {state} en {name} werken hier ook (bij agenda's: {event}). Leeg = de taaktekst.",
+            "notify_data": "Geavanceerd. Extra gegevens voor de melding van de HA-app voor deze regel, bijv. car_ui: true, priority: high.",
+            "list": "Optioneel, bijv. \"Aquarium\": een kaart ingesteld op die lijst toont alleen de taken ervan. Kies een bestaande lijst of typ een nieuwe naam. Leeg = de algemene lijst.",
+            "important": "Luid op de telefoon: Android speelt het af als alarm, ook als de telefoon op stil staat; iPhone als kritieke melding (sta kritieke meldingen toe in de HA-app). Push wordt ook in de stille uren verstuurd; de gesproken aankondiging houdt zich er nog steeds aan."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Regel opgeslagen."
+      },
+      "error": {
+        "not_mapping": "Voer sleutel: waarde-paren in, bijv. car_ui: true",
+        "rule_entity_missing": "Deze entiteit bestaat niet.",
+        "rule_not_calendar": "\"Heeft een agenda-afspraak\" heeft een agenda-entiteit nodig.",
+        "rule_not_numeric": "\"Is boven / onder\" heeft een entiteit nodig met een getal als status (nu: tekst).",
+        "rule_own_entity": "De eigen agenda van Remindo toont de taken zelf, een regel kan haar niet volgen."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "active": {
+        "name": "Remindo herinnert nu"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "De Remindo-integratie is niet geladen"
+    },
+    "task_not_found": {
+      "message": "Geen open taak gevonden (uid={uid}, key={key})"
+    },
+    "invalid_start": {
+      "message": "Onbekend startformaat: {start}. Gebruik now, een datum (2026-12-01) of een datum met tijd (2026-12-01T18:00)."
+    },
+    "repeat_needs_start": {
+      "message": "Een terugkerende taak heeft een startdatum nodig"
+    },
+    "task_closed": {
+      "message": "De taak \"{summary}\" is al klaar of overgeslagen. Herstel haar eerst."
+    },
+    "until_before_start": {
+      "message": "\"Herinneren tot\" moet na de datum liggen."
+    }
+  },
+  "issues": {
+    "rule_entity_missing": {
+      "title": "Remindo-regel \"{rule}\": entiteit niet gevonden",
+      "description": "De regel \"{rule}\" volgt {entity}, die niet bestaat (hernoemd of verwijderd?). De regel kan geen taken toevoegen. Bewerk de regel in Instellingen → Apparaten & diensten → Remindo, of verwijder hem."
+    },
+    "rule_not_calendar": {
+      "title": "Remindo-regel \"{rule}\": geen agenda",
+      "description": "De regel \"{rule}\" zoekt agenda-afspraken in {entity}, dat geen agenda is. Bewerk de regel in Instellingen → Apparaten & diensten → Remindo."
+    },
+    "rule_not_numeric": {
+      "title": "Remindo-regel \"{rule}\": geen getal",
+      "description": "De regel \"{rule}\" vergelijkt {entity} met een getal, maar de status is tekst. De regel kan geen taken toevoegen. Bewerk de regel in Instellingen → Apparaten & diensten → Remindo."
+    },
+    "rule_own_entity": {
+      "title": "Regel \"{rule}\" volgt de eigen agenda van Remindo",
+      "description": "De regel \"{rule}\" volgt {entity}, de eigen agenda van Remindo met de taken, en zou dus taken uit taken toevoegen. Richt de regel op een andere agenda of verwijder hem."
+    }
+  }
+}

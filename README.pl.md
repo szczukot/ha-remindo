@@ -13,7 +13,7 @@ Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadani
 - 🗂️ **Karta Lovelace** dostarczana z integracją: Teraz / Zaplanowane / Notatki / Zrobione / Odrzucone, odkładanie jednym kliknięciem, ręczne dodawanie zadań.
 - 📣 **Dowolne kanały**: aplikacja HA (z przyciskami) oraz Telegram, e-mail, SMS i każde inne powiadomienie, które masz w HA (sam tekst).
 - ✅ **Komunikat po załatwieniu**: np. „Brama zamknięta ✅”, gdy zadanie zamknie się samo.
-- 🌍 Po polsku i angielsku.
+- 🌍 Po polsku, angielsku, niemiecku, francusku, niderlandzku, włosku i hiszpańsku.
 
 <p align="center"><img src="docs/images/demo-pl.gif" width="520" alt="Remindo w działaniu: odhaczanie, dodanie zadania cyklicznego, edycja"></p>
 
@@ -246,7 +246,19 @@ actions:
 
 ## Język
 
-Ekrany konfiguracji, usługi, komunikaty błędów, powiadomienia push i dziennik są po polsku i po angielsku. Push, dziennik i opis w liście To-do idą w języku ustawionym w *Ustawienia → System → Ogólne*; karta w języku profilu użytkownika.
+Remindo mówi **po polsku, angielsku, niemiecku, francusku, niderlandzku, włosku i hiszpańsku** (ekrany konfiguracji, usługi, komunikaty błędów, karta, przyciski push i dziennik). Push, dziennik i opis w liście To-do idą w języku ustawionym w *Ustawienia → System → Ogólne*; karta w języku profilu użytkownika. Każdy inny język dostaje angielski.
+
+Niemiecki, francuski, niderlandzki, włoski i hiszpański zostały przetłumaczone bez native speakera, więc coś może brzmieć niezgrabnie: poprawki bardzo mile widziane jako pull request (albo issue z lepszym tekstem).
+
+**Dodanie języka** to trzy pliki nazwane kodem języka (np. `cs.json`), skopiowane z angielskich i przetłumaczone:
+
+| Plik | Co obejmuje |
+|---|---|
+| `custom_components/remindo/translations/<kod>.json` | ustawienia, formularz reguły, usługi, błędy, Naprawy (format samego Home Assistant) |
+| `custom_components/remindo/frontend/i18n/<kod>.json` | karta |
+| `custom_components/remindo/messages/<kod>.json` | przyciski push, dziennik, opis powtarzania w liście To-do |
+
+Jednostki mają osobny wpis dla każdej formy liczby mnogiej języka (`one`, `few`, `many`, `other`, jak w [CLDR](https://cldr.unicode.org/index/cldr-spec/plural-rules)); tam, gdzie „co” zmienia się z jednostką, dodaj `every_one` / `every_n` (np. niemieckie `"jeden Tag"`, `"alle {n} Tage"`). Testy sprawdzają, że każdy język ma każdy tekst z tymi samymi `{zmiennymi}`.
 
 ## Rozwój
 

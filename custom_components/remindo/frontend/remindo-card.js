@@ -43,13 +43,18 @@ const monthlyLabel = (on, due) => {
   const day = (tv("days_full") || [])[wd];
   if (on === "last_day") return t("on_last_day");
   if (on === "last_weekday" || (on === "weekday" && nth === 5)) return (tv("on_last_days") || [])[wd] || "";
-  if (on === "weekday") return t("on_nth", { n: tv("nth")[nth - 1], day });
+  if (on === "weekday") {
+    // one phrase, or one per weekday where the words depend on it ("il 3° martedì", "la 3ª domenica")
+    const tpl = Array.isArray(tv("on_nth")) ? tv("on_nth")[wd] : tv("on_nth");
+    return String(tpl).replace("{n}", tv("nth")[nth - 1]).replace("{day}", day);
+  }
   return t("on_day", { d: due.getDate() });
 };
 const repeatLabel = (task) => {
   const n = Number(task.repeat_every || 1);
   const f = forms(UNIT[task.repeat]) || { other: task.repeat };
-  let label = n <= 1 ? `${t("every")} ${plural(1, f)}` : `${t("every")} ${n} ${plural(n, f)}`;
+  // a unit may carry its own phrases where "every" changes with it ("jeden Tag", "toutes les 3 semaines")
+  let label = n <= 1 ? f.every_one || `${t("every")} ${plural(1, f)}` : (f.every_n || `${t("every")} {n} ${plural(n, f)}`).replace("{n}", n);
   if (task.repeat === "weekly" && task.repeat_days?.length) label += ": " + task.repeat_days.map((d) => tv("days")[d]).join(", ");
   else if (task.repeat === "monthly" && task.repeat_on && task.repeat_on !== "day" && task.start) label += ", " + monthlyLabel(task.repeat_on, new Date(task.start));
   else if (task.repeat_from_done) label += ` (${t("from_done_short")})`;

@@ -1,0 +1,560 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Remindo — Aufgaben mit Erinnerungen",
+        "data": {
+          "notify_targets": "Ziele für Push-Benachrichtigungen",
+          "persistent_notification": "Dauerhafte Benachrichtigung in HA",
+          "tts_entity": "TTS-Engine",
+          "tts_language": "Sprache der Ansagen",
+          "tts_voice": "Stimme der Ansagen",
+          "media_player": "Mediaplayer für Ansagen",
+          "screen_switch": "Bildschirm-Schalter, der zuerst eingeschaltet wird",
+          "presence_entity": "Anwesenheits-Entität",
+          "tts_default": "Gesprochene Ansage standardmäßig",
+          "quiet_start": "Beginn der Ruhezeit",
+          "quiet_end": "Ende der Ruhezeit",
+          "default_interval": "Standard-Erinnerungsintervall",
+          "default_time": "Uhrzeit für Aufgaben nur mit Datum",
+          "phone_snooze": "Vom Handy verschieben um",
+          "click_url": "Beim Tippen auf die Benachrichtigung öffnen",
+          "keep_done": "Erledigte Aufgaben auf der Liste lassen",
+          "quiet_push": "Ruhezeit auch für Push-Benachrichtigungen",
+          "notify_data": "Zusätzliche Daten für App-Benachrichtigungen"
+        },
+        "data_description": {
+          "quiet_start": "Keine gesprochenen Ansagen während der Ruhezeit. Push wird weiterhin gesendet, außer die Option unten ist aktiviert.",
+          "default_interval": "0 = einmal erinnern.",
+          "click_url": "HA-Pfad, z. B. /lovelace/remindo",
+          "keep_done": "Aus = eine Aufgabe verschwindet nach dem Erledigen (sie bleibt im Logbuch). Wiederkehrende Aufgaben bleiben immer. Kann pro Aufgabe und pro Regel geändert werden.",
+          "notify_targets": "Mobile App (mit Schaltflächen) oder jeder andere Benachrichtigungsdienst: Telegram, E-Mail, SMS (nur Text).",
+          "quiet_push": "An = nachts wird nichts gesendet; eine Erinnerung, die in die Ruhezeit fällt, wartet bis zu deren Ende.",
+          "notify_data": "Fortgeschritten. Wird jeder Benachrichtigung der HA-App hinzugefügt, z. B. car_ui: true (Android Auto), priority: high mit ttl: 0 (sofort zustellen), notification_icon, color, channel. Kann pro Regel und pro Aufgabe überschrieben werden.",
+          "persistent_notification": "Wird bei jeder Erinnerung angezeigt, auch wenn für eine Aufgabe kein Handy und kein Lautsprecher ausgewählt ist.",
+          "tts_language": "Optional, z. B. de-DE. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
+          "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Bereits eingerichtet."
+    },
+    "error": {
+      "not_mapping": "Gib Schlüssel: Wert-Paare ein, z. B. car_ui: true"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Remindo — Aufgaben mit Erinnerungen",
+        "data": {
+          "notify_targets": "Ziele für Push-Benachrichtigungen",
+          "persistent_notification": "Dauerhafte Benachrichtigung in HA",
+          "tts_entity": "TTS-Engine",
+          "tts_language": "Sprache der Ansagen",
+          "tts_voice": "Stimme der Ansagen",
+          "media_player": "Mediaplayer für Ansagen",
+          "screen_switch": "Bildschirm-Schalter, der zuerst eingeschaltet wird",
+          "presence_entity": "Anwesenheits-Entität",
+          "tts_default": "Gesprochene Ansage standardmäßig",
+          "quiet_start": "Beginn der Ruhezeit",
+          "quiet_end": "Ende der Ruhezeit",
+          "default_interval": "Standard-Erinnerungsintervall",
+          "default_time": "Uhrzeit für Aufgaben nur mit Datum",
+          "phone_snooze": "Vom Handy verschieben um",
+          "click_url": "Beim Tippen auf die Benachrichtigung öffnen",
+          "keep_done": "Erledigte Aufgaben auf der Liste lassen",
+          "quiet_push": "Ruhezeit auch für Push-Benachrichtigungen",
+          "notify_data": "Zusätzliche Daten für App-Benachrichtigungen"
+        },
+        "data_description": {
+          "quiet_start": "Keine gesprochenen Ansagen während der Ruhezeit. Push wird weiterhin gesendet, außer die Option unten ist aktiviert.",
+          "default_interval": "0 = einmal erinnern.",
+          "click_url": "HA-Pfad, z. B. /lovelace/remindo",
+          "keep_done": "Aus = eine Aufgabe verschwindet nach dem Erledigen (sie bleibt im Logbuch). Wiederkehrende Aufgaben bleiben immer. Kann pro Aufgabe und pro Regel geändert werden.",
+          "notify_targets": "Mobile App (mit Schaltflächen) oder jeder andere Benachrichtigungsdienst: Telegram, E-Mail, SMS (nur Text).",
+          "quiet_push": "An = nachts wird nichts gesendet; eine Erinnerung, die in die Ruhezeit fällt, wartet bis zu deren Ende.",
+          "notify_data": "Fortgeschritten. Wird jeder Benachrichtigung der HA-App hinzugefügt, z. B. car_ui: true (Android Auto), priority: high mit ttl: 0 (sofort zustellen), notification_icon, color, channel. Kann pro Regel und pro Aufgabe überschrieben werden.",
+          "persistent_notification": "Wird bei jeder Erinnerung angezeigt, auch wenn für eine Aufgabe kein Handy und kein Lautsprecher ausgewählt ist.",
+          "tts_language": "Optional, z. B. de-DE. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
+          "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine."
+        }
+      }
+    },
+    "error": {
+      "not_mapping": "Gib Schlüssel: Wert-Paare ein, z. B. car_ui: true"
+    }
+  },
+  "services": {
+    "add": {
+      "name": "Aufgabe hinzufügen",
+      "description": "Fügt eine Aufgabe mit Erinnerungen hinzu.",
+      "fields": {
+        "summary": {
+          "name": "Text",
+          "description": "Text der Aufgabe. Templates erlaubt, z. B. \"Fenster offen, draußen {{ states('sensor.outside') }}°C\" (bei jeder Erinnerung neu berechnet)."
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Zusätzliche Infos."
+        },
+        "start": {
+          "name": "Start",
+          "description": "Wann die Erinnerungen beginnen: Datum mit Uhrzeit, Datum oder 'now'. Leer = Notiz."
+        },
+        "interval": {
+          "name": "Intervall (Min.)",
+          "description": "Alle N Minuten wiederholen, bis erledigt. 0 = einmal."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Verhindert Duplikate; ermöglicht automatisches Schließen."
+        },
+        "repeat": {
+          "name": "Wiederholen",
+          "description": "Nach dem Erledigen kommt die Aufgabe zum nächsten Termin wieder."
+        },
+        "repeat_every": {
+          "name": "Alle",
+          "description": "Z. B. 3 mit monatlich = alle 3 Monate."
+        },
+        "repeat_days": {
+          "name": "An Wochentagen",
+          "description": "Nur wöchentlich: an diesen Tagen jeder (N-ten) Woche, z. B. mon, thu. Leer = der Wochentag des Termins."
+        },
+        "repeat_on": {
+          "name": "Monatlich am",
+          "description": "Nur monatlich, nach dem Termin: day = derselbe Tag des Monats (Standard), weekday = derselbe Wochentag im Monat (z. B. der 3. Dienstag), last_weekday = der letzte solche Wochentag (z. B. der letzte Freitag), last_day = der letzte Tag des Monats."
+        },
+        "repeat_from_done": {
+          "name": "Ab dem Abhaken zählen",
+          "description": "An = der nächste Termin wird ab dem Abhaken gezählt (z. B. alle 3 Monate, nachdem der Filter wirklich gewechselt wurde), zur gewohnten Uhrzeit. Aus = fester Zeitplan. Nicht bei Wochentagen oder einem monatlichen Muster."
+        },
+        "tts": {
+          "name": "Gesprochen",
+          "description": "Auf dem Tablet sprechen, wenn jemand zu Hause ist."
+        },
+        "tts_message": {
+          "name": "Gesprochener Text",
+          "description": "Anderer Text zum Sprechen."
+        },
+        "push": {
+          "name": "Push",
+          "description": "Benachrichtigung aufs Handy senden."
+        },
+        "phones": {
+          "name": "Handys",
+          "description": "Welche Handys den Push bekommen (leer = keines; weggelassen = alle eingerichteten)."
+        },
+        "speakers": {
+          "name": "Lautsprecher",
+          "description": "Wo gesprochen wird (weggelassen = alle eingerichteten)."
+        },
+        "max_reminders": {
+          "name": "Höchstens so oft",
+          "description": "Nach so vielen Erinnerungen aufhören."
+        },
+        "remind_until": {
+          "name": "Erinnern bis",
+          "description": "Nach diesem Zeitpunkt aufhören zu erinnern."
+        },
+        "keep_done": {
+          "name": "Nach dem Erledigen behalten",
+          "description": "Die Aufgabe unter Erledigt behalten (Standard: Option der Integration)."
+        },
+        "done_message": {
+          "name": "Nachricht bei Erledigung",
+          "description": "Wird gesendet, wenn sich die Aufgabe selbst schließt (close_by_key / Regel). Templates erlaubt."
+        },
+        "notify_data": {
+          "name": "Benachrichtigungsdaten",
+          "description": "Zusätzliche Daten für die Benachrichtigung der HA-App (Symbol, Android Auto, Priorität…)."
+        },
+        "list": {
+          "name": "Liste",
+          "description": "Optionale Liste, z. B. \"Aquarium\". Eine auf diese Liste eingestellte Karte zeigt nur deren Aufgaben. Leer = die allgemeine Liste."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Optionales Symbol (z. B. mdi:package-variant), angezeigt neben der Aufgabe auf der Karte und in der Android-Benachrichtigung."
+        },
+        "important": {
+          "name": "Wichtig",
+          "description": "Laut auf dem Handy: Android spielt sie als Alarm ab, auch wenn das Handy stummgeschaltet ist; iPhone als kritische Warnung (kritische Warnungen in der HA-App erlauben). Push wird auch in der Ruhezeit gesendet."
+        }
+      }
+    },
+    "done": {
+      "name": "Erledigt",
+      "description": "Markiert die Aufgabe als erledigt.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID der Aufgabe."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Beim Hinzufügen angegebener Schlüssel (z. B. tor)."
+        }
+      }
+    },
+    "dismiss": {
+      "name": "Überspringen",
+      "description": "Verwirft die Aufgabe (\"mache ich nicht\"). Eine wiederkehrende Aufgabe überspringt nur diesen Termin; zum Entfernen Löschen verwenden.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID der Aufgabe."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Beim Hinzufügen angegebener Schlüssel (z. B. tor)."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Verschieben",
+      "description": "Verschiebt die nächste Erinnerung.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID der Aufgabe."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Beim Hinzufügen angegebener Schlüssel (z. B. tor)."
+        },
+        "minutes": {
+          "name": "Minuten",
+          "description": "In N Minuten erinnern."
+        },
+        "until": {
+          "name": "Bis",
+          "description": "Bestimmte Uhrzeit oder bestimmtes Datum."
+        }
+      }
+    },
+    "close_by_key": {
+      "name": "Per Schlüssel schließen",
+      "description": "Schließt die offene Aufgabe mit diesem Schlüssel.",
+      "fields": {
+        "key": {
+          "name": "Schlüssel",
+          "description": "Beim Hinzufügen angegebener Schlüssel (z. B. tor)."
+        }
+      }
+    },
+    "delete": {
+      "name": "Löschen",
+      "description": "Entfernt eine Aufgabe endgültig, auch eine wiederkehrende.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID der Aufgabe."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Beim Hinzufügen angegebener Schlüssel (z. B. tor)."
+        }
+      }
+    },
+    "update": {
+      "name": "Ändern",
+      "description": "Ändert eine Aufgabe. Nur die gesendeten Felder werden geändert; ein leerer Wert löscht das Feld.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID der Aufgabe."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Beim Hinzufügen angegebener Schlüssel (z. B. tor)."
+        },
+        "summary": {
+          "name": "Text",
+          "description": "Neuer Text der Aufgabe."
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Zusätzliche Infos (leer = entfernen)."
+        },
+        "start": {
+          "name": "Termin",
+          "description": "Neuer Termin: Datum mit Uhrzeit oder nur ein Datum. Leer = eine Notiz ohne Erinnerungen."
+        },
+        "interval": {
+          "name": "Intervall (Min.)",
+          "description": "Alle N Minuten wiederholen, bis erledigt. 0 = einmal."
+        },
+        "repeat": {
+          "name": "Wiederholen",
+          "description": "Wie oft die Aufgabe nach dem Abhaken wiederkommt (\"none\" = einmalige Aufgabe). Braucht einen Termin."
+        },
+        "repeat_every": {
+          "name": "Alle wie viele Einheiten",
+          "description": "Z. B. 3 mit \"monthly\" = alle 3 Monate."
+        },
+        "repeat_days": {
+          "name": "An Wochentagen",
+          "description": "Nur wöchentlich: an diesen Tagen jeder (N-ten) Woche, z. B. mon, thu. Leer = der Wochentag des Termins."
+        },
+        "repeat_on": {
+          "name": "Monatlich am",
+          "description": "Nur monatlich, nach dem Termin: day = derselbe Tag des Monats (Standard), weekday = derselbe Wochentag im Monat (z. B. der 3. Dienstag), last_weekday = der letzte solche Wochentag (z. B. der letzte Freitag), last_day = der letzte Tag des Monats."
+        },
+        "repeat_from_done": {
+          "name": "Ab dem Abhaken zählen",
+          "description": "An = der nächste Termin wird ab dem Abhaken gezählt (z. B. alle 3 Monate, nachdem der Filter wirklich gewechselt wurde), zur gewohnten Uhrzeit. Aus = fester Zeitplan. Nicht bei Wochentagen oder einem monatlichen Muster."
+        },
+        "phones": {
+          "name": "Kanäle",
+          "description": "Wohin die Benachrichtigung gesendet wird (leere Liste = nirgends; null = alle eingerichteten)."
+        },
+        "speakers": {
+          "name": "Lautsprecher",
+          "description": "Wo gesprochen wird (leere Liste = nirgends; null = alle eingerichteten)."
+        },
+        "max_reminders": {
+          "name": "Höchstens so oft",
+          "description": "Nach so vielen Erinnerungen aufhören (leer = ohne Grenze)."
+        },
+        "remind_until": {
+          "name": "Erinnern bis",
+          "description": "Nach diesem Zeitpunkt aufhören zu erinnern (leer = ohne Grenze)."
+        },
+        "keep_done": {
+          "name": "Nach dem Erledigen behalten",
+          "description": "Die Aufgabe unter Erledigt behalten (null = Option der Integration)."
+        },
+        "notify_data": {
+          "name": "Benachrichtigungsdaten",
+          "description": "Zusätzliche Daten für die Benachrichtigung der HA-App (Symbol, Android Auto, Priorität…)."
+        },
+        "list": {
+          "name": "Liste",
+          "description": "Optionale Liste, z. B. \"Aquarium\". Eine auf diese Liste eingestellte Karte zeigt nur deren Aufgaben. Leer = die allgemeine Liste."
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Optionales Symbol (z. B. mdi:package-variant), angezeigt neben der Aufgabe auf der Karte und in der Android-Benachrichtigung."
+        },
+        "important": {
+          "name": "Wichtig",
+          "description": "Laut auf dem Handy: Android spielt sie als Alarm ab, auch wenn das Handy stummgeschaltet ist; iPhone als kritische Warnung (kritische Warnungen in der HA-App erlauben). Push wird auch in der Ruhezeit gesendet."
+        }
+      }
+    },
+    "reopen": {
+      "name": "Wieder öffnen",
+      "description": "Öffnet eine erledigte oder übersprungene Aufgabe erneut. Eine Aufgabe mit Termin erinnert sofort wieder.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "ID der Aufgabe."
+        },
+        "key": {
+          "name": "Schlüssel",
+          "description": "Beim Hinzufügen angegebener Schlüssel (z. B. tor)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "repeat": {
+      "options": {
+        "none": "Einmalig",
+        "hourly": "Stündlich",
+        "daily": "Täglich",
+        "weekly": "Wöchentlich",
+        "monthly": "Monatlich",
+        "yearly": "Jährlich"
+      }
+    },
+    "rule_mode": {
+      "options": {
+        "state": "Hat einen Zustand",
+        "above": "Liegt über",
+        "below": "Liegt unter",
+        "calendar": "Hat einen Kalendertermin"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Montag",
+        "tue": "Dienstag",
+        "wed": "Mittwoch",
+        "thu": "Donnerstag",
+        "fri": "Freitag",
+        "sat": "Samstag",
+        "sun": "Sonntag"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "Derselbe Tag des Monats",
+        "weekday": "Derselbe Wochentag (z. B. 3. Dienstag)",
+        "last_weekday": "Der letzte solche Wochentag",
+        "last_day": "Der letzte Tag des Monats"
+      }
+    }
+  },
+  "config_subentries": {
+    "rule": {
+      "entry_type": "Regel",
+      "initiate_flow": {
+        "user": "Regel hinzufügen",
+        "reconfigure": "Regel bearbeiten"
+      },
+      "step": {
+        "trigger": {
+          "title": "Neue Regel — wann?",
+          "description": "Eine Aufgabe wird automatisch hinzugefügt, wenn die Entität die Bedingung erfüllt.",
+          "data": {
+            "summary": "Text der Aufgabe",
+            "entity_id": "Entität (Gerät, Sensor, Kalender)",
+            "mode": "Bedingung",
+            "icon": "Symbol"
+          },
+          "data_description": {
+            "summary": "Z. B. \"Spülmaschine ausräumen\". Du kannst {state} (aktueller Wert mit Einheit) und {name} (Gerätename) einfügen, z. B. \"Luftfeuchtigkeit {state}, Bad lüften\". Bei Kalendern werden die Terminnamen angehängt (oder setze {event} dorthin, wo du sie haben willst).",
+            "icon": "Optional. Angezeigt neben der Aufgabe auf der Karte und in der Android-Benachrichtigung."
+          }
+        },
+        "trigger_edit": {
+          "title": "Regel \"{rule}\" bearbeiten — wann?",
+          "description": "Eine Aufgabe wird automatisch hinzugefügt, wenn die Entität die Bedingung erfüllt.",
+          "data": {
+            "summary": "Text der Aufgabe",
+            "entity_id": "Entität (Gerät, Sensor, Kalender)",
+            "mode": "Bedingung",
+            "icon": "Symbol"
+          },
+          "data_description": {
+            "summary": "Z. B. \"Spülmaschine ausräumen\". Du kannst {state} (aktueller Wert mit Einheit) und {name} (Gerätename) einfügen, z. B. \"Luftfeuchtigkeit {state}, Bad lüften\". Bei Kalendern werden die Terminnamen angehängt (oder setze {event} dorthin, wo du sie haben willst).",
+            "icon": "Optional. Angezeigt neben der Aufgabe auf der Karte und in der Android-Benachrichtigung."
+          }
+        },
+        "condition_state": {
+          "title": "Bedingung",
+          "description": "Entität: {entity} (jetzt: {current})",
+          "data": {
+            "value": "Hat den Zustand",
+            "for_minutes": "Mindestens (Min.)"
+          },
+          "data_description": {
+            "for_minutes": "0 = sofort."
+          }
+        },
+        "condition_number": {
+          "title": "Bedingung",
+          "description": "Entität: {entity} (jetzt: {current})",
+          "data": {
+            "value": "Schwellenwert",
+            "for_minutes": "Mindestens (Min.)"
+          },
+          "data_description": {
+            "for_minutes": "0 = sofort."
+          }
+        },
+        "condition_calendar": {
+          "title": "Kalender",
+          "description": "Kalender: {entity}",
+          "data": {
+            "days_before": "Tage vor dem Termin",
+            "at_time": "Um",
+            "contains": "Nur Termine, deren Name enthält (optional)"
+          },
+          "data_description": {
+            "days_before": "1 = am Vortag, 0 = am Tag selbst.",
+            "contains": "Ein Filter auf den Terminnamen. Z. B. \"Glas\" in einem Müllabfuhr-Kalender → eine Erinnerung nur für die Glasabholung, andere Termine in diesem Kalender werden ignoriert. Groß-/Kleinschreibung spielt keine Rolle. Leer = alle Termine."
+          }
+        },
+        "notify": {
+          "title": "Erinnerungen",
+          "data": {
+            "remind": "Erinnerung wiederholen",
+            "interval": "Alle (Min.)",
+            "max_reminders": "Höchstens so oft",
+            "phones": "Handys (Push)",
+            "speakers": "Lautsprecher (Ansage)",
+            "auto_close": "Aufgabe schließen, wenn die Bedingung endet",
+            "done_message": "Nachricht bei Erledigung",
+            "keep_done": "Nach dem Erledigen auf der Liste lassen",
+            "tts_message": "Gesprochener Text",
+            "notify_data": "Zusätzliche Benachrichtigungsdaten",
+            "list": "Liste",
+            "important": "Wichtig"
+          },
+          "data_description": {
+            "remind": "Aus = einmal erinnern.",
+            "max_reminders": "Leer = bis erledigt.",
+            "phones": "Keines ausgewählt = kein Push für diese Regel. Die Aufgabe steht trotzdem auf der Liste und erscheint als Benachrichtigung in HA, wenn diese Option in den Einstellungen der Integration aktiviert ist.",
+            "auto_close": "Z. B. das Tor ist wieder zu, die Tür der Spülmaschine wurde geöffnet: Die Aufgabe schließt sich selbst (als erledigt), ihre Benachrichtigungen verschwinden, und mit ausgeschaltetem \"Nach dem Erledigen auf der Liste lassen\" ist sie von der Liste weg. Bei einem Kalender: nach dem Tag des Termins.",
+            "done_message": "Wird an dieselben Ziele gesendet, wenn sich die Aufgabe selbst schließt, z. B. \"Garagentor geschlossen ✅\". {state} und {name} funktionieren auch hier. Leer = nichts.",
+            "keep_done": "Aus = verschwindet nach dem Erledigen.",
+            "tts_message": "Was statt des Aufgabentexts laut gesagt wird, z. B. \"Die Spülmaschine ist fertig, bitte öffnen.\" {state} und {name} funktionieren auch hier (bei Kalendern: {event}). Leer = der Aufgabentext.",
+            "notify_data": "Fortgeschritten. Zusätzliche Daten für die Benachrichtigung der HA-App bei dieser Regel, z. B. car_ui: true, priority: high.",
+            "list": "Optional, z. B. \"Aquarium\": eine auf diese Liste eingestellte Karte zeigt nur deren Aufgaben. Wähle eine vorhandene Liste oder gib einen neuen Namen ein. Leer = die allgemeine Liste.",
+            "important": "Laut auf dem Handy: Android spielt sie als Alarm ab, auch wenn das Handy stummgeschaltet ist; iPhone als kritische Warnung (kritische Warnungen in der HA-App erlauben). Push wird auch in der Ruhezeit gesendet; die gesprochene Ansage hält sie weiterhin ein."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Regel gespeichert."
+      },
+      "error": {
+        "not_mapping": "Gib Schlüssel: Wert-Paare ein, z. B. car_ui: true",
+        "rule_entity_missing": "Diese Entität existiert nicht.",
+        "rule_not_calendar": "\"Hat einen Kalendertermin\" braucht eine Kalender-Entität.",
+        "rule_not_numeric": "\"Liegt über / unter\" braucht eine Entität mit einer Zahl als Zustand (jetzt: Text).",
+        "rule_own_entity": "Der eigene Kalender von Remindo zeigt die Aufgaben selbst, eine Regel kann ihn nicht beobachten."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "active": {
+        "name": "Remindo erinnert gerade"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "Die Remindo-Integration ist nicht geladen"
+    },
+    "task_not_found": {
+      "message": "Keine offene Aufgabe gefunden (uid={uid}, key={key})"
+    },
+    "invalid_start": {
+      "message": "Unbekanntes Startformat: {start}. Verwende now, ein Datum (2026-12-01) oder ein Datum mit Uhrzeit (2026-12-01T18:00)."
+    },
+    "repeat_needs_start": {
+      "message": "Eine wiederkehrende Aufgabe braucht ein Startdatum"
+    },
+    "task_closed": {
+      "message": "Die Aufgabe \"{summary}\" ist bereits erledigt oder übersprungen. Stelle sie zuerst wieder her."
+    },
+    "until_before_start": {
+      "message": "\"Erinnern bis\" muss nach dem Termin liegen."
+    }
+  },
+  "issues": {
+    "rule_entity_missing": {
+      "title": "Remindo-Regel \"{rule}\": Entität nicht gefunden",
+      "description": "Die Regel \"{rule}\" beobachtet {entity}, die nicht existiert (umbenannt oder entfernt?). Die Regel kann keine Aufgaben hinzufügen. Bearbeite die Regel unter Einstellungen → Geräte & Dienste → Remindo oder lösche sie."
+    },
+    "rule_not_calendar": {
+      "title": "Remindo-Regel \"{rule}\": kein Kalender",
+      "description": "Die Regel \"{rule}\" sucht Kalendertermine in {entity}, das kein Kalender ist. Bearbeite die Regel unter Einstellungen → Geräte & Dienste → Remindo."
+    },
+    "rule_not_numeric": {
+      "title": "Remindo-Regel \"{rule}\": keine Zahl",
+      "description": "Die Regel \"{rule}\" vergleicht {entity} mit einer Zahl, aber ihr Zustand ist Text. Die Regel kann keine Aufgaben hinzufügen. Bearbeite die Regel unter Einstellungen → Geräte & Dienste → Remindo."
+    },
+    "rule_own_entity": {
+      "title": "Regel \"{rule}\" beobachtet den eigenen Kalender von Remindo",
+      "description": "Die Regel \"{rule}\" beobachtet {entity}, den eigenen Kalender von Remindo mit den Aufgaben, und würde so Aufgaben aus Aufgaben hinzufügen. Richte die Regel auf einen anderen Kalender oder lösche sie."
+    }
+  }
+}

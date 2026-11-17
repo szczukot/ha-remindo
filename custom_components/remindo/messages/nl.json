@@ -1,0 +1,91 @@
+{
+  "texts": {
+    "title": "📋 Taak",
+    "done": "✅ Klaar",
+    "snooze": "⏰ +{minutes} min",
+    "dismiss": "❌ Overslaan",
+    "task": "Taak: {summary}",
+    "ev_created": "toegevoegd",
+    "ev_reminded": "herinnerd",
+    "ev_done": "klaar",
+    "ev_snoozed": "uitgesteld",
+    "ev_dismissed": "overgeslagen",
+    "src_phone": "via telefoon",
+    "src_card": "via kaart",
+    "src_todo": "via takenlijst",
+    "src_auto": "automatisch",
+    "src_rule": "door regel",
+    "src_expired": "datum verstreken",
+    "src_rule_removed": "regel verwijderd",
+    "nth": ", {count}e keer"
+  },
+  "units": {
+    "hourly": {
+      "one": "uur",
+      "other": "uur",
+      "every_one": "elk uur",
+      "every_n": "elke {n} uur"
+    },
+    "daily": {
+      "one": "dag",
+      "other": "dagen",
+      "every_one": "elke dag",
+      "every_n": "elke {n} dagen"
+    },
+    "weekly": {
+      "one": "week",
+      "other": "weken",
+      "every_one": "elke week",
+      "every_n": "elke {n} weken"
+    },
+    "monthly": {
+      "one": "maand",
+      "other": "maanden",
+      "every_one": "elke maand",
+      "every_n": "elke {n} maanden"
+    },
+    "yearly": {
+      "one": "jaar",
+      "other": "jaar",
+      "every_one": "elk jaar",
+      "every_n": "elke {n} jaar"
+    }
+  },
+  "days": [
+    "ma",
+    "di",
+    "wo",
+    "do",
+    "vr",
+    "za",
+    "zo"
+  ],
+  "days_full": [
+    "maandag",
+    "dinsdag",
+    "woensdag",
+    "donderdag",
+    "vrijdag",
+    "zaterdag",
+    "zondag"
+  ],
+  "every": "elke",
+  "nth": [
+    "1e",
+    "2e",
+    "3e",
+    "4e"
+  ],
+  "on_nth": "op de {n} {day}",
+  "last_days": [
+    "op de laatste maandag",
+    "op de laatste dinsdag",
+    "op de laatste woensdag",
+    "op de laatste donderdag",
+    "op de laatste vrijdag",
+    "op de laatste zaterdag",
+    "op de laatste zondag"
+  ],
+  "last_day": "op de laatste dag",
+  "from_done": "vanaf het afvinken"
+}

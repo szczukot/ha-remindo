@@ -1,0 +1,560 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Remindo — attività con promemoria",
+        "data": {
+          "notify_targets": "Destinatari delle notifiche push",
+          "persistent_notification": "Notifica persistente in HA",
+          "tts_entity": "Motore TTS",
+          "tts_language": "Lingua degli annunci",
+          "tts_voice": "Voce degli annunci",
+          "media_player": "Lettori multimediali per gli annunci",
+          "screen_switch": "Interruttore dello schermo da accendere prima",
+          "presence_entity": "Entità di presenza",
+          "tts_default": "Annuncio vocale predefinito",
+          "quiet_start": "Inizio delle ore di silenzio",
+          "quiet_end": "Fine delle ore di silenzio",
+          "default_interval": "Intervallo predefinito dei promemoria",
+          "default_time": "Ora per le attività con sola data",
+          "phone_snooze": "Rimanda dal telefono di",
+          "click_url": "Apri toccando la notifica",
+          "keep_done": "Tieni le attività fatte nella lista",
+          "quiet_push": "Ore di silenzio anche per le notifiche push",
+          "notify_data": "Dati extra per le notifiche dell'app"
+        },
+        "data_description": {
+          "quiet_start": "Nessun annuncio vocale durante le ore di silenzio. Il push viene comunque inviato, a meno che l'opzione sotto sia attiva.",
+          "default_interval": "0 = ricorda una volta.",
+          "click_url": "Percorso HA, es. /lovelace/remindo",
+          "keep_done": "Disattivato = un'attività sparisce una volta fatta (resta nel registro). Le attività ricorrenti restano sempre. Modificabile per attività e per regola.",
+          "notify_targets": "App mobile (con pulsanti) o qualsiasi altro servizio di notifica: Telegram, e-mail, SMS (solo testo).",
+          "quiet_push": "Attivo = di notte non viene inviato nulla; un promemoria che cade nelle ore di silenzio aspetta la loro fine.",
+          "notify_data": "Avanzato. Aggiunto a ogni notifica dell'app HA, es. car_ui: true (Android Auto), priority: high con ttl: 0 (consegna immediata), notification_icon, color, channel. Può essere sovrascritto per regola e per attività.",
+          "persistent_notification": "Mostrata a ogni promemoria, anche quando per un'attività non è scelto nessun telefono né altoparlante.",
+          "tts_language": "Facoltativo, es. it-IT. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
+          "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Già configurato."
+    },
+    "error": {
+      "not_mapping": "Inserisci coppie chiave: valore, es. car_ui: true"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Remindo — attività con promemoria",
+        "data": {
+          "notify_targets": "Destinatari delle notifiche push",
+          "persistent_notification": "Notifica persistente in HA",
+          "tts_entity": "Motore TTS",
+          "tts_language": "Lingua degli annunci",
+          "tts_voice": "Voce degli annunci",
+          "media_player": "Lettori multimediali per gli annunci",
+          "screen_switch": "Interruttore dello schermo da accendere prima",
+          "presence_entity": "Entità di presenza",
+          "tts_default": "Annuncio vocale predefinito",
+          "quiet_start": "Inizio delle ore di silenzio",
+          "quiet_end": "Fine delle ore di silenzio",
+          "default_interval": "Intervallo predefinito dei promemoria",
+          "default_time": "Ora per le attività con sola data",
+          "phone_snooze": "Rimanda dal telefono di",
+          "click_url": "Apri toccando la notifica",
+          "keep_done": "Tieni le attività fatte nella lista",
+          "quiet_push": "Ore di silenzio anche per le notifiche push",
+          "notify_data": "Dati extra per le notifiche dell'app"
+        },
+        "data_description": {
+          "quiet_start": "Nessun annuncio vocale durante le ore di silenzio. Il push viene comunque inviato, a meno che l'opzione sotto sia attiva.",
+          "default_interval": "0 = ricorda una volta.",
+          "click_url": "Percorso HA, es. /lovelace/remindo",
+          "keep_done": "Disattivato = un'attività sparisce una volta fatta (resta nel registro). Le attività ricorrenti restano sempre. Modificabile per attività e per regola.",
+          "notify_targets": "App mobile (con pulsanti) o qualsiasi altro servizio di notifica: Telegram, e-mail, SMS (solo testo).",
+          "quiet_push": "Attivo = di notte non viene inviato nulla; un promemoria che cade nelle ore di silenzio aspetta la loro fine.",
+          "notify_data": "Avanzato. Aggiunto a ogni notifica dell'app HA, es. car_ui: true (Android Auto), priority: high con ttl: 0 (consegna immediata), notification_icon, color, channel. Può essere sovrascritto per regola e per attività.",
+          "persistent_notification": "Mostrata a ogni promemoria, anche quando per un'attività non è scelto nessun telefono né altoparlante.",
+          "tts_language": "Facoltativo, es. it-IT. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
+          "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore."
+        }
+      }
+    },
+    "error": {
+      "not_mapping": "Inserisci coppie chiave: valore, es. car_ui: true"
+    }
+  },
+  "services": {
+    "add": {
+      "name": "Aggiungi attività",
+      "description": "Aggiunge un'attività con promemoria.",
+      "fields": {
+        "summary": {
+          "name": "Testo",
+          "description": "Testo dell'attività. Template ammessi, es. \"Finestra aperta, fuori {{ states('sensor.outside') }}°C\" (ricalcolato a ogni promemoria)."
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Informazioni in più."
+        },
+        "start": {
+          "name": "Inizio",
+          "description": "Quando iniziano i promemoria: data e ora, data o 'now'. Vuoto = nota."
+        },
+        "interval": {
+          "name": "Intervallo (min)",
+          "description": "Ripeti ogni N minuti finché non è gestita. 0 = una volta."
+        },
+        "key": {
+          "name": "Chiave",
+          "description": "Evita i duplicati; permette la chiusura automatica."
+        },
+        "repeat": {
+          "name": "Ripeti",
+          "description": "Una volta fatta, l'attività torna alla data successiva."
+        },
+        "repeat_every": {
+          "name": "Ogni",
+          "description": "Es. 3 con mensile = ogni 3 mesi."
+        },
+        "repeat_days": {
+          "name": "Nei giorni della settimana",
+          "description": "Solo settimanale: in questi giorni di ogni (N-esima) settimana, es. mon, thu. Vuoto = il giorno della settimana della data."
+        },
+        "repeat_on": {
+          "name": "Mensile il",
+          "description": "Solo mensile, in base alla data: day = lo stesso giorno del mese (predefinito), weekday = lo stesso giorno della settimana nel mese (es. il 3° martedì), last_weekday = l'ultimo di quei giorni (es. l'ultimo venerdì), last_day = l'ultimo giorno del mese."
+        },
+        "repeat_from_done": {
+          "name": "Conta dal completamento",
+          "description": "Attivo = la data successiva si conta da quando l'attività è stata spuntata (es. ogni 3 mesi dopo il vero cambio del filtro), all'ora solita. Disattivato = calendario fisso. Non usato con giorni della settimana o uno schema mensile."
+        },
+        "tts": {
+          "name": "Vocale",
+          "description": "Parla sul tablet quando qualcuno è in casa."
+        },
+        "tts_message": {
+          "name": "Testo parlato",
+          "description": "Testo diverso da pronunciare."
+        },
+        "push": {
+          "name": "Push",
+          "description": "Invia notifica al telefono."
+        },
+        "phones": {
+          "name": "Telefoni",
+          "description": "Quali telefoni ricevono il push (vuoto = nessuno; omesso = tutti quelli configurati)."
+        },
+        "speakers": {
+          "name": "Altoparlanti",
+          "description": "Dove parlare (omesso = tutti quelli configurati)."
+        },
+        "max_reminders": {
+          "name": "Al massimo",
+          "description": "Smetti dopo questo numero di promemoria."
+        },
+        "remind_until": {
+          "name": "Ricorda fino a",
+          "description": "Smetti di ricordare dopo questo momento."
+        },
+        "keep_done": {
+          "name": "Tieni dopo il completamento",
+          "description": "Tieni l'attività in Fatte (predefinito: opzione dell'integrazione)."
+        },
+        "done_message": {
+          "name": "Messaggio alla risoluzione",
+          "description": "Inviato quando l'attività si chiude da sola (close_by_key / regola). Template ammessi."
+        },
+        "notify_data": {
+          "name": "Dati della notifica",
+          "description": "Dati extra per la notifica dell'app HA (icona, Android Auto, priorità…)."
+        },
+        "list": {
+          "name": "Lista",
+          "description": "Lista facoltativa, es. \"Acquario\". Una scheda impostata su quella lista mostra solo le sue attività. Vuoto = la lista generale."
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Icona facoltativa (es. mdi:package-variant), mostrata accanto all'attività nella scheda e nella notifica Android."
+        },
+        "important": {
+          "name": "Importante",
+          "description": "Forte sul telefono: Android la riproduce come allarme, anche con il telefono silenzioso; iPhone come avviso critico (consenti gli avvisi critici nell'app HA). Il push viene inviato anche nelle ore di silenzio."
+        }
+      }
+    },
+    "done": {
+      "name": "Fatto",
+      "description": "Segna l'attività come fatta.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id dell'attività."
+        },
+        "key": {
+          "name": "Chiave",
+          "description": "Chiave indicata all'aggiunta (es. cancello)."
+        }
+      }
+    },
+    "dismiss": {
+      "name": "Salta",
+      "description": "Abbandona l'attività (\"non la faccio\"). Un'attività ricorrente salta solo questa data; usa Elimina per toglierla.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id dell'attività."
+        },
+        "key": {
+          "name": "Chiave",
+          "description": "Chiave indicata all'aggiunta (es. cancello)."
+        }
+      }
+    },
+    "snooze": {
+      "name": "Rimanda",
+      "description": "Rimanda il prossimo promemoria.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id dell'attività."
+        },
+        "key": {
+          "name": "Chiave",
+          "description": "Chiave indicata all'aggiunta (es. cancello)."
+        },
+        "minutes": {
+          "name": "Minuti",
+          "description": "Ricorda tra N minuti."
+        },
+        "until": {
+          "name": "Fino a",
+          "description": "Ora o data precisa."
+        }
+      }
+    },
+    "close_by_key": {
+      "name": "Chiudi per chiave",
+      "description": "Chiude l'attività aperta con questa chiave.",
+      "fields": {
+        "key": {
+          "name": "Chiave",
+          "description": "Chiave indicata all'aggiunta (es. cancello)."
+        }
+      }
+    },
+    "delete": {
+      "name": "Elimina",
+      "description": "Rimuove un'attività per sempre, anche una ricorrente.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id dell'attività."
+        },
+        "key": {
+          "name": "Chiave",
+          "description": "Chiave indicata all'aggiunta (es. cancello)."
+        }
+      }
+    },
+    "update": {
+      "name": "Modifica",
+      "description": "Modifica un'attività. Cambiano solo i campi inviati; un valore vuoto cancella il campo.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id dell'attività."
+        },
+        "key": {
+          "name": "Chiave",
+          "description": "Chiave indicata all'aggiunta (es. cancello)."
+        },
+        "summary": {
+          "name": "Testo",
+          "description": "Nuovo testo dell'attività."
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Informazioni in più (vuoto = rimuovi)."
+        },
+        "start": {
+          "name": "Scadenza",
+          "description": "Nuova scadenza: data e ora, o solo una data. Vuoto = una nota senza promemoria."
+        },
+        "interval": {
+          "name": "Intervallo (min)",
+          "description": "Ripeti ogni N minuti finché non è gestita. 0 = una volta."
+        },
+        "repeat": {
+          "name": "Ripeti",
+          "description": "Ogni quanto l'attività torna dopo essere stata spuntata (\"none\" = attività singola). Serve una scadenza."
+        },
+        "repeat_every": {
+          "name": "Ogni quante unità",
+          "description": "Es. 3 con \"monthly\" = ogni 3 mesi."
+        },
+        "repeat_days": {
+          "name": "Nei giorni della settimana",
+          "description": "Solo settimanale: in questi giorni di ogni (N-esima) settimana, es. mon, thu. Vuoto = il giorno della settimana della data."
+        },
+        "repeat_on": {
+          "name": "Mensile il",
+          "description": "Solo mensile, in base alla data: day = lo stesso giorno del mese (predefinito), weekday = lo stesso giorno della settimana nel mese (es. il 3° martedì), last_weekday = l'ultimo di quei giorni (es. l'ultimo venerdì), last_day = l'ultimo giorno del mese."
+        },
+        "repeat_from_done": {
+          "name": "Conta dal completamento",
+          "description": "Attivo = la data successiva si conta da quando l'attività è stata spuntata (es. ogni 3 mesi dopo il vero cambio del filtro), all'ora solita. Disattivato = calendario fisso. Non usato con giorni della settimana o uno schema mensile."
+        },
+        "phones": {
+          "name": "Canali",
+          "description": "Dove inviare la notifica (lista vuota = da nessuna parte; null = tutti quelli configurati)."
+        },
+        "speakers": {
+          "name": "Altoparlanti",
+          "description": "Dove parlare (lista vuota = da nessuna parte; null = tutti quelli configurati)."
+        },
+        "max_reminders": {
+          "name": "Al massimo",
+          "description": "Smetti dopo questo numero di promemoria (vuoto = senza limite)."
+        },
+        "remind_until": {
+          "name": "Ricorda fino a",
+          "description": "Smetti di ricordare dopo questo momento (vuoto = senza limite)."
+        },
+        "keep_done": {
+          "name": "Tieni dopo il completamento",
+          "description": "Tieni l'attività in Fatte (null = opzione dell'integrazione)."
+        },
+        "notify_data": {
+          "name": "Dati della notifica",
+          "description": "Dati extra per la notifica dell'app HA (icona, Android Auto, priorità…)."
+        },
+        "list": {
+          "name": "Lista",
+          "description": "Lista facoltativa, es. \"Acquario\". Una scheda impostata su quella lista mostra solo le sue attività. Vuoto = la lista generale."
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Icona facoltativa (es. mdi:package-variant), mostrata accanto all'attività nella scheda e nella notifica Android."
+        },
+        "important": {
+          "name": "Importante",
+          "description": "Forte sul telefono: Android la riproduce come allarme, anche con il telefono silenzioso; iPhone come avviso critico (consenti gli avvisi critici nell'app HA). Il push viene inviato anche nelle ore di silenzio."
+        }
+      }
+    },
+    "reopen": {
+      "name": "Riapri",
+      "description": "Riapre un'attività fatta o saltata. Un'attività con una scadenza ricorda di nuovo subito.",
+      "fields": {
+        "uid": {
+          "name": "UID",
+          "description": "Id dell'attività."
+        },
+        "key": {
+          "name": "Chiave",
+          "description": "Chiave indicata all'aggiunta (es. cancello)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "repeat": {
+      "options": {
+        "none": "Singola",
+        "hourly": "Ogni ora",
+        "daily": "Giornaliera",
+        "weekly": "Settimanale",
+        "monthly": "Mensile",
+        "yearly": "Annuale"
+      }
+    },
+    "rule_mode": {
+      "options": {
+        "state": "Ha uno stato",
+        "above": "È sopra",
+        "below": "È sotto",
+        "calendar": "Ha un evento di calendario"
+      }
+    },
+    "weekday": {
+      "options": {
+        "mon": "Lunedì",
+        "tue": "Martedì",
+        "wed": "Mercoledì",
+        "thu": "Giovedì",
+        "fri": "Venerdì",
+        "sat": "Sabato",
+        "sun": "Domenica"
+      }
+    },
+    "repeat_on": {
+      "options": {
+        "day": "Lo stesso giorno del mese",
+        "weekday": "Lo stesso giorno della settimana (es. 3° martedì)",
+        "last_weekday": "L'ultimo di quei giorni",
+        "last_day": "L'ultimo giorno del mese"
+      }
+    }
+  },
+  "config_subentries": {
+    "rule": {
+      "entry_type": "Regola",
+      "initiate_flow": {
+        "user": "Aggiungi regola",
+        "reconfigure": "Modifica regola"
+      },
+      "step": {
+        "trigger": {
+          "title": "Nuova regola — quando?",
+          "description": "Un'attività viene aggiunta automaticamente quando l'entità soddisfa la condizione.",
+          "data": {
+            "summary": "Testo dell'attività",
+            "entity_id": "Entità (dispositivo, sensore, calendario)",
+            "mode": "Condizione",
+            "icon": "Icona"
+          },
+          "data_description": {
+            "summary": "Es. \"Svuota la lavastoviglie\". Puoi aggiungere {state} (valore attuale con unità) e {name} (nome del dispositivo), es. \"Umidità {state}, arieggia il bagno\". Per i calendari i nomi degli eventi vengono aggiunti in fondo (oppure metti {event} dove li vuoi).",
+            "icon": "Facoltativa. Mostrata accanto all'attività nella scheda e nella notifica Android."
+          }
+        },
+        "trigger_edit": {
+          "title": "Modifica regola \"{rule}\" — quando?",
+          "description": "Un'attività viene aggiunta automaticamente quando l'entità soddisfa la condizione.",
+          "data": {
+            "summary": "Testo dell'attività",
+            "entity_id": "Entità (dispositivo, sensore, calendario)",
+            "mode": "Condizione",
+            "icon": "Icona"
+          },
+          "data_description": {
+            "summary": "Es. \"Svuota la lavastoviglie\". Puoi aggiungere {state} (valore attuale con unità) e {name} (nome del dispositivo), es. \"Umidità {state}, arieggia il bagno\". Per i calendari i nomi degli eventi vengono aggiunti in fondo (oppure metti {event} dove li vuoi).",
+            "icon": "Facoltativa. Mostrata accanto all'attività nella scheda e nella notifica Android."
+          }
+        },
+        "condition_state": {
+          "title": "Condizione",
+          "description": "Entità: {entity} (ora: {current})",
+          "data": {
+            "value": "Ha lo stato",
+            "for_minutes": "Per almeno (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = subito."
+          }
+        },
+        "condition_number": {
+          "title": "Condizione",
+          "description": "Entità: {entity} (ora: {current})",
+          "data": {
+            "value": "Soglia",
+            "for_minutes": "Per almeno (min)"
+          },
+          "data_description": {
+            "for_minutes": "0 = subito."
+          }
+        },
+        "condition_calendar": {
+          "title": "Calendario",
+          "description": "Calendario: {entity}",
+          "data": {
+            "days_before": "Giorni prima dell'evento",
+            "at_time": "Alle",
+            "contains": "Solo eventi il cui nome contiene (facoltativo)"
+          },
+          "data_description": {
+            "days_before": "1 = il giorno prima, 0 = il giorno stesso.",
+            "contains": "Un filtro sul nome dell'evento. Es. \"Vetro\" in un calendario della raccolta rifiuti → un promemoria solo per la raccolta del vetro, gli altri eventi di questo calendario vengono ignorati. Maiuscole / minuscole non contano. Vuoto = tutti gli eventi."
+          }
+        },
+        "notify": {
+          "title": "Promemoria",
+          "data": {
+            "remind": "Ripeti il promemoria",
+            "interval": "Ogni (min)",
+            "max_reminders": "Al massimo",
+            "phones": "Telefoni (push)",
+            "speakers": "Altoparlanti (annuncio)",
+            "auto_close": "Chiudi l'attività quando la condizione finisce",
+            "done_message": "Messaggio alla risoluzione",
+            "keep_done": "Tieni nella lista dopo il completamento",
+            "tts_message": "Testo parlato",
+            "notify_data": "Dati extra della notifica",
+            "list": "Lista",
+            "important": "Importante"
+          },
+          "data_description": {
+            "remind": "Disattivato = ricorda una volta.",
+            "max_reminders": "Vuoto = finché non è fatta.",
+            "phones": "Nessuno scelto = nessun push per questa regola. L'attività resta comunque nella lista e appare come notifica in HA se quell'opzione è attiva nelle impostazioni dell'integrazione.",
+            "auto_close": "Es. il cancello è di nuovo chiuso, lo sportello della lavastoviglie è stato aperto: l'attività si chiude da sola (come fatta), le sue notifiche spariscono e con \"Tieni nella lista dopo il completamento\" disattivato esce dalla lista. Per un calendario: dopo il giorno dell'evento.",
+            "done_message": "Inviato agli stessi destinatari quando l'attività si chiude da sola, es. \"Porta del garage chiusa ✅\". Anche qui funzionano {state} e {name}. Vuoto = niente.",
+            "keep_done": "Disattivato = sparisce una volta fatta.",
+            "tts_message": "Cosa viene detto ad alta voce al posto del testo dell'attività, es. \"La lavastoviglie ha finito, aprila per favore.\" Anche qui funzionano {state} e {name} (per i calendari: {event}). Vuoto = il testo dell'attività.",
+            "notify_data": "Avanzato. Dati extra per la notifica dell'app HA di questa regola, es. car_ui: true, priority: high.",
+            "list": "Facoltativa, es. \"Acquario\": una scheda impostata su quella lista mostra solo le sue attività. Scegli una lista esistente o scrivi un nuovo nome. Vuoto = la lista generale.",
+            "important": "Forte sul telefono: Android la riproduce come allarme, anche con il telefono silenzioso; iPhone come avviso critico (consenti gli avvisi critici nell'app HA). Il push viene inviato anche nelle ore di silenzio; l'annuncio vocale continua a rispettarle."
+          }
+        }
+      },
+      "abort": {
+        "reconfigure_successful": "Regola salvata."
+      },
+      "error": {
+        "not_mapping": "Inserisci coppie chiave: valore, es. car_ui: true",
+        "rule_entity_missing": "Questa entità non esiste.",
+        "rule_not_calendar": "\"Ha un evento di calendario\" richiede un'entità calendario.",
+        "rule_not_numeric": "\"È sopra / sotto\" richiede un'entità con un numero come stato (ora: testo).",
+        "rule_own_entity": "Il calendario di Remindo mostra le attività stesse, una regola non può osservarlo."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "active": {
+        "name": "Remindo sta ricordando"
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "L'integrazione Remindo non è caricata"
+    },
+    "task_not_found": {
+      "message": "Nessuna attività aperta trovata (uid={uid}, key={key})"
+    },
+    "invalid_start": {
+      "message": "Formato di inizio sconosciuto: {start}. Usa now, una data (2026-12-01) o una data con ora (2026-12-01T18:00)."
+    },
+    "repeat_needs_start": {
+      "message": "Un'attività ricorrente ha bisogno di una data di inizio"
+    },
+    "task_closed": {
+      "message": "L'attività \"{summary}\" è già fatta o saltata. Ripristinala prima."
+    },
+    "until_before_start": {
+      "message": "\"Ricorda fino a\" deve essere dopo la scadenza."
+    }
+  },
+  "issues": {
+    "rule_entity_missing": {
+      "title": "Regola Remindo \"{rule}\": entità non trovata",
+      "description": "La regola \"{rule}\" osserva {entity}, che non esiste (rinominata o rimossa?). La regola non può aggiungere attività. Modifica la regola in Impostazioni → Dispositivi e servizi → Remindo, oppure eliminala."
+    },
+    "rule_not_calendar": {
+      "title": "Regola Remindo \"{rule}\": non è un calendario",
+      "description": "La regola \"{rule}\" cerca eventi di calendario in {entity}, che non è un calendario. Modifica la regola in Impostazioni → Dispositivi e servizi → Remindo."
+    },
+    "rule_not_numeric": {
+      "title": "Regola Remindo \"{rule}\": non è un numero",
+      "description": "La regola \"{rule}\" confronta {entity} con un numero, ma il suo stato è testo. La regola non può aggiungere attività. Modifica la regola in Impostazioni → Dispositivi e servizi → Remindo."
+    },
+    "rule_own_entity": {
+      "title": "La regola \"{rule}\" osserva il calendario di Remindo",
+      "description": "La regola \"{rule}\" osserva {entity}, il calendario di Remindo con le attività, e aggiungerebbe quindi attività dalle attività. Punta la regola su un altro calendario o eliminala."
+    }
+  }
+}

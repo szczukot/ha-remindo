@@ -54,9 +54,10 @@ def repeat_label(hass: HomeAssistant | None, repeat: str, every: int) -> str:
     lang = language(hass)
     forms = _get(lang, "units").get(repeat) or {"other": repeat}
     word = _get(lang, "every")
+    # a unit may carry its own phrases where "every" changes with it ("jeden Tag", "toutes les 3 semaines")
     if every <= 1:
-        return f"{word} {_form(forms, lang, 1)}"
-    return f"{word} {every} {_form(forms, lang, every)}"
+        return forms.get("every_one") or f"{word} {_form(forms, lang, 1)}"
+    return (forms.get("every_n") or f"{word} {{n}} {_form(forms, lang, every)}").replace("{n}", str(every))
 
 
 def pattern_label(
@@ -73,7 +74,10 @@ def pattern_label(
         nth = (task_start.day - 1) // 7 + 1
         if on == "last_weekday" or nth == 5:
             return ", " + _get(lang, "last_days")[weekday]
-        return ", " + _get(lang, "on_nth").format(n=_get(lang, "nth")[nth - 1], day=_get(lang, "days_full")[weekday])
+        template = _get(lang, "on_nth")
+        if isinstance(template, list):  # one per weekday where the words depend on it
+            template = template[weekday]
+        return ", " + template.replace("{n}", _get(lang, "nth")[nth - 1]).replace("{day}", _get(lang, "days_full")[weekday])
     if from_done:
         return f" ({_get(lang, 'from_done')})"
     return ""
