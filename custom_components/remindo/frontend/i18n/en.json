@@ -137,6 +137,8 @@
   "f_icon": "Icon:",
   "f_list": "List:",
   "f_list_hint": "empty = general",
+  "f_list_general": "general",
+  "f_list_new": "＋ new list…",
   "until_before": "\"Stop reminding\" must be later than the due time",
   "on_last_days": [
     "on the last Monday",

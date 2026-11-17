@@ -287,8 +287,7 @@ class RemindoCard extends HTMLElement {
       <div class="frow"><span>${t("f_icon")}</span>
         <span id="f-icon" data-value="${esc(edit ? task.icon || "" : "")}" data-was="${esc(edit ? task.icon || "" : "")}"></span></div>
       ${this._fixedList() ? "" : `<div class="frow"><span>${t("f_list")}</span>
-        <input id="f-list" list="f-lists" placeholder="${t("f_list_hint")}" value="${esc(edit ? task.list || "" : this._filter || "")}" data-was="${esc(edit ? task.list || "" : "")}" />
-        <datalist id="f-lists">${this._lists().map((l) => `<option value="${esc(l)}"></option>`).join("")}</datalist></div>`}
+        ${this._listField(edit ? task.list || "" : this._filter || "", edit ? task.list || "" : "")}</div>`}
       <div class="frow">
         <label class="chk"><input type="checkbox" id="f-rem" ${!edit || task.start ? "checked" : ""} /> ${t("remind")}</label>
         <span class="grp" id="f-rem-g"><select id="f-when">
@@ -339,6 +338,17 @@ class RemindoCard extends HTMLElement {
         <button data-a="cancel">${t("cancel")}</button>
         <button class="ok" data-a="save"${edit ? ` data-uid="${task.uid}"` : ""}>${t(edit ? "e_save" : "save")}</button>
       </div></div>`;
+  }
+
+  // A select with the existing lists (an <input list> has no drop-down in the Android app)
+  // and "new list…" for typing a name; with no lists yet only the text field.
+  _listField(value, was) {
+    const lists = this._lists();
+    const input = (hidden) => `<input id="f-list" placeholder="${t("f_list_hint")}" value="${esc(value)}" data-was="${esc(was)}"${hidden ? ' style="display:none"' : ""} />`;
+    if (!lists.length) return input(false);
+    const known = !value || lists.includes(value);
+    const opt = (v, label, on) => `<option value="${esc(v)}"${on ? " selected" : ""}>${esc(label)}</option>`;
+    return `<select id="f-list-sel">${opt("", t("f_list_general"), !value)}${lists.map((l) => opt(l, l, l === value)).join("")}${opt("__new", t("f_list_new"), !known)}</select>${input(known)}`;
   }
 
   _form() {
@@ -542,6 +552,13 @@ class RemindoCard extends HTMLElement {
     $("f-rem-h").style.display = remind ? "" : "none";
     for (const id of ["f-where", "f-where-h", "f-lim-row"]) $(id).style.display = remind ? "" : "none";
     $("f-keep-row").style.display = $("f-rep-on").checked ? "none" : "";
+    const sel = $("f-list-sel");
+    if (sel) {
+      const typing = sel.value === "__new";
+      if (!typing) $("f-list").value = sel.value;
+      else if ($("f-list").style.display === "none") { $("f-list").value = ""; setTimeout(() => $("f-list")?.focus(), 0); }
+      $("f-list").style.display = typing ? "" : "none";
+    }
     const unit = $("f-rep").value, repOn = $("f-rep-on").checked;
     $("f-days").style.display = unit === "weekly" ? "" : "none";
     $("f-mon").style.display = unit === "monthly" ? "" : "none";

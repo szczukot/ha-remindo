@@ -155,6 +155,8 @@
   "f_icon": "Icona:",
   "f_list": "Lista:",
   "f_list_hint": "vuoto = generale",
+  "f_list_general": "generale",
+  "f_list_new": "＋ nuova lista…",
   "until_before": "\"Smetti di ricordare\" deve essere dopo la data",
   "on_last_days": [
     "l'ultimo lunedì",

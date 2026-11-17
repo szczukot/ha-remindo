@@ -143,6 +143,8 @@
   "f_icon": "Ikona:",
   "f_list": "Lista:",
   "f_list_hint": "puste = ogólna",
+  "f_list_general": "ogólna",
+  "f_list_new": "＋ nowa lista…",
   "until_before": "„Przestań przypominać” musi być później niż termin",
   "on_last_days": [
     "w ostatni poniedziałek",
