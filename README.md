@@ -24,13 +24,14 @@ A Home Assistant integration that turns "remember to…" into tasks that **keep 
 Requires Home Assistant **2026.11** or newer.
 
 ### Marketplace (recommended)
-1. *Settings → **Marketplace*** → **⋮** menu → **Add from link**.
-2. Paste `https://github.com/szczukot/ha-remindo` → **Remindo** → **Install**.
-3. If Home Assistant asks for a restart (*Settings → System → Repairs*), restart it.
-4. *Settings → Devices & services → Add integration → **Remindo*** (the Marketplace may open this step for you right after installing).
+1. *Settings → **Marketplace***, search for **Remindo** → **Install**.
+2. If Home Assistant asks for a restart (*Settings → System → Repairs*), restart it.
+3. *Settings → Devices & services → Add integration → **Remindo*** (the Marketplace may open this step for you right after installing).
+
+If Remindo does not show up in the search, add it by hand: *Settings → Marketplace* → **⋮** menu → **Add from link** → paste `https://github.com/szczukot/ha-remindo` → **Remindo** → **Install**, then steps 2–3.
 
 ### Manual
-Copy `custom_components/remindo` to `/config/custom_components/` (e.g. with the File editor or Samba add-on), restart Home Assistant and add the **Remindo** integration as in step 4.
+Copy `custom_components/remindo` to `/config/custom_components/` (e.g. with the File editor or Samba add-on), restart Home Assistant and add the **Remindo** integration as in step 3.
 
 ## Configuration
 

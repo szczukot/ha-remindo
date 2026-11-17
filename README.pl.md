@@ -24,13 +24,14 @@ Integracja do Home Assistant, która zamienia „pamiętaj, żeby…” w zadani
 Wymaga Home Assistant **2026.11** lub nowszego.
 
 ### Marketplace (zalecane)
-1. *Ustawienia → **Marketplace*** → menu **⋮** → **Dodaj z linku**.
-2. Wklej `https://github.com/szczukot/ha-remindo` → **Remindo** → **Zainstaluj**.
-3. Jeśli Home Assistant poprosi o restart (*Ustawienia → System → Naprawy*), zrestartuj go.
-4. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Remindo*** (Marketplace może otworzyć ten krok sam zaraz po instalacji).
+1. *Ustawienia → **Marketplace***, wyszukaj **Remindo** → **Zainstaluj**.
+2. Jeśli Home Assistant poprosi o restart (*Ustawienia → System → Naprawy*), zrestartuj go.
+3. *Ustawienia → Urządzenia i usługi → Dodaj integrację → **Remindo*** (Marketplace może otworzyć ten krok sam zaraz po instalacji).
+
+Jeśli wyszukiwarka nie znajduje Remindo, dodaj je ręcznie: *Ustawienia → Marketplace* → menu **⋮** → **Dodaj z linku** → wklej `https://github.com/szczukot/ha-remindo` → **Remindo** → **Zainstaluj**, potem kroki 2–3.
 
 ### Ręcznie
-Skopiuj folder `custom_components/remindo` do `/config/custom_components/` (np. przez dodatek File editor albo Samba), zrestartuj HA i dodaj integrację **Remindo** jak w kroku 4.
+Skopiuj folder `custom_components/remindo` do `/config/custom_components/` (np. przez dodatek File editor albo Samba), zrestartuj HA i dodaj integrację **Remindo** jak w kroku 3.
 
 ## Konfiguracja
 
