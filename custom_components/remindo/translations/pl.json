@@ -178,6 +178,10 @@
         "icon": {
           "name": "Ikona",
           "description": "Opcjonalna ikona (np. mdi:package-variant), pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
+        },
+        "important": {
+          "name": "Ważne",
+          "description": "Głośno na telefonie: Android odtwarza je jak alarm, także przy wyciszonym telefonie; iPhone jako alert krytyczny (zezwól na alerty krytyczne w aplikacji HA). Push przychodzi także w ciszy nocnej."
         }
       }
     },
@@ -334,6 +338,10 @@
         "icon": {
           "name": "Ikona",
           "description": "Opcjonalna ikona (np. mdi:package-variant), pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
+        },
+        "important": {
+          "name": "Ważne",
+          "description": "Głośno na telefonie: Android odtwarza je jak alarm, także przy wyciszonym telefonie; iPhone jako alert krytyczny (zezwól na alerty krytyczne w aplikacji HA). Push przychodzi także w ciszy nocnej."
         }
       }
     },
@@ -475,7 +483,8 @@
             "keep_done": "Zostaw na liście po wykonaniu",
             "tts_message": "Tekst mówiony",
             "notify_data": "Dodatkowe dane powiadomienia",
-            "list": "Lista"
+            "list": "Lista",
+            "important": "Ważne"
           },
           "data_description": {
             "remind": "Wyłączone = przypomni tylko raz.",
@@ -486,7 +495,8 @@
             "keep_done": "Wyłączone = znika po wykonaniu.",
             "tts_message": "Co zostanie powiedziane na głos zamiast treści zadania, np. „Zmywarka skończyła, otwórz ją”. Tu też działa {state} i {name} (przy kalendarzu: {event}). Puste = treść zadania.",
             "notify_data": "Zaawansowane. Dodatkowe dane powiadomienia w aplikacji HA dla tej reguły, np. car_ui: true, priority: high.",
-            "list": "Opcjonalnie, np. „Akwarium”: karta ustawiona na tę listę pokaże tylko jej zadania. Wybierz istniejącą listę albo wpisz nową nazwę. Puste = lista ogólna."
+            "list": "Opcjonalnie, np. „Akwarium”: karta ustawiona na tę listę pokaże tylko jej zadania. Wybierz istniejącą listę albo wpisz nową nazwę. Puste = lista ogólna.",
+            "important": "Głośno na telefonie: Android odtwarza je jak alarm, także przy wyciszonym telefonie; iPhone jako alert krytyczny (zezwól na alerty krytyczne w aplikacji HA). Push przychodzi także w ciszy nocnej; komunikat głosowy nadal jej przestrzega."
           }
         }
       },

@@ -782,6 +782,40 @@ async def test_icons(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> Non
     assert entry.subentries[sub_id].data["icon"] is None
 
 
+async def test_important(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """An important task rings as an alarm / critical alert and is not held back by quiet hours."""
+    freezer.move_to("2026-11-09 23:00:00+01:00")  # in the quiet hours
+    entry, calls = await setup_integration(hass, quiet_push=True, notify_data={"channel": "Remindo"})
+    manager = entry.runtime_data
+    uid = await add_task(hass, summary="Close the water valve", important=True)
+    plain = await add_task(hass, summary="Water the plants")
+    await tick(hass, freezer, seconds=1)
+    sent = [c.data for c in calls["notify"]]
+    assert [d["message"] for d in sent] == ["Close the water valve"]  # the plain one waits for the morning
+    data = sent[0]["data"]
+    assert data["channel"] == "alarm_stream"  # wins over the integration's channel
+    assert data["push"]["sound"]["critical"] == 1
+    assert data["priority"] == "high" and data["ttl"] == 0
+    assert calls["tts"] == []  # the spoken announcement still keeps the quiet hours
+    assert manager.find(plain).next_reminder.startswith("2026-11-10T07:00")
+    # the task's own data still wins, and it can be switched off
+    await hass.services.async_call(DOMAIN, "update", {"uid": uid, "notify_data": {"channel": "Water"}}, blocking=True)
+    await hass.services.async_call(DOMAIN, "update", {"uid": plain, "important": True}, blocking=True)
+    assert manager.find(plain).important
+    await hass.services.async_call(DOMAIN, "update", {"uid": plain, "important": False}, blocking=True)
+    assert not manager.find(plain).important
+    calls["notify"].clear()
+    await tick(hass, freezer, minutes=31)
+    assert calls["notify"][-1].data["data"]["channel"] == "Water"
+    # from a rule
+    hass.states.async_set("binary_sensor.leak", "off")
+    rule = await add_rule(hass, entry, {"summary": "Leak!", "entity_id": "binary_sensor.leak", "value": "on", "important": True})
+    hass.states.async_set("binary_sensor.leak", "on")
+    await hass.async_block_till_done()
+    assert next(t for t in entry.runtime_data.open_tasks() if t.summary == "Leak!").important
+    assert entry.subentries[rule].data["important"] is True
+
+
 async def test_tts_language_and_voice(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     """tts.speak alone uses the engine's default voice (US English on HA Cloud)."""
     from types import SimpleNamespace

@@ -103,6 +103,9 @@ add:
       example: "mdi:package-variant"
       selector:
         icon:
+    important:
+      selector:
+        boolean:
 done:
   fields: &target
     uid:
@@ -204,6 +207,9 @@ update:
       example: "mdi:package-variant"
       selector:
         icon:
+    important:
+      selector:
+        boolean:
 snooze:
   fields:
     uid:

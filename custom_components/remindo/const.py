@@ -68,6 +68,7 @@ ATTR_DONE_MESSAGE = "done_message"
 ATTR_NOTIFY_DATA = "notify_data"
 ATTR_LIST = "list"
 ATTR_ICON = "icon"
+ATTR_IMPORTANT = "important"
 
 REPEAT_NONE = "none"
 REPEAT_OPTIONS = [REPEAT_NONE, "hourly", "daily", "weekly", "monthly", "yearly"]

@@ -81,6 +81,16 @@ REPEAT_CLOSE_WINDOW = 30.0  # s
 # A recurring task snoozed past its "stop reminding at" keeps at least this long to react.
 SNOOZE_MIN_WINDOW = timedelta(hours=1)
 
+# An important task's notification: Android plays it on the alarm stream (also when the
+# phone is silenced), iOS as a critical alert (also in Do Not Disturb, once allowed in the
+# Companion app's notification settings). Each system ignores the other's keys.
+IMPORTANT_DATA: dict[str, Any] = {
+    "priority": "high",
+    "ttl": 0,
+    "channel": "alarm_stream",
+    "push": {"interruption-level": "critical", "sound": {"name": "default", "critical": 1, "volume": 1.0}},
+}
+
 # Dismissed tasks stay restorable; only the most recent ones are kept.
 KEEP_DISMISSED = 20
 
@@ -259,6 +269,7 @@ class Task:
     template: str | None = None  # summary template, rendered at every reminder
     list_name: str | None = None  # a list ("Aquarium") for cards that show one list; None = general
     icon: str | None = None  # "mdi:package-variant": shown on the card and in the Android notification
+    important: bool = False  # loud on the phone (alarm / critical), also in silent mode and quiet hours
     status: str = STATUS_OPEN
     active: bool = False  # already reminded (shown under "Now")
     reminders: int = 0
@@ -458,6 +469,7 @@ class TaskManager:
         notify_data: dict[str, Any] | None = None,
         list_name: str | None = None,
         icon: str | None = None,
+        important: bool = False,
         templates: bool = False,
         restart: bool = False,
         source: str = "service",
@@ -520,6 +532,7 @@ class TaskManager:
             template=template,
             list_name=self.norm_list(list_name),
             icon=icon or None,
+            important=bool(important),
         )
         self._fit_pattern(task, dt_util.now())
         self.tasks[task.uid] = task
@@ -591,6 +604,8 @@ class TaskManager:
             task.list_name = self.norm_list(changes["list"])
         if "icon" in changes:
             task.icon = changes["icon"] or None
+        if "important" in changes:
+            task.important = bool(changes["important"])
         if changes.keys() & {"start", "repeat", "repeat_every", "repeat_days", "repeat_on"}:
             self._fit_pattern(task, now)
         if changes.keys() & {"start", "remind_until", "repeat"}:
@@ -817,9 +832,9 @@ class TaskManager:
         if (expires := self._expiry(task)) and expires <= now:
             await self.async_dismiss(task, "expired")
             return
-        if self.options.get(CONF_QUIET_PUSH) and self.is_quiet(now):
+        if self.options.get(CONF_QUIET_PUSH) and not task.important and self.is_quiet(now):
             # quiet hours also for push: the reminder waits until they end,
-            # unless "stop reminding at" comes first
+            # unless "stop reminding at" comes first (an important task does not wait)
             later = self._quiet_end(now)
             until = self._stop_at(task)
             task.next_reminder = None if until and later > until else _iso(later)
@@ -983,8 +998,12 @@ class TaskManager:
         snooze = int(self.options[CONF_PHONE_SNOOZE])
         click = self.options.get(CONF_CLICK_URL) or DEFAULTS[CONF_CLICK_URL]
         # anything the Companion app understands (icon, Android Auto, priority…): from the
-        # integration options, then from the task; the tag and the buttons stay ours
-        extra = {**self._mapping(self.options.get(CONF_NOTIFY_DATA)), **self._mapping(task.notify_data)}
+        # integration options, then "important", then from the task; the tag and the buttons stay ours
+        extra = {
+            **self._mapping(self.options.get(CONF_NOTIFY_DATA)),
+            **(IMPORTANT_DATA if task.important else {}),
+            **self._mapping(task.notify_data),
+        }
         for target in self.phones_for(task):
             if not self._is_mobile(target):
                 await self._notify_plain(target, title, body)

@@ -348,6 +348,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             schema[vol.Optional("phones", default=phones if chosen_phones is None else chosen_phones)] = selector.SelectSelector(
                 selector.SelectSelectorConfig(options=labels(phones, "notify"), multiple=True)
             )
+            schema[vol.Required("important", default=self._data.get("important", False))] = selector.BooleanSelector()
         if speakers:
             schema[vol.Optional("speakers", default=speakers if chosen_speakers is None else chosen_speakers)] = selector.SelectSelector(
                 selector.SelectSelectorConfig(options=labels(speakers, "media_player"), multiple=True)

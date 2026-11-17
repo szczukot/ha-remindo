@@ -74,6 +74,10 @@ list: Aquarium     # optional: show and add only this list
 
 A task can have an icon (Home Assistant's `mdi:` icons): pick it in the task form ("Icon:"), in a rule's first step or pass `icon: mdi:package-variant` to `remindo.add`. It is shown before the task's text on the card and replaces the app's icon in the Android notification (iOS shows text only). An emoji typed into the text works everywhere, also in the To-do list.
 
+### Important
+
+Tick **❗ Important** in the task form, in a rule's reminder step, or pass `important: true` to `remindo.add`, for things that must not be missed (a water leak, medicine, the oven). The phone then rings loudly: Android plays it on the alarm stream, also when the phone is silenced; iPhone shows it as a critical alert, also in Do Not Disturb (allow critical alerts for the HA app once, in its notification settings). Push for an important task is also sent in the quiet hours; the spoken announcement still keeps them. On the card the task has a red **!**.
+
 ### Lists
 
 At the start there is one general list, and the card looks as shown above. To keep e.g. aquarium tasks apart, type a list name in the task form ("List:", with suggestions of the lists in use), in a rule or in `remindo.add` (`list: Aquarium`). Upper / lower case does not matter. Once there is at least one list:
@@ -193,8 +197,8 @@ If a rule watches an entity that no longer exists (renamed or removed), or compa
 
 | Action | Fields |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `list` (e.g. `Aquarium`), `icon` (e.g. `mdi:package-variant`), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
-| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`. Only the fields you send change; `null` clears a field. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `list` (e.g. `Aquarium`), `icon` (e.g. `mdi:package-variant`), `important` (loud alarm / critical alert, also in the quiet hours), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
+| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`. Only the fields you send change; `null` clears a field. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time; a second close within 30 s (another phone, the card) is ignored, so a date is never skipped by accident. |
 | `remindo.reopen` | `uid`: opens a done or skipped task again; a task with a due time reminds again right away |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |
