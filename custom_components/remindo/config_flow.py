@@ -16,6 +16,7 @@ from homeassistant.config_entries import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
+from homeassistant.util import language as language_util
 
 from .const import (
     CONF_CLICK_URL,
@@ -39,6 +40,7 @@ from .const import (
     DEFAULTS,
     DOMAIN,
 )
+from .manager import engine_languages
 from .rules import MODES, rule_problem
 
 # shown literally in the form help texts
@@ -112,6 +114,22 @@ def _bad_mapping(data: dict[str, Any], key: str) -> dict[str, str]:
     return {key: "not_mapping"} if value and not isinstance(value, dict) else {}
 
 
+def _check_tts_language(hass: HomeAssistant, data: dict[str, Any]) -> tuple[dict[str, str], dict[str, str]]:
+    """The announcement language as the chosen engine names it ("pl-PL" → "pl" for Google
+    Translate), or an error when the engine does not speak it at all. Changes `data`."""
+    language = str(data.get(CONF_TTS_LANGUAGE) or "").strip()
+    engine = data.get(CONF_TTS_ENTITY)
+    if not language or not engine or (supported := engine_languages(hass, engine)) is None:
+        return {}, {}
+    if language in supported:
+        return {}, {}
+    if found := language_util.matches(language, supported):
+        data[CONF_TTS_LANGUAGE] = found[0]
+        return {}, {}
+    shown = sorted(supported)
+    return {CONF_TTS_LANGUAGE: "tts_language"}, {"languages": ", ".join(shown[:40]) + (" …" if len(shown) > 40 else "")}
+
+
 def _clean(data: dict[str, Any]) -> dict[str, Any]:
     data = dict(data)
     if isinstance(data.get(CONF_MEDIA_PLAYER), str):
@@ -129,10 +147,17 @@ class RemindoConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
+        placeholders: dict[str, str] = {"languages": ""}
         if user_input is not None:
-            if not (errors := _bad_mapping(user_input, CONF_NOTIFY_DATA)):
+            errors = _bad_mapping(user_input, CONF_NOTIFY_DATA)
+            tts_errors, found = _check_tts_language(self.hass, user_input)
+            errors, placeholders = {**errors, **tts_errors}, {**placeholders, **found}
+            if not errors:
                 return self.async_create_entry(title="Remindo", data={}, options=_clean(user_input))
-        return self.async_show_form(step_id="user", data_schema=_schema(self.hass, user_input or {}), errors=errors)
+        return self.async_show_form(
+            step_id="user", data_schema=_schema(self.hass, user_input or {}), errors=errors,
+            description_placeholders=placeholders,
+        )
 
     @staticmethod
     @callback
@@ -153,13 +178,18 @@ class RemindoOptionsFlow(OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
+        placeholders: dict[str, str] = {"languages": ""}
         if user_input is not None:
-            if not (errors := _bad_mapping(user_input, CONF_NOTIFY_DATA)):
+            errors = _bad_mapping(user_input, CONF_NOTIFY_DATA)
+            tts_errors, found = _check_tts_language(self.hass, user_input)
+            errors, placeholders = {**errors, **tts_errors}, {**placeholders, **found}
+            if not errors:
                 return self.async_create_entry(data=_clean(user_input))
         return self.async_show_form(
             step_id="init",
             data_schema=_schema(self.hass, user_input or dict(self.config_entry.options)),
             errors=errors,
+            description_placeholders=placeholders,
         )
 
 

@@ -46,7 +46,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Kanały powiadomień | aplikacja HA (`notify.mobile_app_*`, z przyciskami) oraz każdy inny kanał z HA: Telegram, e-mail, SMS, encje `notify.*` (sam tekst) |
 | Powiadomienie w HA | dodatkowo dzwoneczek w HA, przy każdym przypomnieniu (także dla zadań bez wybranego telefonu i głośnika) |
 | Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
-| Język i głos komunikatów | opcjonalnie, np. `pl-PL` i `MarekNeural`; puste = język i głos Twojego asystenta głosowego (*Ustawienia → Asystenci głosowi*), jeśli używa tego samego silnika, a inaczej domyślne silnika (Home Assistant Cloud: angielski amerykański) |
+| Język i głos komunikatów | opcjonalnie, np. `pl-PL` i `MarekNeural` (Home Assistant Cloud) albo `pl` (Google Translate) — kod w formacie silnika, podobny (`pl-PL` ↔ `pl`) Remindo samo poprawi; puste = język i głos Twojego asystenta głosowego (*Ustawienia → Asystenci głosowi*), jeśli używa tego samego silnika, a inaczej domyślne silnika (Home Assistant Cloud: angielski amerykański) |
 | Włącz ekran tabletu | np. `switch.<tablet>_screen` z Fully Kiosk |
 | Obecność | np. `group.domownicy`; głos tylko gdy ktoś jest w domu |
 | Cisza nocna | bez komunikatów głosowych; push nadal przychodzi |

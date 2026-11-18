@@ -32,7 +32,7 @@
           "quiet_push": "Activé = rien n'est envoyé la nuit ; un rappel qui tombe pendant les heures calmes attend leur fin.",
           "notify_data": "Avancé. Ajouté à chaque notification de l'app HA, p. ex. car_ui: true (Android Auto), priority: high avec ttl: 0 (livrer tout de suite), notification_icon, color, channel. Peut être remplacé par règle et par tâche.",
           "persistent_notification": "Affichée à chaque rappel, même quand aucun téléphone ni haut-parleur n'est choisi pour une tâche.",
-          "tts_language": "Facultatif, p. ex. fr-FR. Vide = la langue de votre assistant vocal (Paramètres → Assistants vocaux) s'il utilise le même moteur, sinon celle par défaut du moteur.",
+          "tts_language": "Facultatif : le code de votre moteur TTS, p. ex. fr pour Google Translate, fr-FR pour Home Assistant Cloud. Un code proche est corrigé à l'enregistrement. Vide = la langue de votre assistant vocal (Paramètres → Assistants vocaux) s'il utilise le même moteur, sinon celle par défaut du moteur.",
           "tts_voice": "Facultatif, l'identifiant de voix du moteur, p. ex. DeniseNeural pour Home Assistant Cloud. Vide = la voix de votre assistant vocal s'il utilise le même moteur, sinon celle par défaut du moteur."
         }
       }
@@ -41,7 +41,8 @@
       "single_instance_allowed": "Déjà configuré."
     },
     "error": {
-      "not_mapping": "Saisissez des paires clé: valeur, p. ex. car_ui: true"
+      "not_mapping": "Saisissez des paires clé: valeur, p. ex. car_ui: true",
+      "tts_language": "Ce moteur ne parle pas cette langue. Il connaît : {languages}"
     }
   },
   "options": {
@@ -77,13 +78,14 @@
           "quiet_push": "Activé = rien n'est envoyé la nuit ; un rappel qui tombe pendant les heures calmes attend leur fin.",
           "notify_data": "Avancé. Ajouté à chaque notification de l'app HA, p. ex. car_ui: true (Android Auto), priority: high avec ttl: 0 (livrer tout de suite), notification_icon, color, channel. Peut être remplacé par règle et par tâche.",
           "persistent_notification": "Affichée à chaque rappel, même quand aucun téléphone ni haut-parleur n'est choisi pour une tâche.",
-          "tts_language": "Facultatif, p. ex. fr-FR. Vide = la langue de votre assistant vocal (Paramètres → Assistants vocaux) s'il utilise le même moteur, sinon celle par défaut du moteur.",
+          "tts_language": "Facultatif : le code de votre moteur TTS, p. ex. fr pour Google Translate, fr-FR pour Home Assistant Cloud. Un code proche est corrigé à l'enregistrement. Vide = la langue de votre assistant vocal (Paramètres → Assistants vocaux) s'il utilise le même moteur, sinon celle par défaut du moteur.",
           "tts_voice": "Facultatif, l'identifiant de voix du moteur, p. ex. DeniseNeural pour Home Assistant Cloud. Vide = la voix de votre assistant vocal s'il utilise le même moteur, sinon celle par défaut du moteur."
         }
       }
     },
     "error": {
-      "not_mapping": "Saisissez des paires clé: valeur, p. ex. car_ui: true"
+      "not_mapping": "Saisissez des paires clé: valeur, p. ex. car_ui: true",
+      "tts_language": "Ce moteur ne parle pas cette langue. Il connaît : {languages}"
     }
   },
   "services": {

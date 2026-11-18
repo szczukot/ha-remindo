@@ -32,7 +32,7 @@
           "quiet_push": "Attivo = di notte non viene inviato nulla; un promemoria che cade nelle ore di silenzio aspetta la loro fine.",
           "notify_data": "Avanzato. Aggiunto a ogni notifica dell'app HA, es. car_ui: true (Android Auto), priority: high con ttl: 0 (consegna immediata), notification_icon, color, channel. Può essere sovrascritto per regola e per attività.",
           "persistent_notification": "Mostrata a ogni promemoria, anche quando per un'attività non è scelto nessun telefono né altoparlante.",
-          "tts_language": "Facoltativo, es. it-IT. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
+          "tts_language": "Facoltativo: il codice del tuo motore TTS, es. it per Google Translate, it-IT per Home Assistant Cloud. Un codice simile viene corretto al salvataggio. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
           "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore."
         }
       }
@@ -41,7 +41,8 @@
       "single_instance_allowed": "Già configurato."
     },
     "error": {
-      "not_mapping": "Inserisci coppie chiave: valore, es. car_ui: true"
+      "not_mapping": "Inserisci coppie chiave: valore, es. car_ui: true",
+      "tts_language": "Questo motore non parla questa lingua. Conosce: {languages}"
     }
   },
   "options": {
@@ -77,13 +78,14 @@
           "quiet_push": "Attivo = di notte non viene inviato nulla; un promemoria che cade nelle ore di silenzio aspetta la loro fine.",
           "notify_data": "Avanzato. Aggiunto a ogni notifica dell'app HA, es. car_ui: true (Android Auto), priority: high con ttl: 0 (consegna immediata), notification_icon, color, channel. Può essere sovrascritto per regola e per attività.",
           "persistent_notification": "Mostrata a ogni promemoria, anche quando per un'attività non è scelto nessun telefono né altoparlante.",
-          "tts_language": "Facoltativo, es. it-IT. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
+          "tts_language": "Facoltativo: il codice del tuo motore TTS, es. it per Google Translate, it-IT per Home Assistant Cloud. Un codice simile viene corretto al salvataggio. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
           "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore."
         }
       }
     },
     "error": {
-      "not_mapping": "Inserisci coppie chiave: valore, es. car_ui: true"
+      "not_mapping": "Inserisci coppie chiave: valore, es. car_ui: true",
+      "tts_language": "Questo motore non parla questa lingua. Conosce: {languages}"
     }
   },
   "services": {

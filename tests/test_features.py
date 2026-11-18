@@ -897,3 +897,47 @@ async def test_tts_language_and_voice(hass: HomeAssistant, freezer: FrozenDateTi
         await manager._speak(task, ["media_player.tablet"])
         assert calls["tts"][-1].data["language"] == "pl-PL"
         assert calls["tts"][-1].data["options"] == {"voice": "MarekNeural"}
+
+
+async def test_tts_language_in_the_engines_spelling(hass: HomeAssistant, caplog) -> None:
+    """Google Translate knows "pl", not "pl-PL": tts.speak with "pl-PL" fails and nothing is heard."""
+    from unittest.mock import patch
+
+    entry, calls = await setup_integration(hass, tts_language="pl-PL")
+    manager = entry.runtime_data
+    task = manager.find(await add_task(hass, summary="Unload the washer"))
+    with patch("custom_components.remindo.manager.engine_languages", return_value=["en", "pl"]):
+        await manager._speak(task, ["media_player.tablet"])
+        assert calls["tts"][-1].data["language"] == "pl"
+        # a language the engine does not speak at all: its default, and a warning in the log
+        manager.options["tts_language"] = "xx-YY"
+        await manager._speak(task, ["media_player.tablet"])
+        assert "language" not in calls["tts"][-1].data
+        assert "does not speak 'xx-YY'" in caplog.text
+    # the engine cannot be asked (not loaded): the language is passed on as it is
+    with patch("custom_components.remindo.manager.engine_languages", return_value=None):
+        await manager._speak(task, ["media_player.tablet"])
+        assert calls["tts"][-1].data["language"] == "xx-YY"
+
+
+async def test_options_correct_the_tts_language(hass: HomeAssistant) -> None:
+    """The settings form stores the engine's own spelling, and rejects a language it does not know."""
+    from unittest.mock import patch
+
+    from homeassistant.data_entry_flow import FlowResultType
+
+    entry, _ = await setup_integration(hass)
+    form = {**entry.options, "media_player": ["media_player.tablet"]}
+    with patch("custom_components.remindo.config_flow.engine_languages", return_value=["de", "en", "pl"]):
+        flow = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            flow["flow_id"], {**form, "tts_language": "xx"}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] == {"tts_language": "tts_language"}
+        assert "pl" in result["description_placeholders"]["languages"]
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {**form, "tts_language": "pl_PL"}
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["tts_language"] == "pl"
