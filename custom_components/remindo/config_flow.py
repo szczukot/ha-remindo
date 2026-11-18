@@ -45,7 +45,7 @@ from .const import (
     PHONE_TTS_STREAMS,
 )
 from .manager import engine_languages
-from .rules import MODES, rule_problem
+from .rules import MODES, UNAVAILABLE_MIN_MINUTES, rule_problem
 
 # shown literally in the form help texts
 _TOKENS = {"state": "{state}", "name": "{name}", "event": "{event}"}
@@ -224,6 +224,7 @@ class RemindoOptionsFlow(OptionsFlow):
 # ----------------------------------------------------------------------- rules
 
 RULE = "rule"
+_CONDITION_STEP = {"state": "state", "unavailable": "unavailable", "calendar": "calendar"}  # above / below: number
 
 
 def _num(value: Any, default: Any = None) -> Any:
@@ -301,6 +302,8 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             for key in ("for_minutes", "days_before"):
                 if key in user_input:
                     user_input[key] = int(user_input[key])
+            if mode == "unavailable":
+                user_input["value"] = ""
             if mode == "calendar":
                 user_input.setdefault("contains", None)
                 user_input["value"] = ""
@@ -323,6 +326,16 @@ class RuleSubentryFlow(ConfigSubentryFlow):
                 ),
                 vol.Required("for_minutes", default=self._data.get("for_minutes", 0)): minutes,
             }
+        elif mode == "unavailable":
+            wait = selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=UNAVAILABLE_MIN_MINUTES, max=10080, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX
+                )
+            )
+            if int(self._data.get("for_minutes") or 0) < UNAVAILABLE_MIN_MINUTES:
+                # new rule, or one that used to wait less (a state rule with 0 min)
+                self._data["for_minutes"] = 30
+            schema = {vol.Required("for_minutes", default=self._data["for_minutes"]): wait}
         else:
             schema = {
                 vol.Required("days_before", default=self._data.get("days_before", 1)): selector.NumberSelector(
@@ -333,7 +346,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             }
         state = self.hass.states.get(entity)
         return self.async_show_form(
-            step_id=f"condition_{'state' if mode == 'state' else 'number' if mode != 'calendar' else 'calendar'}",
+            step_id=f"condition_{_CONDITION_STEP.get(mode, 'number')}",
             data_schema=self._suggest(schema),
             description_placeholders={
                 "entity": state.name if state else entity,
@@ -345,6 +358,9 @@ class RuleSubentryFlow(ConfigSubentryFlow):
         return await self.async_step_condition(user_input)
 
     async def async_step_condition_number(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self.async_step_condition(user_input)
+
+    async def async_step_condition_unavailable(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         return await self.async_step_condition(user_input)
 
     async def async_step_condition_calendar(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:

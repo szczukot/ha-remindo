@@ -112,8 +112,8 @@ The card follows the language of the user's profile.
 
 *Settings → Devices & services → Remindo → **＋ Add rule***. Three steps:
 
-1. **When**: task text, entity, condition (*has state* / *above* / *below* / *calendar event*).
-2. **Condition**: value (list of the entity's states) and "for at least N min"; for a calendar: how many days before and at what time.
+1. **When**: task text, entity, condition (*has state* / *above* / *below* / *is unavailable* / *calendar event*).
+2. **Condition**: value (list of the entity's states) and "for at least N min"; for a calendar: how many days before and at what time; for *is unavailable*: how long (at least 10 min, as entities are unavailable for a while after a restart).
 3. **Reminders**: repeat interval, limit, channels, speakers, "close automatically when the condition ends", message when resolved, "keep on the list after done". Optional: **spoken text** (what the speaker says instead of the task text, e.g. "It's me, your dishwasher. Open me, please.") and extra notification data for this rule.
 
 **Values in the text, no templates needed.** In the rule text (and the message when resolved) you can write:
@@ -134,6 +134,7 @@ Examples:
 | Close the garage | `binary_sensor.garage` has state `on` for 10 min; every 10 min, at most 6 times |
 | Put the bins out | `calendar.waste`, 1 day before, 18:00 → "Put the bins out: Paper, Glass" (or put `{event}` in the text to place the event name yourself) |
 | Air the bathroom | `sensor.bathroom_humidity` above 70 for 15 min |
+| Gate sensor is down | `binary_sensor.gate` is unavailable for 2 h → "{name} offline, check the battery"; closes itself when the sensor is back |
 
 Passing through `unavailable` / `unknown` (HA restart, Wi-Fi drop) never triggers a rule by itself, and does not hide a real change either: "running → unavailable → finished" still counts.
 

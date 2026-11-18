@@ -37,8 +37,12 @@ _LOGGER = logging.getLogger(__name__)
 MODE_STATE = "state"  # state equals a value
 MODE_ABOVE = "above"  # number above a limit
 MODE_BELOW = "below"  # number below a limit
+MODE_UNAVAILABLE = "unavailable"  # the entity is unavailable (device offline, dead battery)
 MODE_CALENDAR = "calendar"  # calendar event in N days
-MODES = [MODE_STATE, MODE_ABOVE, MODE_BELOW, MODE_CALENDAR]
+MODES = [MODE_STATE, MODE_ABOVE, MODE_BELOW, MODE_UNAVAILABLE, MODE_CALENDAR]
+# Entities are unavailable for a while after a restart or an integration reload:
+# an "unavailable" rule always waits at least this long.
+UNAVAILABLE_MIN_MINUTES = 10
 _IGNORED = (STATE_UNAVAILABLE, STATE_UNKNOWN, None)
 _RULE_ID = re.compile(r"[0-9A-Z]{26}")  # config subentry id
 
@@ -123,6 +127,13 @@ class Rule:
         return f"rule_{self.id}"
 
     @property
+    def wait_minutes(self) -> int:
+        """How long the condition must hold before the task is added."""
+        if self.mode == MODE_UNAVAILABLE:
+            return max(int(self.for_minutes), UNAVAILABLE_MIN_MINUTES)
+        return int(self.for_minutes)
+
+    @property
     def signature(self) -> str:
         """What a running countdown depends on; when it changes, the countdown starts over."""
         return f"{self.entity_id}|{self.mode}|{self.value}|{self.for_minutes}"
@@ -131,6 +142,9 @@ class Rule:
         """True/False, or None when the state cannot be judged (unavailable)."""
         if self.mode == MODE_CALENDAR:
             return None
+        if self.mode == MODE_UNAVAILABLE:
+            # unknown = no value yet (the device is there); a removed entity cannot be judged
+            return None if state is None else state.state == STATE_UNAVAILABLE
         if state is None or state.state in _IGNORED:
             return None
         if self.mode == MODE_STATE:
@@ -258,11 +272,20 @@ class RuleEngine:
             if current is False:
                 self._drop_deadline(rule.id)
             else:
-                earliest = dt_util.utcnow() + timedelta(seconds=STARTUP_DELAY)
+                # an entity that is unavailable while Home Assistant starts gets the whole wait again
+                wait = timedelta(minutes=rule.wait_minutes) if rule.mode == MODE_UNAVAILABLE else timedelta(seconds=STARTUP_DELAY)
+                earliest = dt_util.utcnow() + wait
                 self._arm(rule, max(dt_util.parse_datetime(deadline.get("until", "")) or earliest, earliest))
+        elif rule.mode == MODE_UNAVAILABLE and current and not self.manager.find(key=rule.key):
+            # unavailable already (the device died while Home Assistant was down, or it is still
+            # starting up): count from now; the countdown stops as soon as the entity is back
+            self._start(rule)
 
     @callback
     def _evaluate(self, rule: Rule, new: State | None, old: State | None) -> None:
+        if rule.mode == MODE_UNAVAILABLE and self.hass.is_stopping:
+            # entities go unavailable while Home Assistant shuts down
+            return
         now_match = rule.matches(new)
         if now_match is None:
             # unavailable / unknown (restart, Wi-Fi drop): neither start nor end
@@ -281,10 +304,10 @@ class RuleEngine:
     def _start(self, rule: Rule) -> None:
         if rule.id in self._timers:
             return
-        if rule.for_minutes <= 0:
+        if rule.wait_minutes <= 0:
             self.hass.async_create_task(self._fire(rule))
             return
-        deadline = dt_util.utcnow() + timedelta(minutes=rule.for_minutes)
+        deadline = dt_util.utcnow() + timedelta(minutes=rule.wait_minutes)
         self._deadlines[rule.id] = {"until": deadline.isoformat(), "sig": rule.signature}
         self.manager.async_schedule_save()
         self._arm(rule, deadline)

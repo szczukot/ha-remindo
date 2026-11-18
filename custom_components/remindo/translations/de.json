@@ -386,6 +386,7 @@
         "state": "Hat einen Zustand",
         "above": "Liegt über",
         "below": "Liegt unter",
+        "unavailable": "Ist nicht verfügbar",
         "calendar": "Hat einen Kalendertermin"
       }
     },
@@ -472,6 +473,16 @@
           },
           "data_description": {
             "for_minutes": "0 = sofort."
+          }
+        },
+        "condition_unavailable": {
+          "title": "Bedingung",
+          "description": "Entität: {entity} (jetzt: {current}). Eine Aufgabe wird angelegt, wenn sie nicht verfügbar bleibt (Gerät offline, Batterie leer, kein WLAN), und schließt sich selbst, sobald die Entität zurück ist.",
+          "data": {
+            "for_minutes": "Nicht verfügbar seit mindestens (Min.)"
+          },
+          "data_description": {
+            "for_minutes": "Mindestens 10 Min.: nach einem Neustart oder dem Neuladen einer Integration sind Entitäten eine Weile nicht verfügbar."
           }
         },
         "condition_calendar": {

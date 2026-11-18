@@ -386,6 +386,7 @@
         "state": "Ma określony stan",
         "above": "Jest powyżej progu",
         "below": "Jest poniżej progu",
+        "unavailable": "Jest niedostępne",
         "calendar": "Ma wydarzenie w kalendarzu"
       }
     },
@@ -472,6 +473,16 @@
           },
           "data_description": {
             "for_minutes": "0 = od razu."
+          }
+        },
+        "condition_unavailable": {
+          "title": "Warunek",
+          "description": "Encja: {entity} (teraz: {current}). Zadanie powstaje, gdy encja jest niedostępna (urządzenie offline, padła bateria, brak Wi-Fi), i samo się zamyka, gdy wróci.",
+          "data": {
+            "for_minutes": "Niedostępne przez co najmniej (min)"
+          },
+          "data_description": {
+            "for_minutes": "Minimum 10 min: po restarcie albo przeładowaniu integracji encje przez chwilę są niedostępne."
           }
         },
         "condition_calendar": {

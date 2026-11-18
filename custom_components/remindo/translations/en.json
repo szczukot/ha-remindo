@@ -386,6 +386,7 @@
         "state": "Has a state",
         "above": "Is above",
         "below": "Is below",
+        "unavailable": "Is unavailable",
         "calendar": "Has a calendar event"
       }
     },
@@ -472,6 +473,16 @@
           },
           "data_description": {
             "for_minutes": "0 = immediately."
+          }
+        },
+        "condition_unavailable": {
+          "title": "Condition",
+          "description": "Entity: {entity} (now: {current}). A task is added when it stays unavailable (device offline, dead battery, no Wi-Fi) and closes itself when the entity is back.",
+          "data": {
+            "for_minutes": "Unavailable for at least (min)"
+          },
+          "data_description": {
+            "for_minutes": "At least 10 min: after a restart or an integration reload entities are unavailable for a while."
           }
         },
         "condition_calendar": {
