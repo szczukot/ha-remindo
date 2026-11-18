@@ -5,6 +5,8 @@
         "title": "Remindo — zadania z przypomnieniami",
         "data": {
           "notify_targets": "Telefony (powiadomienia push)",
+          "phone_tts": "Telefony czytające przypomnienia na głos",
+          "phone_tts_stream": "Głośność na telefonie",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
           "tts_language": "Język komunikatów",
@@ -33,7 +35,9 @@
           "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
           "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika.",
           "tts_language": "Opcjonalnie: kod, którego używa Twój silnik TTS, np. pl dla Google Translate, pl-PL dla Home Assistant Cloud. Podobny kod zostanie poprawiony przy zapisie. Puste = język Twojego asystenta głosowego (Ustawienia → Asystenci głosowi), jeśli używa tego samego silnika, a inaczej domyślny silnika.",
-          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika."
+          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika.",
+          "phone_tts": "Tylko Android (aplikacja HA). Telefon wypowiada przypomnienie własnym głosem, także gdy nikogo nie ma w domu. Nie w ciszy nocnej, tylko dla zadań z komunikatem głosowym i tylko na telefony, które dostają push z tego zadania.",
+          "phone_tts_stream": "Multimedia: głośność multimediów. Alarm: głośność alarmu, także w trybie cichym."
         }
       }
     },
@@ -51,6 +55,8 @@
         "title": "Remindo — zadania z przypomnieniami",
         "data": {
           "notify_targets": "Telefony (powiadomienia push)",
+          "phone_tts": "Telefony czytające przypomnienia na głos",
+          "phone_tts_stream": "Głośność na telefonie",
           "persistent_notification": "Powiadomienie w HA (dzwoneczek)",
           "tts_entity": "Silnik TTS",
           "tts_language": "Język komunikatów",
@@ -79,7 +85,9 @@
           "notify_data": "Zaawansowane. Dopisywane do każdego powiadomienia w aplikacji HA, np. car_ui: true (Android Auto), priority: high razem z ttl: 0 (dostarcz natychmiast), notification_icon, color, channel. Można nadpisać w regule i w zadaniu.",
           "persistent_notification": "Pojawia się przy każdym przypomnieniu, także gdy dla zadania nie wybrano telefonu ani głośnika.",
           "tts_language": "Opcjonalnie: kod, którego używa Twój silnik TTS, np. pl dla Google Translate, pl-PL dla Home Assistant Cloud. Podobny kod zostanie poprawiony przy zapisie. Puste = język Twojego asystenta głosowego (Ustawienia → Asystenci głosowi), jeśli używa tego samego silnika, a inaczej domyślny silnika.",
-          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika."
+          "tts_voice": "Opcjonalnie, identyfikator głosu silnika, np. MarekNeural w Home Assistant Cloud. Puste = głos Twojego asystenta głosowego, jeśli używa tego samego silnika, a inaczej domyślny silnika.",
+          "phone_tts": "Tylko Android (aplikacja HA). Telefon wypowiada przypomnienie własnym głosem, także gdy nikogo nie ma w domu. Nie w ciszy nocnej, tylko dla zadań z komunikatem głosowym i tylko na telefony, które dostają push z tego zadania.",
+          "phone_tts_stream": "Multimedia: głośność multimediów. Alarm: głośność alarmu, także w trybie cichym."
         }
       }
     },
@@ -398,6 +406,13 @@
         "weekday": "Ten sam dzień tygodnia (np. 3. wtorek)",
         "last_weekday": "Ostatni taki dzień tygodnia",
         "last_day": "Ostatni dzień miesiąca"
+      }
+    },
+    "phone_tts_stream": {
+      "options": {
+        "music_stream": "Multimedia",
+        "alarm_stream": "Alarm (także w trybie cichym)",
+        "alarm_stream_max": "Alarm na pełnej głośności"
       }
     }
   },

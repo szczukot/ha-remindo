@@ -44,6 +44,7 @@ When adding the integration (and later under *Configure*) you set:
 | Option | Description |
 |---|---|
 | Notification channels | the HA app (`notify.mobile_app_*`, with buttons) and any other channel in HA: Telegram, e-mail, SMS, `notify.*` entities (text only) |
+| Phones that read aloud, volume | Android only: the chosen phones also say the reminder (HA app TTS), also when nobody is home; not in the quiet hours and only for spoken tasks. Volume: media or alarm (heard in silent mode too) |
 | Persistent notification in HA | also show the bell notification in HA, for every reminder (also for tasks with no phone and no speaker selected) |
 | TTS engine, media players | where announcements are spoken |
 | Announcement language, voice | optional, e.g. `en-GB` and `RyanNeural` (Home Assistant Cloud) or `en` (Google Translate) — the code as your engine names it, a close one (`en-GB` ↔ `en`) is corrected by Remindo; empty = the language and voice of your voice assistant (*Settings → Voice assistants*) if it uses the same engine, otherwise the engine's default (Home Assistant Cloud: US English) |

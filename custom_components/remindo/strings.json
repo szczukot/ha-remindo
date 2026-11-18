@@ -5,6 +5,8 @@
         "title": "Remindo — tasks with reminders",
         "data": {
           "notify_targets": "Push notification targets",
+          "phone_tts": "Phones that read reminders aloud",
+          "phone_tts_stream": "Volume on the phone",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
           "tts_language": "Announcement language",
@@ -33,7 +35,9 @@
           "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
           "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task.",
           "tts_language": "Optional: the code your TTS engine uses, e.g. en for Google Translate, en-GB for Home Assistant Cloud. A close match is corrected on saving. Empty = the language of your voice assistant (Settings → Voice assistants) if it uses the same engine, otherwise the engine's default.",
-          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default."
+          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default.",
+          "phone_tts": "Android only (HA app). The phone says the reminder with its own voice, also when nobody is home. Not in the quiet hours, only for tasks that are spoken, and only to phones that get the task's push.",
+          "phone_tts_stream": "Media: the media volume. Alarm: the alarm volume, also in silent mode."
         }
       }
     },
@@ -51,6 +55,8 @@
         "title": "Remindo — tasks with reminders",
         "data": {
           "notify_targets": "Push notification targets",
+          "phone_tts": "Phones that read reminders aloud",
+          "phone_tts_stream": "Volume on the phone",
           "persistent_notification": "Persistent notification in HA",
           "tts_entity": "TTS engine",
           "tts_language": "Announcement language",
@@ -79,7 +85,9 @@
           "notify_data": "Advanced. Added to every notification of the HA app, e.g. car_ui: true (Android Auto), priority: high with ttl: 0 (deliver immediately), notification_icon, color, channel. Can be overridden per rule and per task.",
           "persistent_notification": "Shown for every reminder, also when no phone or speaker is selected for a task.",
           "tts_language": "Optional: the code your TTS engine uses, e.g. en for Google Translate, en-GB for Home Assistant Cloud. A close match is corrected on saving. Empty = the language of your voice assistant (Settings → Voice assistants) if it uses the same engine, otherwise the engine's default.",
-          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default."
+          "tts_voice": "Optional, the engine's voice id, e.g. RyanNeural for Home Assistant Cloud. Empty = the voice of your voice assistant if it uses the same engine, otherwise the engine's default.",
+          "phone_tts": "Android only (HA app). The phone says the reminder with its own voice, also when nobody is home. Not in the quiet hours, only for tasks that are spoken, and only to phones that get the task's push.",
+          "phone_tts_stream": "Media: the media volume. Alarm: the alarm volume, also in silent mode."
         }
       }
     },
@@ -398,6 +406,13 @@
         "weekday": "The same weekday (e.g. 3rd Tuesday)",
         "last_weekday": "The last such weekday",
         "last_day": "The last day of the month"
+      }
+    },
+    "phone_tts_stream": {
+      "options": {
+        "music_stream": "Media",
+        "alarm_stream": "Alarm (also in silent mode)",
+        "alarm_stream_max": "Alarm at full volume"
       }
     }
   },
