@@ -5,6 +5,8 @@
         "title": "Remindo — attività con promemoria",
         "data": {
           "notify_targets": "Destinatari delle notifiche push",
+          "phone_tts": "Telefoni che leggono i promemoria ad alta voce",
+          "phone_tts_stream": "Volume sul telefono",
           "persistent_notification": "Notifica persistente in HA",
           "tts_entity": "Motore TTS",
           "tts_language": "Lingua degli annunci",
@@ -33,7 +35,9 @@
           "notify_data": "Avanzato. Aggiunto a ogni notifica dell'app HA, es. car_ui: true (Android Auto), priority: high con ttl: 0 (consegna immediata), notification_icon, color, channel. Può essere sovrascritto per regola e per attività.",
           "persistent_notification": "Mostrata a ogni promemoria, anche quando per un'attività non è scelto nessun telefono né altoparlante.",
           "tts_language": "Facoltativo: il codice del tuo motore TTS, es. it per Google Translate, it-IT per Home Assistant Cloud. Un codice simile viene corretto al salvataggio. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
-          "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore."
+          "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore.",
+          "phone_tts": "Solo Android (app HA). Il telefono dice il promemoria con la propria voce, anche se nessuno è in casa. Non nelle ore di silenzio, solo per i compiti annunciati e solo sui telefoni che ricevono la notifica del compito.",
+          "phone_tts_stream": "Multimedia: il volume multimediale. Sveglia: il volume della sveglia, anche in modalità silenziosa."
         }
       }
     },
@@ -51,6 +55,8 @@
         "title": "Remindo — attività con promemoria",
         "data": {
           "notify_targets": "Destinatari delle notifiche push",
+          "phone_tts": "Telefoni che leggono i promemoria ad alta voce",
+          "phone_tts_stream": "Volume sul telefono",
           "persistent_notification": "Notifica persistente in HA",
           "tts_entity": "Motore TTS",
           "tts_language": "Lingua degli annunci",
@@ -79,7 +85,9 @@
           "notify_data": "Avanzato. Aggiunto a ogni notifica dell'app HA, es. car_ui: true (Android Auto), priority: high con ttl: 0 (consegna immediata), notification_icon, color, channel. Può essere sovrascritto per regola e per attività.",
           "persistent_notification": "Mostrata a ogni promemoria, anche quando per un'attività non è scelto nessun telefono né altoparlante.",
           "tts_language": "Facoltativo: il codice del tuo motore TTS, es. it per Google Translate, it-IT per Home Assistant Cloud. Un codice simile viene corretto al salvataggio. Vuoto = la lingua del tuo assistente vocale (Impostazioni → Assistenti vocali) se usa lo stesso motore, altrimenti quella predefinita del motore.",
-          "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore."
+          "tts_voice": "Facoltativo, l'id della voce del motore, es. ElsaNeural per Home Assistant Cloud. Vuoto = la voce del tuo assistente vocale se usa lo stesso motore, altrimenti quella predefinita del motore.",
+          "phone_tts": "Solo Android (app HA). Il telefono dice il promemoria con la propria voce, anche se nessuno è in casa. Non nelle ore di silenzio, solo per i compiti annunciati e solo sui telefoni che ricevono la notifica del compito.",
+          "phone_tts_stream": "Multimedia: il volume multimediale. Sveglia: il volume della sveglia, anche in modalità silenziosa."
         }
       }
     },
@@ -398,6 +406,13 @@
         "weekday": "Lo stesso giorno della settimana (es. 3° martedì)",
         "last_weekday": "L'ultimo di quei giorni",
         "last_day": "L'ultimo giorno del mese"
+      }
+    },
+    "phone_tts_stream": {
+      "options": {
+        "music_stream": "Multimedia",
+        "alarm_stream": "Sveglia (anche in modalità silenziosa)",
+        "alarm_stream_max": "Sveglia al massimo volume"
       }
     }
   },

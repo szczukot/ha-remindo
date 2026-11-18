@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 from homeassistant.util import language as language_util
+from homeassistant.util import slugify
 
 from .const import (
     CONF_CLICK_URL,
@@ -28,6 +29,8 @@ from .const import (
     CONF_NOTIFY_DATA,
     CONF_PERSISTENT,
     CONF_PHONE_SNOOZE,
+    CONF_PHONE_TTS,
+    CONF_PHONE_TTS_STREAM,
     CONF_PRESENCE,
     CONF_QUIET_END,
     CONF_QUIET_PUSH,
@@ -39,6 +42,7 @@ from .const import (
     CONF_TTS_VOICE,
     DEFAULTS,
     DOMAIN,
+    PHONE_TTS_STREAMS,
 )
 from .manager import engine_languages
 from .rules import MODES, rule_problem
@@ -60,6 +64,16 @@ def _notify_services(hass: HomeAssistant) -> list[str]:
     return mobile + other
 
 
+def _android_phones(hass: HomeAssistant) -> list[str]:
+    """HA app phones that can read aloud: the Companion app for Android (iOS cannot)."""
+    android = {
+        f"notify.mobile_app_{slugify(entry.data.get('device_name') or entry.title)}"
+        for entry in hass.config_entries.async_entries("mobile_app")
+        if str(entry.data.get("os_name", "Android")).lower() == "android"
+    }
+    return [p for p in _notify_services(hass) if p in android]
+
+
 def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
     values = {**DEFAULTS, **current}
     if isinstance(values.get(CONF_MEDIA_PLAYER), str):
@@ -70,6 +84,19 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
             return vol.Optional(key, description={"suggested_value": values[key]})
         return vol.Optional(key)
 
+    readers = sorted(set(_android_phones(hass)) | set(values.get(CONF_PHONE_TTS) or []))
+    reading: dict = {}
+    if readers:
+        reading = {
+            vol.Optional(CONF_PHONE_TTS, default=values.get(CONF_PHONE_TTS) or []): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=readers, multiple=True)
+            ),
+            vol.Optional(CONF_PHONE_TTS_STREAM, default=values[CONF_PHONE_TTS_STREAM]): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=PHONE_TTS_STREAMS, translation_key="phone_tts_stream", mode=selector.SelectSelectorMode.DROPDOWN
+                )
+            ),
+        }
     return vol.Schema(
         {
             vol.Optional(CONF_NOTIFY, default=values[CONF_NOTIFY]): selector.SelectSelector(
@@ -77,6 +104,7 @@ def _schema(hass: HomeAssistant, current: dict[str, Any]) -> vol.Schema:
                     options=_notify_services(hass), multiple=True, custom_value=True
                 )
             ),
+            **reading,
             vol.Optional(CONF_PERSISTENT, default=values[CONF_PERSISTENT]): selector.BooleanSelector(),
             opt(CONF_TTS_ENTITY): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),
             opt(CONF_TTS_LANGUAGE): selector.TextSelector(),

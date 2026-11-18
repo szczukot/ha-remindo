@@ -5,6 +5,8 @@
         "title": "Remindo — taken met herinneringen",
         "data": {
           "notify_targets": "Doelen voor pushmeldingen",
+          "phone_tts": "Telefoons die herinneringen voorlezen",
+          "phone_tts_stream": "Volume op de telefoon",
           "persistent_notification": "Blijvende melding in HA",
           "tts_entity": "TTS-engine",
           "tts_language": "Taal van aankondigingen",
@@ -33,7 +35,9 @@
           "notify_data": "Geavanceerd. Toegevoegd aan elke melding van de HA-app, bijv. car_ui: true (Android Auto), priority: high met ttl: 0 (direct afleveren), notification_icon, color, channel. Per regel en per taak te overschrijven.",
           "persistent_notification": "Getoond bij elke herinnering, ook als voor een taak geen telefoon of luidspreker gekozen is.",
           "tts_language": "Optioneel: de code van je TTS-engine, bijv. nl voor Google Translate, nl-NL voor Home Assistant Cloud. Een vergelijkbare code wordt bij opslaan verbeterd. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
-          "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine."
+          "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine.",
+          "phone_tts": "Alleen Android (HA-app). De telefoon zegt de herinnering met zijn eigen stem, ook als er niemand thuis is. Niet in de stille uren, alleen voor taken die worden uitgesproken en alleen op telefoons die de melding van de taak krijgen.",
+          "phone_tts_stream": "Media: het mediavolume. Wekker: het wekkervolume, ook in de stille modus."
         }
       }
     },
@@ -51,6 +55,8 @@
         "title": "Remindo — taken met herinneringen",
         "data": {
           "notify_targets": "Doelen voor pushmeldingen",
+          "phone_tts": "Telefoons die herinneringen voorlezen",
+          "phone_tts_stream": "Volume op de telefoon",
           "persistent_notification": "Blijvende melding in HA",
           "tts_entity": "TTS-engine",
           "tts_language": "Taal van aankondigingen",
@@ -79,7 +85,9 @@
           "notify_data": "Geavanceerd. Toegevoegd aan elke melding van de HA-app, bijv. car_ui: true (Android Auto), priority: high met ttl: 0 (direct afleveren), notification_icon, color, channel. Per regel en per taak te overschrijven.",
           "persistent_notification": "Getoond bij elke herinnering, ook als voor een taak geen telefoon of luidspreker gekozen is.",
           "tts_language": "Optioneel: de code van je TTS-engine, bijv. nl voor Google Translate, nl-NL voor Home Assistant Cloud. Een vergelijkbare code wordt bij opslaan verbeterd. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
-          "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine."
+          "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine.",
+          "phone_tts": "Alleen Android (HA-app). De telefoon zegt de herinnering met zijn eigen stem, ook als er niemand thuis is. Niet in de stille uren, alleen voor taken die worden uitgesproken en alleen op telefoons die de melding van de taak krijgen.",
+          "phone_tts_stream": "Media: het mediavolume. Wekker: het wekkervolume, ook in de stille modus."
         }
       }
     },
@@ -398,6 +406,13 @@
         "weekday": "Dezelfde weekdag (bijv. 3e dinsdag)",
         "last_weekday": "De laatste zulke weekdag",
         "last_day": "De laatste dag van de maand"
+      }
+    },
+    "phone_tts_stream": {
+      "options": {
+        "music_stream": "Media",
+        "alarm_stream": "Wekker (ook in de stille modus)",
+        "alarm_stream_max": "Wekker op vol volume"
       }
     }
   },

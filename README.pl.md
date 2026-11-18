@@ -44,6 +44,7 @@ Przy dodawaniu integracji (i później w *Konfiguruj*) ustawiasz:
 | Opcja | Opis |
 |---|---|
 | Kanały powiadomień | aplikacja HA (`notify.mobile_app_*`, z przyciskami) oraz każdy inny kanał z HA: Telegram, e-mail, SMS, encje `notify.*` (sam tekst) |
+| Telefony czytające na głos, głośność | tylko Android: wybrane telefony dodatkowo wypowiadają przypomnienie (TTS aplikacji HA), także gdy nikogo nie ma w domu; nie w ciszy nocnej i tylko dla zadań z komunikatem głosowym. Głośność: multimedia albo alarm (słychać też w trybie cichym) |
 | Powiadomienie w HA | dodatkowo dzwoneczek w HA, przy każdym przypomnieniu (także dla zadań bez wybranego telefonu i głośnika) |
 | Silnik TTS, głośniki/tablety | gdzie mówić komunikaty |
 | Język i głos komunikatów | opcjonalnie, np. `pl-PL` i `MarekNeural` (Home Assistant Cloud) albo `pl` (Google Translate) — kod w formacie silnika, podobny (`pl-PL` ↔ `pl`) Remindo samo poprawi; puste = język i głos Twojego asystenta głosowego (*Ustawienia → Asystenci głosowi*), jeśli używa tego samego silnika, a inaczej domyślne silnika (Home Assistant Cloud: angielski amerykański) |

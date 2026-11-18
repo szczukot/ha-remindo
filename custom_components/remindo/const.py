@@ -26,6 +26,9 @@ CONF_CLICK_URL = "click_url"
 CONF_KEEP_DONE = "keep_done"
 CONF_QUIET_PUSH = "quiet_push"
 CONF_NOTIFY_DATA = "notify_data"
+CONF_PHONE_TTS = "phone_tts"  # Android phones that also read the reminder aloud
+CONF_PHONE_TTS_STREAM = "phone_tts_stream"
+PHONE_TTS_STREAMS = ["music_stream", "alarm_stream", "alarm_stream_max"]
 
 DEFAULTS = {
     CONF_NOTIFY: [],
@@ -40,6 +43,8 @@ DEFAULTS = {
     CONF_CLICK_URL: "/todo?entity_id=todo.remindo",
     CONF_KEEP_DONE: True,
     CONF_QUIET_PUSH: False,
+    CONF_PHONE_TTS: [],
+    CONF_PHONE_TTS_STREAM: "music_stream",
 }
 
 # Service fields

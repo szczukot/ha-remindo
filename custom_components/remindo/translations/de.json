@@ -5,6 +5,8 @@
         "title": "Remindo — Aufgaben mit Erinnerungen",
         "data": {
           "notify_targets": "Ziele für Push-Benachrichtigungen",
+          "phone_tts": "Telefone, die Erinnerungen vorlesen",
+          "phone_tts_stream": "Lautstärke am Telefon",
           "persistent_notification": "Dauerhafte Benachrichtigung in HA",
           "tts_entity": "TTS-Engine",
           "tts_language": "Sprache der Ansagen",
@@ -33,7 +35,9 @@
           "notify_data": "Fortgeschritten. Wird jeder Benachrichtigung der HA-App hinzugefügt, z. B. car_ui: true (Android Auto), priority: high mit ttl: 0 (sofort zustellen), notification_icon, color, channel. Kann pro Regel und pro Aufgabe überschrieben werden.",
           "persistent_notification": "Wird bei jeder Erinnerung angezeigt, auch wenn für eine Aufgabe kein Handy und kein Lautsprecher ausgewählt ist.",
           "tts_language": "Optional: der Code deiner TTS-Engine, z. B. de für Google Translate, de-DE für Home Assistant Cloud. Ein ähnlicher Code wird beim Speichern korrigiert. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
-          "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine."
+          "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine.",
+          "phone_tts": "Nur Android (HA-App). Das Telefon spricht die Erinnerung mit seiner eigenen Stimme, auch wenn niemand zu Hause ist. Nicht in der Ruhezeit, nur für gesprochene Aufgaben und nur auf Telefonen, die die Push-Nachricht der Aufgabe bekommen.",
+          "phone_tts_stream": "Medien: Medienlautstärke. Wecker: Weckerlautstärke, auch im Lautlos-Modus."
         }
       }
     },
@@ -51,6 +55,8 @@
         "title": "Remindo — Aufgaben mit Erinnerungen",
         "data": {
           "notify_targets": "Ziele für Push-Benachrichtigungen",
+          "phone_tts": "Telefone, die Erinnerungen vorlesen",
+          "phone_tts_stream": "Lautstärke am Telefon",
           "persistent_notification": "Dauerhafte Benachrichtigung in HA",
           "tts_entity": "TTS-Engine",
           "tts_language": "Sprache der Ansagen",
@@ -79,7 +85,9 @@
           "notify_data": "Fortgeschritten. Wird jeder Benachrichtigung der HA-App hinzugefügt, z. B. car_ui: true (Android Auto), priority: high mit ttl: 0 (sofort zustellen), notification_icon, color, channel. Kann pro Regel und pro Aufgabe überschrieben werden.",
           "persistent_notification": "Wird bei jeder Erinnerung angezeigt, auch wenn für eine Aufgabe kein Handy und kein Lautsprecher ausgewählt ist.",
           "tts_language": "Optional: der Code deiner TTS-Engine, z. B. de für Google Translate, de-DE für Home Assistant Cloud. Ein ähnlicher Code wird beim Speichern korrigiert. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
-          "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine."
+          "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine.",
+          "phone_tts": "Nur Android (HA-App). Das Telefon spricht die Erinnerung mit seiner eigenen Stimme, auch wenn niemand zu Hause ist. Nicht in der Ruhezeit, nur für gesprochene Aufgaben und nur auf Telefonen, die die Push-Nachricht der Aufgabe bekommen.",
+          "phone_tts_stream": "Medien: Medienlautstärke. Wecker: Weckerlautstärke, auch im Lautlos-Modus."
         }
       }
     },
@@ -398,6 +406,13 @@
         "weekday": "Derselbe Wochentag (z. B. 3. Dienstag)",
         "last_weekday": "Der letzte solche Wochentag",
         "last_day": "Der letzte Tag des Monats"
+      }
+    },
+    "phone_tts_stream": {
+      "options": {
+        "music_stream": "Medien",
+        "alarm_stream": "Wecker (auch im Lautlos-Modus)",
+        "alarm_stream_max": "Wecker in voller Lautstärke"
       }
     }
   },

@@ -5,6 +5,8 @@
         "title": "Remindo — tâches avec rappels",
         "data": {
           "notify_targets": "Destinataires des notifications push",
+          "phone_tts": "Téléphones qui lisent les rappels à voix haute",
+          "phone_tts_stream": "Volume sur le téléphone",
           "persistent_notification": "Notification persistante dans HA",
           "tts_entity": "Moteur TTS",
           "tts_language": "Langue des annonces",
@@ -33,7 +35,9 @@
           "notify_data": "Avancé. Ajouté à chaque notification de l'app HA, p. ex. car_ui: true (Android Auto), priority: high avec ttl: 0 (livrer tout de suite), notification_icon, color, channel. Peut être remplacé par règle et par tâche.",
           "persistent_notification": "Affichée à chaque rappel, même quand aucun téléphone ni haut-parleur n'est choisi pour une tâche.",
           "tts_language": "Facultatif : le code de votre moteur TTS, p. ex. fr pour Google Translate, fr-FR pour Home Assistant Cloud. Un code proche est corrigé à l'enregistrement. Vide = la langue de votre assistant vocal (Paramètres → Assistants vocaux) s'il utilise le même moteur, sinon celle par défaut du moteur.",
-          "tts_voice": "Facultatif, l'identifiant de voix du moteur, p. ex. DeniseNeural pour Home Assistant Cloud. Vide = la voix de votre assistant vocal s'il utilise le même moteur, sinon celle par défaut du moteur."
+          "tts_voice": "Facultatif, l'identifiant de voix du moteur, p. ex. DeniseNeural pour Home Assistant Cloud. Vide = la voix de votre assistant vocal s'il utilise le même moteur, sinon celle par défaut du moteur.",
+          "phone_tts": "Android uniquement (app HA). Le téléphone dit le rappel avec sa propre voix, même si personne n'est à la maison. Pas pendant les heures calmes, seulement pour les tâches annoncées et sur les téléphones qui reçoivent la notification de la tâche.",
+          "phone_tts_stream": "Multimédia : volume multimédia. Alarme : volume de l'alarme, même en mode silencieux."
         }
       }
     },
@@ -51,6 +55,8 @@
         "title": "Remindo — tâches avec rappels",
         "data": {
           "notify_targets": "Destinataires des notifications push",
+          "phone_tts": "Téléphones qui lisent les rappels à voix haute",
+          "phone_tts_stream": "Volume sur le téléphone",
           "persistent_notification": "Notification persistante dans HA",
           "tts_entity": "Moteur TTS",
           "tts_language": "Langue des annonces",
@@ -79,7 +85,9 @@
           "notify_data": "Avancé. Ajouté à chaque notification de l'app HA, p. ex. car_ui: true (Android Auto), priority: high avec ttl: 0 (livrer tout de suite), notification_icon, color, channel. Peut être remplacé par règle et par tâche.",
           "persistent_notification": "Affichée à chaque rappel, même quand aucun téléphone ni haut-parleur n'est choisi pour une tâche.",
           "tts_language": "Facultatif : le code de votre moteur TTS, p. ex. fr pour Google Translate, fr-FR pour Home Assistant Cloud. Un code proche est corrigé à l'enregistrement. Vide = la langue de votre assistant vocal (Paramètres → Assistants vocaux) s'il utilise le même moteur, sinon celle par défaut du moteur.",
-          "tts_voice": "Facultatif, l'identifiant de voix du moteur, p. ex. DeniseNeural pour Home Assistant Cloud. Vide = la voix de votre assistant vocal s'il utilise le même moteur, sinon celle par défaut du moteur."
+          "tts_voice": "Facultatif, l'identifiant de voix du moteur, p. ex. DeniseNeural pour Home Assistant Cloud. Vide = la voix de votre assistant vocal s'il utilise le même moteur, sinon celle par défaut du moteur.",
+          "phone_tts": "Android uniquement (app HA). Le téléphone dit le rappel avec sa propre voix, même si personne n'est à la maison. Pas pendant les heures calmes, seulement pour les tâches annoncées et sur les téléphones qui reçoivent la notification de la tâche.",
+          "phone_tts_stream": "Multimédia : volume multimédia. Alarme : volume de l'alarme, même en mode silencieux."
         }
       }
     },
@@ -398,6 +406,13 @@
         "weekday": "Le même jour de la semaine (p. ex. 3e mardi)",
         "last_weekday": "Le dernier de ces jours",
         "last_day": "Le dernier jour du mois"
+      }
+    },
+    "phone_tts_stream": {
+      "options": {
+        "music_stream": "Multimédia",
+        "alarm_stream": "Alarme (même en mode silencieux)",
+        "alarm_stream_max": "Alarme à plein volume"
       }
     }
   },

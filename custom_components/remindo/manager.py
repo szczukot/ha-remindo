@@ -39,6 +39,8 @@ from .const import (
     CONF_NOTIFY_DATA,
     CONF_PERSISTENT,
     CONF_PHONE_SNOOZE,
+    CONF_PHONE_TTS,
+    CONF_PHONE_TTS_STREAM,
     CONF_PRESENCE,
     CONF_QUIET_END,
     CONF_QUIET_PUSH,
@@ -930,6 +932,23 @@ class TaskManager:
             return []
         return self.all_phones() if task.phones is None else task.phones
 
+    def reading_phones(self, task: Task) -> list[str]:
+        """Phones that read this reminder aloud: chosen in the settings, getting the push for
+        this task, the task is spoken, and not in the quiet hours (a phone is with its owner:
+        nobody needs to be home)."""
+        if not task.tts or self.is_quiet():
+            return []
+        chosen = set(self._norm(self.options.get(CONF_PHONE_TTS) or [], "notify.") or [])
+        return [p for p in self.phones_for(task) if p in chosen and self._is_mobile(p)]
+
+    def spoken_text(self, task: Task) -> str:
+        """What is said aloud: the rule's / automation's spoken text, otherwise the task.
+        Only the spoken text from a trusted source is a template; the summary was rendered
+        already, and may have been edited by someone who must not run templates."""
+        if task.templates and task.tts_message:
+            return self._render(task.tts_message)
+        return task.tts_message or task.summary
+
     def speakers_for(self, task: Task) -> list[str]:
         if not task.tts:
             return []
@@ -1044,6 +1063,17 @@ class TaskManager:
                     },
                 },
             )
+        reading = self.reading_phones(task)
+        if reading:
+            # the Companion app for Android says it with the phone's own TTS instead of showing it
+            stream = self.options.get(CONF_PHONE_TTS_STREAM) or DEFAULTS[CONF_PHONE_TTS_STREAM]
+            spoken = self.spoken_text(task)
+            for target in reading:
+                await self._call(
+                    "notify",
+                    target.removeprefix("notify."),
+                    {"message": "TTS", "data": {"tts_text": spoken, "media_stream": stream}},
+                )
         if self.options.get(CONF_PERSISTENT):
             await self._call(
                 "persistent_notification",
@@ -1097,9 +1127,7 @@ class TaskManager:
             return None
         if screen := self.options.get(CONF_SCREEN_SWITCH):
             await self._call("switch", "turn_on", {"entity_id": screen}, blocking=True)
-        # only the spoken text from the rule / automation is a template; the summary was
-        # rendered already, and may have been edited by someone who must not run templates
-        message = self._render(task.tts_message) if task.templates and task.tts_message else task.tts_message or task.summary
+        message = self.spoken_text(task)
         data: dict[str, Any] = {"entity_id": tts_entity, "media_player_entity_id": speakers, "message": message, "cache": True}
         language, voice = self._tts_voice(tts_entity)
         if language:
