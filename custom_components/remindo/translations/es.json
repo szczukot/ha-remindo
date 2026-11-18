@@ -32,7 +32,7 @@
           "quiet_push": "Activado = por la noche no se envía nada; un recordatorio que cae en las horas de silencio espera a que terminen.",
           "notify_data": "Avanzado. Se añade a cada notificación de la app de HA, p. ej. car_ui: true (Android Auto), priority: high con ttl: 0 (entregar al instante), notification_icon, color, channel. Se puede sustituir por regla y por tarea.",
           "persistent_notification": "Se muestra en cada recordatorio, también cuando no hay teléfono ni altavoz elegido para una tarea.",
-          "tts_language": "Opcional, p. ej. es-ES. Vacío = el idioma de tu asistente de voz (Ajustes → Asistentes de voz) si usa el mismo motor; si no, el predeterminado del motor.",
+          "tts_language": "Opcional: el código de tu motor TTS, p. ej. es para Google Translate, es-ES para Home Assistant Cloud. Un código parecido se corrige al guardar. Vacío = el idioma de tu asistente de voz (Ajustes → Asistentes de voz) si usa el mismo motor; si no, el predeterminado del motor.",
           "tts_voice": "Opcional, el id de voz del motor, p. ej. ElviraNeural en Home Assistant Cloud. Vacío = la voz de tu asistente de voz si usa el mismo motor; si no, la predeterminada del motor."
         }
       }
@@ -41,7 +41,8 @@
       "single_instance_allowed": "Ya está configurado."
     },
     "error": {
-      "not_mapping": "Introduce pares clave: valor, p. ej. car_ui: true"
+      "not_mapping": "Introduce pares clave: valor, p. ej. car_ui: true",
+      "tts_language": "Este motor no habla este idioma. Conoce: {languages}"
     }
   },
   "options": {
@@ -77,13 +78,14 @@
           "quiet_push": "Activado = por la noche no se envía nada; un recordatorio que cae en las horas de silencio espera a que terminen.",
           "notify_data": "Avanzado. Se añade a cada notificación de la app de HA, p. ej. car_ui: true (Android Auto), priority: high con ttl: 0 (entregar al instante), notification_icon, color, channel. Se puede sustituir por regla y por tarea.",
           "persistent_notification": "Se muestra en cada recordatorio, también cuando no hay teléfono ni altavoz elegido para una tarea.",
-          "tts_language": "Opcional, p. ej. es-ES. Vacío = el idioma de tu asistente de voz (Ajustes → Asistentes de voz) si usa el mismo motor; si no, el predeterminado del motor.",
+          "tts_language": "Opcional: el código de tu motor TTS, p. ej. es para Google Translate, es-ES para Home Assistant Cloud. Un código parecido se corrige al guardar. Vacío = el idioma de tu asistente de voz (Ajustes → Asistentes de voz) si usa el mismo motor; si no, el predeterminado del motor.",
           "tts_voice": "Opcional, el id de voz del motor, p. ej. ElviraNeural en Home Assistant Cloud. Vacío = la voz de tu asistente de voz si usa el mismo motor; si no, la predeterminada del motor."
         }
       }
     },
     "error": {
-      "not_mapping": "Introduce pares clave: valor, p. ej. car_ui: true"
+      "not_mapping": "Introduce pares clave: valor, p. ej. car_ui: true",
+      "tts_language": "Este motor no habla este idioma. Conoce: {languages}"
     }
   },
   "services": {

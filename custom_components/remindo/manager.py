@@ -20,6 +20,7 @@ from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.template import Template
 from homeassistant.util import dt as dt_util
+from homeassistant.util import language as language_util
 from homeassistant.util import slugify
 
 from . import texts
@@ -107,6 +108,18 @@ class RemindoError(ValueError):
         super().__init__(key)
         self.key = key
         self.placeholders = placeholders
+
+
+def engine_languages(hass: HomeAssistant, tts_entity: str) -> list[str] | None:
+    """The languages a TTS engine speaks, or None when that cannot be told (engine not loaded)."""
+    try:
+        from homeassistant.components.tts.helper import get_engine_instance  # noqa: PLC0415
+
+        engine = get_engine_instance(hass, tts_entity)
+    except Exception:  # noqa: BLE001 - TTS not set up (yet)
+        return None
+    languages = getattr(engine, "supported_languages", None) if engine else None
+    return list(languages) if languages else None
 
 
 def _is_template(text: str | None) -> bool:
@@ -1103,11 +1116,32 @@ class TaskManager:
         language = (self.options.get(CONF_TTS_LANGUAGE) or "").strip() or None
         voice = (self.options.get(CONF_TTS_VOICE) or "").strip() or None
         if language or voice:
-            return language, voice
+            return self._engine_language(tts_entity, language), voice
         pipeline = self._assistant()
         if pipeline is None or pipeline.tts_engine != tts_entity:
             return None, None
         return pipeline.tts_language, pipeline.tts_voice
+
+    def _engine_language(self, tts_entity: str, language: str | None) -> str | None:
+        """The language as the engine names it: Google Translate knows "pl", not "pl-PL",
+        HA Cloud the other way round. With a language the engine does not speak at all
+        tts.speak fails, so the engine's default is used instead (with a warning)."""
+        if not language:
+            return None
+        supported = engine_languages(self.hass, tts_entity)
+        if supported is None or language in supported:
+            return language
+        if found := language_util.matches(language, supported):
+            return found[0]
+        if "tts_language" not in self._warned:
+            self._warned.add("tts_language")
+            _LOGGER.warning(
+                "Remindo: %s does not speak '%s' (check the announcement language in the integration settings), "
+                "using the engine's default language",
+                tts_entity,
+                language,
+            )
+        return None
 
     def _assistant(self) -> Any:
         """The preferred voice assistant (Assist pipeline), or None."""

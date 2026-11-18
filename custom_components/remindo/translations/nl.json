@@ -32,7 +32,7 @@
           "quiet_push": "Aan = 's nachts wordt niets verstuurd; een herinnering die in de stille uren valt, wacht tot ze voorbij zijn.",
           "notify_data": "Geavanceerd. Toegevoegd aan elke melding van de HA-app, bijv. car_ui: true (Android Auto), priority: high met ttl: 0 (direct afleveren), notification_icon, color, channel. Per regel en per taak te overschrijven.",
           "persistent_notification": "Getoond bij elke herinnering, ook als voor een taak geen telefoon of luidspreker gekozen is.",
-          "tts_language": "Optioneel, bijv. nl-NL. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
+          "tts_language": "Optioneel: de code van je TTS-engine, bijv. nl voor Google Translate, nl-NL voor Home Assistant Cloud. Een vergelijkbare code wordt bij opslaan verbeterd. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
           "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine."
         }
       }
@@ -41,7 +41,8 @@
       "single_instance_allowed": "Al ingesteld."
     },
     "error": {
-      "not_mapping": "Voer sleutel: waarde-paren in, bijv. car_ui: true"
+      "not_mapping": "Voer sleutel: waarde-paren in, bijv. car_ui: true",
+      "tts_language": "Deze engine spreekt deze taal niet. Hij kent: {languages}"
     }
   },
   "options": {
@@ -77,13 +78,14 @@
           "quiet_push": "Aan = 's nachts wordt niets verstuurd; een herinnering die in de stille uren valt, wacht tot ze voorbij zijn.",
           "notify_data": "Geavanceerd. Toegevoegd aan elke melding van de HA-app, bijv. car_ui: true (Android Auto), priority: high met ttl: 0 (direct afleveren), notification_icon, color, channel. Per regel en per taak te overschrijven.",
           "persistent_notification": "Getoond bij elke herinnering, ook als voor een taak geen telefoon of luidspreker gekozen is.",
-          "tts_language": "Optioneel, bijv. nl-NL. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
+          "tts_language": "Optioneel: de code van je TTS-engine, bijv. nl voor Google Translate, nl-NL voor Home Assistant Cloud. Een vergelijkbare code wordt bij opslaan verbeterd. Leeg = de taal van je spraakassistent (Instellingen → Spraakassistenten) als die dezelfde engine gebruikt, anders de standaard van de engine.",
           "tts_voice": "Optioneel, de stem-ID van de engine, bijv. ColetteNeural voor Home Assistant Cloud. Leeg = de stem van je spraakassistent als die dezelfde engine gebruikt, anders de standaard van de engine."
         }
       }
     },
     "error": {
-      "not_mapping": "Voer sleutel: waarde-paren in, bijv. car_ui: true"
+      "not_mapping": "Voer sleutel: waarde-paren in, bijv. car_ui: true",
+      "tts_language": "Deze engine spreekt deze taal niet. Hij kent: {languages}"
     }
   },
   "services": {

@@ -32,7 +32,7 @@
           "quiet_push": "An = nachts wird nichts gesendet; eine Erinnerung, die in die Ruhezeit fällt, wartet bis zu deren Ende.",
           "notify_data": "Fortgeschritten. Wird jeder Benachrichtigung der HA-App hinzugefügt, z. B. car_ui: true (Android Auto), priority: high mit ttl: 0 (sofort zustellen), notification_icon, color, channel. Kann pro Regel und pro Aufgabe überschrieben werden.",
           "persistent_notification": "Wird bei jeder Erinnerung angezeigt, auch wenn für eine Aufgabe kein Handy und kein Lautsprecher ausgewählt ist.",
-          "tts_language": "Optional, z. B. de-DE. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
+          "tts_language": "Optional: der Code deiner TTS-Engine, z. B. de für Google Translate, de-DE für Home Assistant Cloud. Ein ähnlicher Code wird beim Speichern korrigiert. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
           "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine."
         }
       }
@@ -41,7 +41,8 @@
       "single_instance_allowed": "Bereits eingerichtet."
     },
     "error": {
-      "not_mapping": "Gib Schlüssel: Wert-Paare ein, z. B. car_ui: true"
+      "not_mapping": "Gib Schlüssel: Wert-Paare ein, z. B. car_ui: true",
+      "tts_language": "Diese Engine spricht diese Sprache nicht. Sie kennt: {languages}"
     }
   },
   "options": {
@@ -77,13 +78,14 @@
           "quiet_push": "An = nachts wird nichts gesendet; eine Erinnerung, die in die Ruhezeit fällt, wartet bis zu deren Ende.",
           "notify_data": "Fortgeschritten. Wird jeder Benachrichtigung der HA-App hinzugefügt, z. B. car_ui: true (Android Auto), priority: high mit ttl: 0 (sofort zustellen), notification_icon, color, channel. Kann pro Regel und pro Aufgabe überschrieben werden.",
           "persistent_notification": "Wird bei jeder Erinnerung angezeigt, auch wenn für eine Aufgabe kein Handy und kein Lautsprecher ausgewählt ist.",
-          "tts_language": "Optional, z. B. de-DE. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
+          "tts_language": "Optional: der Code deiner TTS-Engine, z. B. de für Google Translate, de-DE für Home Assistant Cloud. Ein ähnlicher Code wird beim Speichern korrigiert. Leer = die Sprache deines Sprachassistenten (Einstellungen → Sprachassistenten), wenn er dieselbe Engine nutzt, sonst die Standardsprache der Engine.",
           "tts_voice": "Optional, die Stimmen-ID der Engine, z. B. KatjaNeural bei Home Assistant Cloud. Leer = die Stimme deines Sprachassistenten, wenn er dieselbe Engine nutzt, sonst die Standardstimme der Engine."
         }
       }
     },
     "error": {
-      "not_mapping": "Gib Schlüssel: Wert-Paare ein, z. B. car_ui: true"
+      "not_mapping": "Gib Schlüssel: Wert-Paare ein, z. B. car_ui: true",
+      "tts_language": "Diese Engine spricht diese Sprache nicht. Sie kennt: {languages}"
     }
   },
   "services": {
