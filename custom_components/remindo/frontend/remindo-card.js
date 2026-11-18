@@ -1,5 +1,5 @@
 /* Lovelace card: custom:remindo-card (Remindo integration) */
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 
 // texts: frontend/i18n/<language>.json, added in front of this file when it is served
 const I18N = typeof REMINDO_I18N !== "undefined" ? REMINDO_I18N : { en: {} };
