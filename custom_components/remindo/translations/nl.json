@@ -378,6 +378,7 @@
         "state": "Heeft een status",
         "above": "Is boven",
         "below": "Is onder",
+        "unavailable": "Is niet beschikbaar",
         "calendar": "Heeft een agenda-afspraak"
       }
     },
@@ -457,6 +458,16 @@
           },
           "data_description": {
             "for_minutes": "0 = meteen."
+          }
+        },
+        "condition_unavailable": {
+          "title": "Voorwaarde",
+          "description": "Entiteit: {entity} (nu: {current}). Er wordt een taak toegevoegd als die niet beschikbaar blijft (apparaat offline, batterij leeg, geen wifi), en die sluit zichzelf zodra de entiteit terug is.",
+          "data": {
+            "for_minutes": "Minstens niet beschikbaar (min)"
+          },
+          "data_description": {
+            "for_minutes": "Minstens 10 min: na een herstart of het herladen van een integratie zijn entiteiten even niet beschikbaar."
           }
         },
         "condition_calendar": {

@@ -378,6 +378,7 @@
         "state": "Ha uno stato",
         "above": "È sopra",
         "below": "È sotto",
+        "unavailable": "Non è disponibile",
         "calendar": "Ha un evento di calendario"
       }
     },
@@ -457,6 +458,16 @@
           },
           "data_description": {
             "for_minutes": "0 = subito."
+          }
+        },
+        "condition_unavailable": {
+          "title": "Condizione",
+          "description": "Entità: {entity} (ora: {current}). Viene aggiunto un compito quando resta non disponibile (dispositivo offline, batteria scarica, niente Wi-Fi) e si chiude da solo quando l'entità torna.",
+          "data": {
+            "for_minutes": "Non disponibile per almeno (min)"
+          },
+          "data_description": {
+            "for_minutes": "Almeno 10 min: dopo un riavvio o il ricaricamento di un'integrazione le entità restano non disponibili per un po'."
           }
         },
         "condition_calendar": {

@@ -378,6 +378,7 @@
         "state": "A un état",
         "above": "Est au-dessus de",
         "below": "Est en dessous de",
+        "unavailable": "Est indisponible",
         "calendar": "A un événement de calendrier"
       }
     },
@@ -457,6 +458,16 @@
           },
           "data_description": {
             "for_minutes": "0 = tout de suite."
+          }
+        },
+        "condition_unavailable": {
+          "title": "Condition",
+          "description": "Entité : {entity} (maintenant : {current}). Une tâche est ajoutée quand elle reste indisponible (appareil hors ligne, pile vide, pas de Wi-Fi) et se ferme d'elle-même quand l'entité revient.",
+          "data": {
+            "for_minutes": "Indisponible depuis au moins (min)"
+          },
+          "data_description": {
+            "for_minutes": "Au moins 10 min : après un redémarrage ou le rechargement d'une intégration, les entités sont indisponibles un moment."
           }
         },
         "condition_calendar": {

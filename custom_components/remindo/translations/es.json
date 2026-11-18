@@ -378,6 +378,7 @@
         "state": "Tiene un estado",
         "above": "Está por encima de",
         "below": "Está por debajo de",
+        "unavailable": "No está disponible",
         "calendar": "Tiene un evento de calendario"
       }
     },
@@ -457,6 +458,16 @@
           },
           "data_description": {
             "for_minutes": "0 = al instante."
+          }
+        },
+        "condition_unavailable": {
+          "title": "Condición",
+          "description": "Entidad: {entity} (ahora: {current}). Se añade una tarea cuando sigue sin estar disponible (dispositivo desconectado, batería agotada, sin Wi-Fi) y se cierra sola cuando la entidad vuelve.",
+          "data": {
+            "for_minutes": "No disponible durante al menos (min)"
+          },
+          "data_description": {
+            "for_minutes": "Al menos 10 min: tras un reinicio o al recargar una integración, las entidades no están disponibles durante un rato."
           }
         },
         "condition_calendar": {
