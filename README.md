@@ -77,7 +77,7 @@ A task can have an icon (Home Assistant's `mdi:` icons): pick it in the task for
 
 ### Heads-up (remind before)
 
-For a task with a due time, pick in **Heads-up** 15 min, 30 min, 1 h, 2 h or 24 h before the due time, or **at a time…** (e.g. 20:00 the day before). Then one notification comes, e.g. "Tomorrow at 14:30: Dentist", with Done and Skip. The due time stays as it is, and the usual reminders every N minutes start at it. Tick the task off at the heads-up and there are no reminders at the due time. A recurring task gets a heads-up before every date. The heads-up follows "quiet hours also for push". In `remindo.add` / `remindo.update`: `advance` (minutes) or `advance_at` (time) + `advance_days` (days before, default 1).
+For a task with a due time, pick in **Heads-up** 15 min, 30 min, 1 h, 2 h or 24 h before the due time, or **at a time…** (e.g. 20:00 the day before). Then one notification comes, e.g. "Tomorrow at 14:30: Dentist", with three buttons: **👍 I'll remember** takes the heads-up away, and the reminders come at the due time as set; **✅ Done** for things done early (the bins put out the evening before) and **❌ Skip**: after either of them nothing comes at the due time. Without a tap the usual reminders every N minutes start at the due time. A recurring task gets a heads-up before every date. The heads-up follows "quiet hours also for push". In `remindo.add` / `remindo.update`: `advance` (minutes) or `advance_at` (time) + `advance_days` (days before, default 1).
 
 ### Important
 

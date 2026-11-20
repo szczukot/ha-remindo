@@ -20,7 +20,8 @@
     "nth": ", {count}. Mal",
     "advance_today": "Heute um {time}: {summary}",
     "advance_tomorrow": "Morgen um {time}: {summary}",
-    "advance_date": "{date} um {time}: {summary}"
+    "advance_date": "{date} um {time}: {summary}",
+    "ack": "👍 Denk ich dran"
   },
   "units": {
     "hourly": {

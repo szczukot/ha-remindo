@@ -77,7 +77,7 @@ Zadanie może mieć ikonę (ikony `mdi:` z Home Assistant): wybierzesz ją w for
 
 ### Zapowiedź (przypomnienie wcześniej)
 
-Przy zadaniu z terminem w polu **Zapowiedź** wybierz 15 min, 30 min, 1 h, 2 h albo 24 h przed terminem, albo **o godzinie…** (np. dzień wcześniej o 20:00). O tym czasie przychodzi jedno powiadomienie, np. „Jutro o 14:30: Dentysta”, z przyciskami Zrobione i Nie robię. Termin zadania się nie zmienia, a od niego zaczyna się zwykłe przypominanie co N minut. Jeśli odhaczysz zadanie już przy zapowiedzi, przypominania w terminie nie będzie. Zadanie cykliczne dostaje zapowiedź przed każdym terminem. Zapowiedź przestrzega „ciszy nocnej także dla push”. W `remindo.add` / `remindo.update`: `advance` (minuty) albo `advance_at` (godzina) + `advance_days` (ile dni przed, domyślnie 1).
+Przy zadaniu z terminem w polu **Zapowiedź** wybierz 15 min, 30 min, 1 h, 2 h albo 24 h przed terminem, albo **o godzinie…** (np. dzień wcześniej o 20:00). O tym czasie przychodzi jedno powiadomienie, np. „Jutro o 14:30: Dentysta”, z trzema przyciskami: **👍 Pamiętam** zdejmuje zapowiedź, a w terminie przypomnienia przychodzą tak, jak są ustawione; **✅ Zrobione** dla rzeczy załatwionych wcześniej (śmietnik wystawiony już wieczorem) i **❌ Nie robię**: po obu w terminie nic nie przyjdzie. Bez klikania w terminie zaczyna się zwykłe przypominanie co N minut. Zadanie cykliczne dostaje zapowiedź przed każdym terminem. Zapowiedź przestrzega „ciszy nocnej także dla push”. W `remindo.add` / `remindo.update`: `advance` (minuty) albo `advance_at` (godzina) + `advance_days` (ile dni przed, domyślnie 1).
 
 ### Ważne
 
