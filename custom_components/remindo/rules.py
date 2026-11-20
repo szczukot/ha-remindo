@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ from homeassistant.helpers.event import (
     async_track_point_in_time,
     async_track_state_change_event,
     async_track_time_change,
+    async_track_time_interval,
 )
 from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
@@ -52,6 +54,46 @@ RECHECK_DELAY = 60  # s, entity still unavailable when a countdown ends
 RECHECK_MAX = 5
 CALENDAR_RETRY_DELAY = 120  # s, calendar could not be read
 CALENDAR_RETRY_MAX = 3
+# "N minutes before the start": how often the calendar is read (HA refreshes Google and CalDAV
+# about every 15 min), and how far ahead; a task is added shortly before its heads-up is due
+CALENDAR_TIMING_DAY = "day"  # N days before, at a time
+CALENDAR_TIMING_START = "start"  # N minutes before each event's start
+CALENDAR_TIMINGS = [CALENDAR_TIMING_DAY, CALENDAR_TIMING_START]
+CALENDAR_SYNC = timedelta(minutes=10)
+CALENDAR_LOOKAHEAD = timedelta(days=8)
+ADVANCE_MAX = timedelta(days=7)
+# "remindo: 2h" in an event's description: its own heads-up time (m = minutes, h = hours, d = days)
+_ADVANCE_IN_TEXT = re.compile(r"remindo\s*[:=]\s*(\d+)(?!\d)(?:\s*(min|m|h|d))?(?!\s*[a-z])", re.IGNORECASE)
+_UNIT_MINUTES = {"": 1, "m": 1, "min": 1, "h": 60, "d": 1440}
+
+
+def advance_from_text(text: str | None) -> int | None:
+    """Minutes from "remindo: 30" / "remindo: 2h" / "remindo: 1d" in an event's description."""
+    if not text or not (match := _ADVANCE_IN_TEXT.search(text)):
+        return None
+    minutes = int(match.group(1)) * _UNIT_MINUTES[(match.group(2) or "").lower()]
+    return min(minutes, int(ADVANCE_MAX.total_seconds() // 60))
+
+
+def _event_start(event: dict[str, Any]) -> datetime | None:
+    """The start of an event with a time; None for an all-day event (a bare date)."""
+    raw = str(event.get("start") or "")
+    if "T" not in raw:
+        return None
+    parsed = dt_util.parse_datetime(raw)
+    return dt_util.as_local(parsed) if parsed else None
+
+
+def event_text(text: str, events: list[dict[str, Any]], *, append: bool) -> str:
+    """{event} = the names, {time} = the start times (empty for all-day events),
+    {location} = the places. Without {event} the names are appended when `append`."""
+    names = list(dict.fromkeys(e.get("summary", "") for e in events))
+    times = list(dict.fromkeys(s.strftime("%H:%M") for e in events if (s := _event_start(e))))
+    places = list(dict.fromkeys(p for e in events if (p := (e.get("location") or "").strip())))
+    what = ", ".join(names)
+    if "{event}" not in text and append:
+        text = f"{text}: {what}"
+    return text.replace("{event}", what).replace("{time}", ", ".join(times)).replace("{location}", ", ".join(places))
 
 
 def _tokens(text: str | None, entity_id: str) -> str | None:
@@ -116,6 +158,8 @@ class Rule:
     days_before: int = 1
     at_time: str = "18:00"
     contains: str | None = None
+    timing: str = CALENDAR_TIMING_DAY
+    before_minutes: int = 60
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Rule:
@@ -171,15 +215,23 @@ class RuleEngine:
         # rule id → {"until": end of the "for N minutes" countdown, "sig": Rule.signature}
         self._deadlines: dict[str, dict[str, str]] = {}
         self._calendar_checked: dict[str, str] = {}  # rule id → date of the last calendar check
+        # "N minutes before the start": rule id → {task key: {"start", "end"}} of the events that
+        # got a task, so a task ticked off is not added again; kept until the event has ended
+        self._calendar_events: dict[str, dict[str, dict[str, str]]] = {}
 
     # ------------------------------------------------------------- persistence
     def restore(self, state: dict[str, Any]) -> None:
         # entries without a signature (older versions) cannot be checked: start over
         self._deadlines = {k: v for k, v in (state.get("pending") or {}).items() if isinstance(v, dict)}
         self._calendar_checked = dict(state.get("calendar_checked") or {})
+        self._calendar_events = {k: dict(v) for k, v in (state.get("calendar_events") or {}).items() if isinstance(v, dict)}
 
     def state(self) -> dict[str, Any]:
-        return {"pending": dict(self._deadlines), "calendar_checked": dict(self._calendar_checked)}
+        return {
+            "pending": dict(self._deadlines),
+            "calendar_checked": dict(self._calendar_checked),
+            "calendar_events": {k: dict(v) for k, v in self._calendar_events.items()},
+        }
 
     def load(self, data: list[dict[str, Any]]) -> None:
         for raw in data:
@@ -195,6 +247,7 @@ class RuleEngine:
             k: v for k, v in self._deadlines.items() if k in self.rules and v.get("sig") == self.rules[k].signature
         }
         self._calendar_checked = {k: v for k, v in self._calendar_checked.items() if k in self.rules}
+        self._calendar_events = {k: v for k, v in self._calendar_events.items() if k in self.rules}
         for rule in self.rules.values():
             self._watch(rule)
         # problems with a rule's entity are shown in Settings → Repairs; checked once
@@ -370,6 +423,16 @@ class RuleEngine:
     # ---------------------------------------------------------------- calendar
     @callback
     def _watch_calendar(self, rule: Rule) -> None:
+        if rule.timing == CALENDAR_TIMING_START:
+
+            @callback
+            def _sync(_now: datetime) -> None:
+                self.hass.async_create_task(self._sync_calendar(rule))
+
+            self._unsubs[rule.id] = async_track_time_interval(self.hass, _sync, CALENDAR_SYNC)
+            # first look once Home Assistant (and the calendar) had a moment to start
+            self._timers[rule.id] = async_call_later(self.hass, STARTUP_DELAY, _sync)
+            return
         at = dt_util.parse_time(rule.at_time) or dt_util.parse_time("18:00")
 
         @callback
@@ -413,13 +476,11 @@ class RuleEngine:
         self._calendar_checked[rule.id] = today.date().isoformat()
         self.manager.async_schedule_save()
         events = (resp or {}).get(rule.entity_id, {}).get("events", [])
-        names = [e.get("summary", "") for e in events]
         if rule.contains:
-            names = [n for n in names if rule.contains.lower() in n.lower()]
-        if not names:
+            events = [e for e in events if rule.contains.lower() in e.get("summary", "").lower()]
+        if not events:
             return
-        what = ", ".join(dict.fromkeys(names))
-        summary = rule.summary.replace("{event}", what) if "{event}" in rule.summary else f"{rule.summary}: {what}"
+        summary = event_text(rule.summary, events, append=True)
         await self.manager.async_add(
             summary,
             description=rule.description,
@@ -429,7 +490,7 @@ class RuleEngine:
             key=f"{rule.key}_{day.date().isoformat()}",
             phones=rule.phones,
             speakers=rule.speakers,
-            tts_message=(rule.tts_message or summary).replace("{event}", what),
+            tts_message=event_text(rule.tts_message, events, append=False) if rule.tts_message else summary,
             max_reminders=rule.max_reminders,
             keep_done=rule.keep_done,
             notify_data=rule.notify_data,
@@ -442,3 +503,78 @@ class RuleEngine:
             restart=True,
             source="rule",
         )
+
+    async def _sync_calendar(self, rule: Rule) -> None:
+        """"N minutes before the start": a task for each event with a time, added shortly
+        before its heads-up; due at the start, closed at the end. Events that moved or were
+        deleted take their task along, as long as it has not started reminding."""
+        if cancel := self._timers.pop(rule.id, None):
+            cancel()  # the first look after starting, if this is a regular one
+        now = dt_util.now()
+        try:
+            resp = await self.hass.services.async_call(
+                "calendar",
+                "get_events",
+                {"entity_id": rule.entity_id, "start_date_time": now.isoformat(),
+                 "end_date_time": (now + CALENDAR_LOOKAHEAD).isoformat()},
+                blocking=True,
+                return_response=True,
+            )
+        except Exception as err:  # noqa: BLE001 - tried again at the next look
+            _LOGGER.debug("Remindo could not read calendar %s: %s", rule.entity_id, err)
+            return
+        known = self._calendar_events.setdefault(rule.id, {})
+        for key, info in list(known.items()):
+            if (dt_util.parse_datetime(info.get("end", "")) or now) < now:
+                known.pop(key)  # the event is over
+        seen: set[str] = set()
+        for event in (resp or {}).get(rule.entity_id, {}).get("events", []):
+            name = event.get("summary", "")
+            start = _event_start(event)
+            if start is None or start <= now:
+                continue  # all-day events are for the "N days before" timing
+            if rule.contains and rule.contains.lower() not in name.lower():
+                continue
+            # one task per event: its name and start (a moved event is a new one)
+            key = f"{rule.key}_at_{start:%Y%m%d%H%M}_{hashlib.sha1(name.encode()).hexdigest()[:6]}"
+            seen.add(key)
+            if key in known:
+                continue
+            advance = advance_from_text(event.get("description"))
+            minutes = int(rule.before_minutes) if advance is None else advance
+            if start - timedelta(minutes=minutes) > now + CALENDAR_SYNC * 2:
+                continue  # too early: added at a later look
+            end = dt_util.parse_datetime(str(event.get("end") or "")) or start
+            known[key] = {"start": start.isoformat(), "end": dt_util.as_local(end).isoformat()}
+            summary = event_text(rule.summary, [event], append=True)
+            await self.manager.async_add(
+                summary,
+                description=rule.description,
+                start=start,
+                interval=rule.interval,
+                key=key,
+                phones=rule.phones,
+                speakers=rule.speakers,
+                tts_message=event_text(rule.tts_message, [event], append=False) if rule.tts_message else None,
+                max_reminders=rule.max_reminders,
+                keep_done=rule.keep_done,
+                notify_data=rule.notify_data,
+                list_name=rule.list_name,
+                icon=rule.icon,
+                important=rule.important,
+                advance=minutes or None,
+                # nobody ticked it off: drop the task once the event is over
+                expires=dt_util.as_local(end) if rule.auto_close and end > start else None,
+                templates=False,  # event names come from outside: never run them as templates
+                source="rule",
+            )
+        for key, info in list(known.items()):
+            if key in seen:
+                continue
+            start = dt_util.parse_datetime(info.get("start", ""))
+            if start and now < start < now + CALENDAR_LOOKAHEAD:
+                # the event is no longer there (moved or deleted)
+                if (task := self.manager.find(key=key)) and not task.active:
+                    await self.manager.async_delete(task)
+                known.pop(key)
+        self.manager.async_schedule_save()

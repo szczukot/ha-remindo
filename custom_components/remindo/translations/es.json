@@ -192,6 +192,18 @@
         "important": {
           "name": "Importante",
           "description": "Fuerte en el teléfono: Android la reproduce como alarma, también con el teléfono en silencio; iPhone como alerta crítica (permite las alertas críticas en la app de HA). El push se envía también en las horas de silencio."
+        },
+        "advance": {
+          "name": "Aviso antes (min)",
+          "description": "Una notificación tantos minutos antes de la hora (p. ej. 60), con Hecho y Omitir; los recordatorios de siempre empiezan a la hora."
+        },
+        "advance_at": {
+          "name": "Aviso a las",
+          "description": "O un aviso a esta hora, advance_days días antes de la fecha (p. ej. 20:00 el día anterior). Se ignora si se indica advance."
+        },
+        "advance_days": {
+          "name": "Aviso: días antes",
+          "description": "Para advance_at: 1 = el día anterior (por defecto), 0 = el mismo día."
         }
       }
     },
@@ -352,6 +364,18 @@
         "important": {
           "name": "Importante",
           "description": "Fuerte en el teléfono: Android la reproduce como alarma, también con el teléfono en silencio; iPhone como alerta crítica (permite las alertas críticas en la app de HA). El push se envía también en las horas de silencio."
+        },
+        "advance": {
+          "name": "Aviso antes (min)",
+          "description": "Una notificación tantos minutos antes de la hora (p. ej. 60), con Hecho y Omitir; los recordatorios de siempre empiezan a la hora."
+        },
+        "advance_at": {
+          "name": "Aviso a las",
+          "description": "O un aviso a esta hora, advance_days días antes de la fecha (p. ej. 20:00 el día anterior). Se ignora si se indica advance."
+        },
+        "advance_days": {
+          "name": "Aviso: días antes",
+          "description": "Para advance_at: 1 = el día anterior (por defecto), 0 = el mismo día."
         }
       }
     },
@@ -415,6 +439,12 @@
         "alarm_stream": "Alarma (también en modo silencio)",
         "alarm_stream_max": "Alarma a todo volumen"
       }
+    },
+    "calendar_timing": {
+      "options": {
+        "day": "N días antes, a una hora",
+        "start": "N minutos antes del inicio de cada evento"
+      }
     }
   },
   "config_subentries": {
@@ -435,7 +465,7 @@
             "icon": "Icono"
           },
           "data_description": {
-            "summary": "P. ej. \"Vaciar el lavavajillas\". Puedes añadir {state} (valor actual con unidad) y {name} (nombre del dispositivo), p. ej. \"Humedad {state}, ventila el baño\". En los calendarios se añaden al final los nombres de los eventos (o pon {event} donde los quieras).",
+            "summary": "P. ej. \"Vaciar el lavavajillas\". Puedes añadir {state} (valor actual con unidad) y {name} (nombre del dispositivo), p. ej. \"Humedad {state}, ventila el baño\". En los calendarios se añaden al final los nombres de los eventos (o pon {event} donde los quieras). En calendarios también {time} (hora de inicio) y {location} (lugar).",
             "icon": "Opcional. Se muestra junto a la tarea en la tarjeta y en la notificación de Android."
           }
         },
@@ -449,7 +479,7 @@
             "icon": "Icono"
           },
           "data_description": {
-            "summary": "P. ej. \"Vaciar el lavavajillas\". Puedes añadir {state} (valor actual con unidad) y {name} (nombre del dispositivo), p. ej. \"Humedad {state}, ventila el baño\". En los calendarios se añaden al final los nombres de los eventos (o pon {event} donde los quieras).",
+            "summary": "P. ej. \"Vaciar el lavavajillas\". Puedes añadir {state} (valor actual con unidad) y {name} (nombre del dispositivo), p. ej. \"Humedad {state}, ventila el baño\". En los calendarios se añaden al final los nombres de los eventos (o pon {event} donde los quieras). En calendarios también {time} (hora de inicio) y {location} (lugar).",
             "icon": "Opcional. Se muestra junto a la tarea en la tarjeta y en la notificación de Android."
           }
         },
@@ -489,12 +519,17 @@
           "title": "Calendario",
           "description": "Calendario: {entity}",
           "data": {
+            "timing": "Cuándo recordar",
             "days_before": "Días antes del evento",
             "at_time": "A las",
+            "before_minutes": "Minutos antes del inicio",
             "contains": "Solo eventos cuyo nombre contiene (opcional)"
           },
           "data_description": {
-            "days_before": "1 = el día anterior, 0 = el mismo día.",
+            "timing": "N días antes: una tarea con los eventos del día, a una hora fija (también los de todo el día). N minutos antes del inicio: una tarea por cada evento con hora; recuerda desde el inicio y se cierra sola al terminar el evento.",
+            "days_before": "1 = el día anterior, 0 = el mismo día. Solo para «N días antes».",
+            "at_time": "Solo para «N días antes».",
+            "before_minutes": "Solo para «N minutos antes del inicio». Un aviso llega ese tiempo antes del evento y desde su inicio los recordatorios de siempre. Un evento puede tener su propio tiempo: escribe p. ej. remindo: 2h (o 30m, 1d) en su descripción. 0 = sin aviso, recordar al inicio.",
             "contains": "Un filtro sobre el nombre del evento. P. ej. \"Vidrio\" en un calendario de recogida de basura → un recordatorio solo para la recogida de vidrio; los demás eventos de este calendario se ignoran. No importan mayúsculas / minúsculas. Vacío = todos los eventos."
           }
         },

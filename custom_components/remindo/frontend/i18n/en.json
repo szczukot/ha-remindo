@@ -148,5 +148,14 @@
     "on the last Friday",
     "on the last Saturday",
     "on the last Sunday"
-  ]
+  ],
+  "advance": "Heads-up",
+  "adv_none": "no",
+  "adv_at": "at a time…",
+  "adv_day0": "on the day",
+  "adv_day1": "the day before",
+  "adv_dayn": "{n} days before",
+  "adv_before": "{n} before",
+  "adv_meta_at": "{d} at {t}",
+  "advance_hint": "one notification before the due time; reminding starts at the due time"
 }

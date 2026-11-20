@@ -192,6 +192,18 @@
         "important": {
           "name": "Importante",
           "description": "Forte sul telefono: Android la riproduce come allarme, anche con il telefono silenzioso; iPhone come avviso critico (consenti gli avvisi critici nell'app HA). Il push viene inviato anche nelle ore di silenzio."
+        },
+        "advance": {
+          "name": "Avviso prima (min)",
+          "description": "Una notifica tanti minuti prima della scadenza (es. 60), con Fatto e Salta; i soliti promemoria iniziano alla scadenza."
+        },
+        "advance_at": {
+          "name": "Avviso alle",
+          "description": "Oppure un avviso a quest'ora, advance_days giorni prima della data (es. 20:00 il giorno prima). Ignorato se advance è impostato."
+        },
+        "advance_days": {
+          "name": "Avviso: giorni prima",
+          "description": "Per advance_at: 1 = il giorno prima (predefinito), 0 = il giorno stesso."
         }
       }
     },
@@ -352,6 +364,18 @@
         "important": {
           "name": "Importante",
           "description": "Forte sul telefono: Android la riproduce come allarme, anche con il telefono silenzioso; iPhone come avviso critico (consenti gli avvisi critici nell'app HA). Il push viene inviato anche nelle ore di silenzio."
+        },
+        "advance": {
+          "name": "Avviso prima (min)",
+          "description": "Una notifica tanti minuti prima della scadenza (es. 60), con Fatto e Salta; i soliti promemoria iniziano alla scadenza."
+        },
+        "advance_at": {
+          "name": "Avviso alle",
+          "description": "Oppure un avviso a quest'ora, advance_days giorni prima della data (es. 20:00 il giorno prima). Ignorato se advance è impostato."
+        },
+        "advance_days": {
+          "name": "Avviso: giorni prima",
+          "description": "Per advance_at: 1 = il giorno prima (predefinito), 0 = il giorno stesso."
         }
       }
     },
@@ -415,6 +439,12 @@
         "alarm_stream": "Sveglia (anche in modalità silenziosa)",
         "alarm_stream_max": "Sveglia al massimo volume"
       }
+    },
+    "calendar_timing": {
+      "options": {
+        "day": "N giorni prima, a un'ora",
+        "start": "N minuti prima dell'inizio di ogni evento"
+      }
     }
   },
   "config_subentries": {
@@ -435,7 +465,7 @@
             "icon": "Icona"
           },
           "data_description": {
-            "summary": "Es. \"Svuota la lavastoviglie\". Puoi aggiungere {state} (valore attuale con unità) e {name} (nome del dispositivo), es. \"Umidità {state}, arieggia il bagno\". Per i calendari i nomi degli eventi vengono aggiunti in fondo (oppure metti {event} dove li vuoi).",
+            "summary": "Es. \"Svuota la lavastoviglie\". Puoi aggiungere {state} (valore attuale con unità) e {name} (nome del dispositivo), es. \"Umidità {state}, arieggia il bagno\". Per i calendari i nomi degli eventi vengono aggiunti in fondo (oppure metti {event} dove li vuoi). Per i calendari anche {time} (ora di inizio) e {location} (luogo).",
             "icon": "Facoltativa. Mostrata accanto all'attività nella scheda e nella notifica Android."
           }
         },
@@ -449,7 +479,7 @@
             "icon": "Icona"
           },
           "data_description": {
-            "summary": "Es. \"Svuota la lavastoviglie\". Puoi aggiungere {state} (valore attuale con unità) e {name} (nome del dispositivo), es. \"Umidità {state}, arieggia il bagno\". Per i calendari i nomi degli eventi vengono aggiunti in fondo (oppure metti {event} dove li vuoi).",
+            "summary": "Es. \"Svuota la lavastoviglie\". Puoi aggiungere {state} (valore attuale con unità) e {name} (nome del dispositivo), es. \"Umidità {state}, arieggia il bagno\". Per i calendari i nomi degli eventi vengono aggiunti in fondo (oppure metti {event} dove li vuoi). Per i calendari anche {time} (ora di inizio) e {location} (luogo).",
             "icon": "Facoltativa. Mostrata accanto all'attività nella scheda e nella notifica Android."
           }
         },
@@ -489,12 +519,17 @@
           "title": "Calendario",
           "description": "Calendario: {entity}",
           "data": {
+            "timing": "Quando ricordare",
             "days_before": "Giorni prima dell'evento",
             "at_time": "Alle",
+            "before_minutes": "Minuti prima dell'inizio",
             "contains": "Solo eventi il cui nome contiene (facoltativo)"
           },
           "data_description": {
-            "days_before": "1 = il giorno prima, 0 = il giorno stesso.",
+            "timing": "N giorni prima: un compito con gli eventi del giorno, a un'ora fissa (anche quelli di tutto il giorno). N minuti prima dell'inizio: un compito per ogni evento con orario; ricorda dall'inizio e si chiude da solo alla fine dell'evento.",
+            "days_before": "1 = il giorno prima, 0 = il giorno stesso. Solo per «N giorni prima».",
+            "at_time": "Solo per «N giorni prima».",
+            "before_minutes": "Solo per «N minuti prima dell'inizio». Un avviso arriva tanto tempo prima dell'evento, poi dall'inizio i soliti promemoria. Un evento può avere un tempo suo: scrivi ad es. remindo: 2h (o 30m, 1d) nella descrizione. 0 = nessun avviso, promemoria all'inizio.",
             "contains": "Un filtro sul nome dell'evento. Es. \"Vetro\" in un calendario della raccolta rifiuti → un promemoria solo per la raccolta del vetro, gli altri eventi di questo calendario vengono ignorati. Maiuscole / minuscole non contano. Vuoto = tutti gli eventi."
           }
         },

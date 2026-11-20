@@ -158,5 +158,14 @@
     "el último viernes",
     "el último sábado",
     "el último domingo"
-  ]
+  ],
+  "advance": "Aviso previo",
+  "adv_none": "no",
+  "adv_at": "a una hora…",
+  "adv_day0": "el mismo día",
+  "adv_day1": "el día anterior",
+  "adv_dayn": "{n} días antes",
+  "adv_before": "{n} antes",
+  "adv_meta_at": "{d} a las {t}",
+  "advance_hint": "una notificación antes de la hora; los recordatorios empiezan a la hora"
 }

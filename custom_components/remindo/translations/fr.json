@@ -192,6 +192,18 @@
         "important": {
           "name": "Important",
           "description": "Fort sur le téléphone : Android la joue comme une alarme, même téléphone en silencieux ; iPhone comme alerte critique (autorisez les alertes critiques dans l'app HA). Le push est envoyé aussi pendant les heures calmes."
+        },
+        "advance": {
+          "name": "Annonce avant (min)",
+          "description": "Une notification autant de minutes avant l'échéance (p. ex. 60), avec Fait et Ignorer ; les rappels habituels commencent à l'échéance."
+        },
+        "advance_at": {
+          "name": "Annonce à",
+          "description": "Ou une annonce à cette heure, advance_days jours avant l'échéance (p. ex. 20:00 la veille). Ignoré si advance est défini."
+        },
+        "advance_days": {
+          "name": "Annonce : jours avant",
+          "description": "Pour advance_at : 1 = la veille (par défaut), 0 = le jour de l'échéance."
         }
       }
     },
@@ -352,6 +364,18 @@
         "important": {
           "name": "Important",
           "description": "Fort sur le téléphone : Android la joue comme une alarme, même téléphone en silencieux ; iPhone comme alerte critique (autorisez les alertes critiques dans l'app HA). Le push est envoyé aussi pendant les heures calmes."
+        },
+        "advance": {
+          "name": "Annonce avant (min)",
+          "description": "Une notification autant de minutes avant l'échéance (p. ex. 60), avec Fait et Ignorer ; les rappels habituels commencent à l'échéance."
+        },
+        "advance_at": {
+          "name": "Annonce à",
+          "description": "Ou une annonce à cette heure, advance_days jours avant l'échéance (p. ex. 20:00 la veille). Ignoré si advance est défini."
+        },
+        "advance_days": {
+          "name": "Annonce : jours avant",
+          "description": "Pour advance_at : 1 = la veille (par défaut), 0 = le jour de l'échéance."
         }
       }
     },
@@ -415,6 +439,12 @@
         "alarm_stream": "Alarme (même en mode silencieux)",
         "alarm_stream_max": "Alarme à plein volume"
       }
+    },
+    "calendar_timing": {
+      "options": {
+        "day": "N jours avant, à une heure",
+        "start": "N minutes avant le début de chaque événement"
+      }
     }
   },
   "config_subentries": {
@@ -435,7 +465,7 @@
             "icon": "Icône"
           },
           "data_description": {
-            "summary": "P. ex. \"Vider le lave-vaisselle\". Vous pouvez ajouter {state} (valeur actuelle avec unité) et {name} (nom de l'appareil), p. ex. \"Humidité {state}, aérer la salle de bain\". Pour les calendriers, les noms des événements sont ajoutés à la fin (ou placez {event} où vous voulez).",
+            "summary": "P. ex. \"Vider le lave-vaisselle\". Vous pouvez ajouter {state} (valeur actuelle avec unité) et {name} (nom de l'appareil), p. ex. \"Humidité {state}, aérer la salle de bain\". Pour les calendriers, les noms des événements sont ajoutés à la fin (ou placez {event} où vous voulez). Pour un calendrier aussi {time} (heure de début) et {location} (lieu).",
             "icon": "Facultatif. Affichée à côté de la tâche sur la carte et dans la notification Android."
           }
         },
@@ -449,7 +479,7 @@
             "icon": "Icône"
           },
           "data_description": {
-            "summary": "P. ex. \"Vider le lave-vaisselle\". Vous pouvez ajouter {state} (valeur actuelle avec unité) et {name} (nom de l'appareil), p. ex. \"Humidité {state}, aérer la salle de bain\". Pour les calendriers, les noms des événements sont ajoutés à la fin (ou placez {event} où vous voulez).",
+            "summary": "P. ex. \"Vider le lave-vaisselle\". Vous pouvez ajouter {state} (valeur actuelle avec unité) et {name} (nom de l'appareil), p. ex. \"Humidité {state}, aérer la salle de bain\". Pour les calendriers, les noms des événements sont ajoutés à la fin (ou placez {event} où vous voulez). Pour un calendrier aussi {time} (heure de début) et {location} (lieu).",
             "icon": "Facultatif. Affichée à côté de la tâche sur la carte et dans la notification Android."
           }
         },
@@ -489,12 +519,17 @@
           "title": "Calendrier",
           "description": "Calendrier : {entity}",
           "data": {
+            "timing": "Quand rappeler",
             "days_before": "Jours avant l'événement",
             "at_time": "À",
+            "before_minutes": "Minutes avant le début",
             "contains": "Seulement les événements dont le nom contient (facultatif)"
           },
           "data_description": {
-            "days_before": "1 = la veille, 0 = le jour même.",
+            "timing": "N jours avant : une tâche pour les événements du jour, à une heure fixe (aussi ceux sur toute la journée). N minutes avant le début : une tâche par événement avec une heure ; elle rappelle dès le début et se ferme seule à la fin de l'événement.",
+            "days_before": "1 = la veille, 0 = le jour même. Seulement pour « N jours avant ».",
+            "at_time": "Seulement pour « N jours avant ».",
+            "before_minutes": "Seulement pour « N minutes avant le début ». Une annonce arrive autant de temps avant l'événement, puis les rappels habituels dès le début. Un événement peut avoir son propre délai : écrivez p. ex. remindo: 2h (ou 30m, 1d) dans sa description. 0 = pas d'annonce, rappel au début.",
             "contains": "Un filtre sur le nom de l'événement. P. ex. \"Verre\" dans un calendrier de collecte des déchets → un rappel seulement pour la collecte du verre, les autres événements de ce calendrier sont ignorés. Majuscules / minuscules sans importance. Vide = tous les événements."
           }
         },

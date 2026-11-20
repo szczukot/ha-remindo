@@ -17,7 +17,10 @@
     "src_rule": "by rule",
     "src_expired": "date passed",
     "src_rule_removed": "rule deleted",
-    "nth": ", time #{count}"
+    "nth": ", time #{count}",
+    "advance_today": "Today at {time}: {summary}",
+    "advance_tomorrow": "Tomorrow at {time}: {summary}",
+    "advance_date": "{date} at {time}: {summary}"
   },
   "units": {
     "hourly": {
@@ -77,5 +80,6 @@
     "last Sunday"
   ],
   "last_day": "last day",
-  "from_done": "from ticking off"
+  "from_done": "from ticking off",
+  "date_format": "%b %d"
 }

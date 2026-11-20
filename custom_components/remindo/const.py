@@ -74,6 +74,9 @@ ATTR_NOTIFY_DATA = "notify_data"
 ATTR_LIST = "list"
 ATTR_ICON = "icon"
 ATTR_IMPORTANT = "important"
+ATTR_ADVANCE = "advance"  # minutes before the due time: one heads-up notification
+ATTR_ADVANCE_AT = "advance_at"  # or at this time ("20:00")…
+ATTR_ADVANCE_DAYS = "advance_days"  # …this many days before the due date (0 = the same day)
 
 REPEAT_NONE = "none"
 REPEAT_OPTIONS = [REPEAT_NONE, "hourly", "daily", "weekly", "monthly", "yearly"]

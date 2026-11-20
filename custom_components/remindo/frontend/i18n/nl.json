@@ -158,5 +158,14 @@
     "op de laatste vrijdag",
     "op de laatste zaterdag",
     "op de laatste zondag"
-  ]
+  ],
+  "advance": "Vooraankondiging",
+  "adv_none": "nee",
+  "adv_at": "op een tijdstip…",
+  "adv_day0": "op de dag zelf",
+  "adv_day1": "de dag ervoor",
+  "adv_dayn": "{n} dagen ervoor",
+  "adv_before": "{n} vooraf",
+  "adv_meta_at": "{d} om {t}",
+  "advance_hint": "één melding voor het tijdstip; de herinneringen beginnen op het tijdstip"
 }

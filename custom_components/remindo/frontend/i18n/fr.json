@@ -158,5 +158,14 @@
     "le dernier vendredi",
     "le dernier samedi",
     "le dernier dimanche"
-  ]
+  ],
+  "advance": "Annonce",
+  "adv_none": "non",
+  "adv_at": "à une heure…",
+  "adv_day0": "le jour même",
+  "adv_day1": "la veille",
+  "adv_dayn": "{n} jours avant",
+  "adv_before": "{n} avant",
+  "adv_meta_at": "{d} à {t}",
+  "advance_hint": "une notification avant l'échéance ; les rappels commencent à l'échéance"
 }

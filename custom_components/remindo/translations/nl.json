@@ -192,6 +192,18 @@
         "important": {
           "name": "Belangrijk",
           "description": "Luid op de telefoon: Android speelt het af als alarm, ook als de telefoon op stil staat; iPhone als kritieke melding (sta kritieke meldingen toe in de HA-app). Push wordt ook in de stille uren verstuurd."
+        },
+        "advance": {
+          "name": "Aankondiging vooraf (min)",
+          "description": "Eén melding zoveel minuten voor het tijdstip (bijv. 60), met Gedaan en Overslaan; de gewone herinneringen beginnen op het tijdstip."
+        },
+        "advance_at": {
+          "name": "Aankondiging om",
+          "description": "Of een aankondiging om dit tijdstip, advance_days dagen voor de datum (bijv. 20:00 de dag ervoor). Genegeerd als advance is ingesteld."
+        },
+        "advance_days": {
+          "name": "Aankondiging: dagen vooraf",
+          "description": "Voor advance_at: 1 = de dag ervoor (standaard), 0 = op de dag zelf."
         }
       }
     },
@@ -352,6 +364,18 @@
         "important": {
           "name": "Belangrijk",
           "description": "Luid op de telefoon: Android speelt het af als alarm, ook als de telefoon op stil staat; iPhone als kritieke melding (sta kritieke meldingen toe in de HA-app). Push wordt ook in de stille uren verstuurd."
+        },
+        "advance": {
+          "name": "Aankondiging vooraf (min)",
+          "description": "Eén melding zoveel minuten voor het tijdstip (bijv. 60), met Gedaan en Overslaan; de gewone herinneringen beginnen op het tijdstip."
+        },
+        "advance_at": {
+          "name": "Aankondiging om",
+          "description": "Of een aankondiging om dit tijdstip, advance_days dagen voor de datum (bijv. 20:00 de dag ervoor). Genegeerd als advance is ingesteld."
+        },
+        "advance_days": {
+          "name": "Aankondiging: dagen vooraf",
+          "description": "Voor advance_at: 1 = de dag ervoor (standaard), 0 = op de dag zelf."
         }
       }
     },
@@ -415,6 +439,12 @@
         "alarm_stream": "Wekker (ook in de stille modus)",
         "alarm_stream_max": "Wekker op vol volume"
       }
+    },
+    "calendar_timing": {
+      "options": {
+        "day": "N dagen vooraf, op een tijdstip",
+        "start": "N minuten voor het begin van elke afspraak"
+      }
     }
   },
   "config_subentries": {
@@ -435,7 +465,7 @@
             "icon": "Pictogram"
           },
           "data_description": {
-            "summary": "Bijv. \"Vaatwasser uitruimen\". Je kunt {state} (huidige waarde met eenheid) en {name} (naam van het apparaat) toevoegen, bijv. \"Luchtvochtigheid {state}, badkamer luchten\". Bij agenda's worden de namen van de afspraken achteraan toegevoegd (of zet {event} waar je ze wilt).",
+            "summary": "Bijv. \"Vaatwasser uitruimen\". Je kunt {state} (huidige waarde met eenheid) en {name} (naam van het apparaat) toevoegen, bijv. \"Luchtvochtigheid {state}, badkamer luchten\". Bij agenda's worden de namen van de afspraken achteraan toegevoegd (of zet {event} waar je ze wilt). Bij agenda's ook {time} (begintijd) en {location} (plaats).",
             "icon": "Optioneel. Getoond naast de taak op de kaart en in de Android-melding."
           }
         },
@@ -449,7 +479,7 @@
             "icon": "Pictogram"
           },
           "data_description": {
-            "summary": "Bijv. \"Vaatwasser uitruimen\". Je kunt {state} (huidige waarde met eenheid) en {name} (naam van het apparaat) toevoegen, bijv. \"Luchtvochtigheid {state}, badkamer luchten\". Bij agenda's worden de namen van de afspraken achteraan toegevoegd (of zet {event} waar je ze wilt).",
+            "summary": "Bijv. \"Vaatwasser uitruimen\". Je kunt {state} (huidige waarde met eenheid) en {name} (naam van het apparaat) toevoegen, bijv. \"Luchtvochtigheid {state}, badkamer luchten\". Bij agenda's worden de namen van de afspraken achteraan toegevoegd (of zet {event} waar je ze wilt). Bij agenda's ook {time} (begintijd) en {location} (plaats).",
             "icon": "Optioneel. Getoond naast de taak op de kaart en in de Android-melding."
           }
         },
@@ -489,12 +519,17 @@
           "title": "Agenda",
           "description": "Agenda: {entity}",
           "data": {
+            "timing": "Wanneer herinneren",
             "days_before": "Dagen vóór de afspraak",
             "at_time": "Om",
+            "before_minutes": "Minuten voor het begin",
             "contains": "Alleen afspraken waarvan de naam bevat (optioneel)"
           },
           "data_description": {
-            "days_before": "1 = de dag ervoor, 0 = op de dag zelf.",
+            "timing": "N dagen vooraf: één taak met de afspraken van die dag, op een vast tijdstip (ook hele-dag-afspraken). N minuten voor het begin: een taak per afspraak met een tijd; die herinnert vanaf het begin en sluit zichzelf als de afspraak voorbij is.",
+            "days_before": "1 = de dag ervoor, 0 = op de dag zelf. Alleen voor „N dagen vooraf”.",
+            "at_time": "Alleen voor „N dagen vooraf”.",
+            "before_minutes": "Alleen voor „N minuten voor het begin”. Zo lang vooraf komt een aankondiging, vanaf het begin de gewone herinneringen. Een afspraak kan een eigen tijd hebben: zet bijv. remindo: 2h (of 30m, 1d) in de beschrijving. 0 = geen aankondiging, herinneren bij het begin.",
             "contains": "Een filter op de naam van de afspraak. Bijv. \"Glas\" in een afvalkalender → alleen een herinnering voor de glasophaling, andere afspraken in deze agenda worden genegeerd. Hoofd- / kleine letters maken niet uit. Leeg = alle afspraken."
           }
         },

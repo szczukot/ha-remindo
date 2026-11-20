@@ -166,5 +166,14 @@
     "l'ultimo venerdì",
     "l'ultimo sabato",
     "l'ultima domenica"
-  ]
+  ],
+  "advance": "Avviso prima",
+  "adv_none": "no",
+  "adv_at": "a un'ora…",
+  "adv_day0": "il giorno stesso",
+  "adv_day1": "il giorno prima",
+  "adv_dayn": "{n} giorni prima",
+  "adv_before": "{n} prima",
+  "adv_meta_at": "{d} alle {t}",
+  "advance_hint": "una notifica prima della scadenza; i promemoria iniziano alla scadenza"
 }

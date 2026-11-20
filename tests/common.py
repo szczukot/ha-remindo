@@ -65,7 +65,7 @@ async def add_rule(hass: HomeAssistant, entry, data: dict) -> str:
     flow = await hass.config_entries.subentries.async_configure(
         flow["flow_id"], {"summary": data["summary"], "entity_id": data["entity_id"], "mode": data.get("mode", "state")}
     )
-    cond = {k: data[k] for k in ("value", "for_minutes", "days_before", "at_time", "contains") if k in data}
+    cond = {k: data[k] for k in ("value", "for_minutes", "days_before", "at_time", "contains", "timing", "before_minutes") if k in data}
     if not data["entity_id"].startswith("calendar."):
         cond.setdefault("for_minutes", 0)
     flow = await hass.config_entries.subentries.async_configure(flow["flow_id"], cond)

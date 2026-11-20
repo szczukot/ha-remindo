@@ -31,6 +31,9 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
 from .const import (
+    ATTR_ADVANCE,
+    ATTR_ADVANCE_AT,
+    ATTR_ADVANCE_DAYS,
     ATTR_DESCRIPTION,
     ATTR_DONE_MESSAGE,
     ATTR_ICON,
@@ -91,6 +94,11 @@ _PHONES = vol.Any(None, cv.ensure_list_csv)
 # weekdays as names (mon … sun) or numbers (0 = Monday)
 _DAYS = vol.All(cv.ensure_list_csv, [vol.Any(vol.All(vol.Coerce(int), vol.Range(min=0, max=6)), vol.All(cv.string, vol.Lower, vol.In(WEEKDAYS)))])
 _SPEAKERS = vol.Any(None, cv.entity_ids)
+_ADVANCE = {
+    vol.Optional(ATTR_ADVANCE): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0, max=43200))),
+    vol.Optional(ATTR_ADVANCE_AT): vol.Any(None, cv.time),
+    vol.Optional(ATTR_ADVANCE_DAYS): vol.All(vol.Coerce(int), vol.Range(min=0, max=30)),
+}
 
 ADD_SCHEMA = vol.Schema(
     {
@@ -117,6 +125,7 @@ ADD_SCHEMA = vol.Schema(
         vol.Optional(ATTR_LIST): vol.Any(None, cv.string),
         vol.Optional(ATTR_ICON): vol.Any(None, cv.icon),
         vol.Optional(ATTR_IMPORTANT, default=False): cv.boolean,
+        **_ADVANCE,
     }
 )
 TARGET = {vol.Optional(ATTR_UID): cv.string, vol.Optional(ATTR_KEY): cv.string}
@@ -152,6 +161,7 @@ UPDATE_FIELDS = {
     vol.Optional(ATTR_LIST): vol.Any(None, cv.string),
     vol.Optional(ATTR_ICON): vol.Any(None, cv.icon),
     vol.Optional(ATTR_IMPORTANT): cv.boolean,
+    **_ADVANCE,
 }
 UPDATE_SCHEMA = vol.All(vol.Schema({**TARGET, **UPDATE_FIELDS}), _HAS_TARGET)
 CLOSE_SCHEMA = vol.Schema({vol.Required(ATTR_KEY): cv.string})
@@ -296,6 +306,9 @@ def _register_services(hass: HomeAssistant) -> None:
             list_name=data.get(ATTR_LIST),
             icon=data.get(ATTR_ICON),
             important=data.get(ATTR_IMPORTANT, False),
+            advance=data.get(ATTR_ADVANCE),
+            advance_at=data.get(ATTR_ADVANCE_AT),
+            advance_days=data.get(ATTR_ADVANCE_DAYS),
             templates=await _may_use_templates(hass, call),
             source="service",
             context=call.context,
