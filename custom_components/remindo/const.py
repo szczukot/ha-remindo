@@ -98,5 +98,6 @@ ACTION_PREFIX = "REMINDO"
 ACTION_DONE = "DONE"
 ACTION_SNOOZE = "SNOOZE"
 ACTION_DISMISS = "DISMISS"
+ACTION_ACK = "ACK"  # the heads-up: "I'll remember" (only takes the notification away)
 
 CARD_URL = "/remindo_static/remindo-card.js"

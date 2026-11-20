@@ -20,7 +20,8 @@
     "nth": ", {count}ª volta",
     "advance_today": "Oggi alle {time}: {summary}",
     "advance_tomorrow": "Domani alle {time}: {summary}",
-    "advance_date": "Il {date} alle {time}: {summary}"
+    "advance_date": "Il {date} alle {time}: {summary}",
+    "ack": "👍 Me lo ricordo"
   },
   "units": {
     "hourly": {

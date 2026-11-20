@@ -20,7 +20,8 @@
     "nth": ", time #{count}",
     "advance_today": "Today at {time}: {summary}",
     "advance_tomorrow": "Tomorrow at {time}: {summary}",
-    "advance_date": "{date} at {time}: {summary}"
+    "advance_date": "{date} at {time}: {summary}",
+    "ack": "👍 I'll remember"
   },
   "units": {
     "hourly": {

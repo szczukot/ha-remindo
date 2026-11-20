@@ -21,7 +21,7 @@ async def test_heads_up_minutes_before(hass: HomeAssistant, freezer: FrozenDateT
     await tick(hass, freezer, minutes=2)
     assert _pushes(calls) == ["Today at 14:30: Dentist"]
     push = calls["notify"][-1].data["data"]
-    assert [a["action"] for a in push["actions"]] == [f"REMINDO_DONE_{uid}", f"REMINDO_DISMISS_{uid}"]
+    assert [a["action"] for a in push["actions"]] == [f"REMINDO_ACK_{uid}", f"REMINDO_DONE_{uid}", f"REMINDO_DISMISS_{uid}"]
     assert push["tag"] == f"remindo_{uid}"
     # no speaker for the heads-up, and the task is not "reminding" yet
     assert calls["tts"] == []
@@ -91,3 +91,20 @@ async def test_quiet_hours_delay_the_heads_up(hass: HomeAssistant, freezer: Froz
     assert _pushes(calls) == []
     await tick(hass, freezer, hours=1)
     assert _pushes(calls) == ["Today at 09:00: Train"]
+
+
+async def test_ill_remember_keeps_the_reminders(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
+    """"I'll remember" only takes the heads-up away: the reminders come at the due time as set."""
+    freezer.move_to("2026-11-20 12:00:00+01:00")
+    entry, calls = await setup_integration(hass)
+    uid = await add_task(hass, summary="Dentist", start="2026-11-20T14:30:00+01:00", advance=60)
+    await tick(hass, freezer, minutes=91)
+    hass.bus.async_fire("mobile_app_notification_action", {"action": f"REMINDO_ACK_{uid}"})
+    await hass.async_block_till_done()
+    task = entry.runtime_data.find(uid)
+    assert task.status == "open" and not task.active
+    assert calls["notify"][-1].data["message"] == "clear_notification"
+    await tick(hass, freezer, minutes=60)  # 14:31
+    assert _pushes(calls) == ["Today at 14:30: Dentist", "Dentist"]
+    await tick(hass, freezer, minutes=30)  # and again, as set
+    assert _pushes(calls) == ["Today at 14:30: Dentist", "Dentist", "Dentist"]

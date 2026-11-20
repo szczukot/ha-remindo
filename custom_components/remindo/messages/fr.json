@@ -20,7 +20,8 @@
     "nth": ", {count}e fois",
     "advance_today": "Aujourd'hui à {time} : {summary}",
     "advance_tomorrow": "Demain à {time} : {summary}",
-    "advance_date": "Le {date} à {time} : {summary}"
+    "advance_date": "Le {date} à {time} : {summary}",
+    "ack": "👍 J'y penserai"
   },
   "units": {
     "hourly": {

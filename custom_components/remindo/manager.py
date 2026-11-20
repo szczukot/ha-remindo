@@ -25,6 +25,7 @@ from homeassistant.util import slugify
 
 from . import texts
 from .const import (
+    ACTION_ACK,
     ACTION_DISMISS,
     ACTION_DONE,
     ACTION_PREFIX,
@@ -1186,8 +1187,9 @@ class TaskManager:
             speaking.add_done_callback(self._speaking.discard)
 
     async def _send_advance(self, task: Task, start: datetime) -> None:
-        """The heads-up: one notification ("Tomorrow at 14:30: Dentist") with Done and Skip.
-        It has the task's tag, so the first reminder at the due time replaces it."""
+        """The heads-up: one notification ("Tomorrow at 14:30: Dentist") with "I'll remember"
+        (only takes it away: the reminders come at the due time as set), Done (done early)
+        and Skip. It has the task's tag, so the first reminder at the due time replaces it."""
         title = texts.text(self.hass, "title")
         body = texts.advance(self.hass, task.summary, dt_util.as_local(start), dt_util.now())
         if task.description:
@@ -1215,6 +1217,7 @@ class TaskManager:
                         **extra,
                         "tag": self._tag(task),
                         "actions": [
+                            {"action": f"{ACTION_PREFIX}_{ACTION_ACK}_{task.uid}", "title": texts.text(self.hass, "ack")},
                             {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": texts.text(self.hass, "done")},
                             {"action": f"{ACTION_PREFIX}_{ACTION_DISMISS}_{task.uid}", "title": texts.text(self.hass, "dismiss")},
                         ],
@@ -1344,7 +1347,10 @@ class TaskManager:
             # occurrence of a recurring task): remove it, do not touch the task
             await self._clear_notifications(task, force=True)
             return
-        if kind == ACTION_DONE:
+        if kind == ACTION_ACK:
+            # the heads-up was read: only the notification goes, the reminders come as set
+            await self._clear_notifications(task, force=True)
+        elif kind == ACTION_DONE:
             await self.async_done(task, "phone", event.context)
         elif kind == ACTION_SNOOZE:
             await self.async_snooze(
