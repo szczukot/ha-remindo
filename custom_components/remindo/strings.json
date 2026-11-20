@@ -192,6 +192,18 @@
         "important": {
           "name": "Important",
           "description": "Loud on the phone: Android plays it as an alarm, also when the phone is silenced; iPhone as a critical alert (allow critical alerts in the HA app). Push is sent also in the quiet hours."
+        },
+        "advance": {
+          "name": "Heads-up before (min)",
+          "description": "One notification this many minutes before the due time (e.g. 60), with Done and Skip; the usual reminders start at the due time."
+        },
+        "advance_at": {
+          "name": "Heads-up at",
+          "description": "Or a heads-up at this time, advance_days before the due date (e.g. 20:00 the day before). Ignored when advance is set."
+        },
+        "advance_days": {
+          "name": "Heads-up days before",
+          "description": "For advance_at: 1 = the day before (default), 0 = on the due date."
         }
       }
     },
@@ -352,6 +364,18 @@
         "important": {
           "name": "Important",
           "description": "Loud on the phone: Android plays it as an alarm, also when the phone is silenced; iPhone as a critical alert (allow critical alerts in the HA app). Push is sent also in the quiet hours."
+        },
+        "advance": {
+          "name": "Heads-up before (min)",
+          "description": "One notification this many minutes before the due time (e.g. 60), with Done and Skip; the usual reminders start at the due time."
+        },
+        "advance_at": {
+          "name": "Heads-up at",
+          "description": "Or a heads-up at this time, advance_days before the due date (e.g. 20:00 the day before). Ignored when advance is set."
+        },
+        "advance_days": {
+          "name": "Heads-up days before",
+          "description": "For advance_at: 1 = the day before (default), 0 = on the due date."
         }
       }
     },
@@ -415,6 +439,12 @@
         "alarm_stream": "Alarm (also in silent mode)",
         "alarm_stream_max": "Alarm at full volume"
       }
+    },
+    "calendar_timing": {
+      "options": {
+        "day": "N days before, at a time",
+        "start": "N minutes before each event's start"
+      }
     }
   },
   "config_subentries": {
@@ -435,7 +465,7 @@
             "icon": "Icon"
           },
           "data_description": {
-            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them).",
+            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them). For calendars also {time} (start time) and {location} (place).",
             "icon": "Optional. Shown next to the task on the card and in the Android notification."
           }
         },
@@ -449,7 +479,7 @@
             "icon": "Icon"
           },
           "data_description": {
-            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them).",
+            "summary": "E.g. \"Unload the dishwasher\". You can add {state} (current value with unit) and {name} (device name), e.g. \"Humidity {state}, air the bathroom\". For calendars the event names are appended (or put {event} where you want them). For calendars also {time} (start time) and {location} (place).",
             "icon": "Optional. Shown next to the task on the card and in the Android notification."
           }
         },
@@ -489,12 +519,17 @@
           "title": "Calendar",
           "description": "Calendar: {entity}",
           "data": {
+            "timing": "When to remind",
             "days_before": "Days before the event",
             "at_time": "At",
+            "before_minutes": "Minutes before the start",
             "contains": "Only events whose name contains (optional)"
           },
           "data_description": {
-            "days_before": "1 = the day before, 0 = on the day.",
+            "timing": "N days before: one task for the day's events, at a set time (all-day events too). N minutes before the start: a task for each event with a time; it reminds at the start and closes itself when the event ends.",
+            "days_before": "1 = the day before, 0 = on the day. Only for \"N days before\".",
+            "at_time": "Only for \"N days before\".",
+            "before_minutes": "Only for \"minutes before the start\". A heads-up comes this long before the event, then the usual reminders at its start. An event can set its own time: put e.g. remindo: 2h (or 30m, 1d) in its description. 0 = no heads-up, remind at the start.",
             "contains": "A filter on the event name. E.g. \"Glass\" in a bin collection calendar → a reminder only for glass collection, other events in this calendar are ignored. Upper / lower case does not matter. Empty = all events."
           }
         },

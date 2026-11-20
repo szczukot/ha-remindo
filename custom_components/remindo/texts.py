@@ -34,6 +34,20 @@ def text(hass: HomeAssistant | None, key: str, **kwargs) -> str:
     return texts.get(key, _MESSAGES["en"]["texts"][key]).format(**kwargs)
 
 
+def advance(hass: HomeAssistant | None, summary: str, start: Any, now: Any) -> str:
+    """The heads-up text: "Today at 14:30: Dentist", "Tomorrow at …", "24.11. at …"."""
+    lang = language(hass)
+    texts = {**_MESSAGES["en"]["texts"], **_MESSAGES[lang]["texts"]}
+    clock = start.strftime("%H:%M")
+    days = (start.date() - now.date()).days
+    if days <= 0:
+        return texts["advance_today"].format(time=clock, summary=summary)
+    if days == 1:
+        return texts["advance_tomorrow"].format(time=clock, summary=summary)
+    day = start.strftime(_get(lang, "date_format"))
+    return texts["advance_date"].format(date=day, time=clock, summary=summary)
+
+
 def plural_category(lang: str, n: int) -> str:
     """CLDR plural category for whole numbers, for the languages that have files."""
     if lang == "pl":

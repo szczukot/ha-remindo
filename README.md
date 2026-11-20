@@ -75,6 +75,10 @@ list: Aquarium     # optional: show and add only this list
 
 A task can have an icon (Home Assistant's `mdi:` icons): pick it in the task form ("Icon:"), in a rule's first step or pass `icon: mdi:package-variant` to `remindo.add`. It is shown before the task's text on the card and replaces the app's icon in the Android notification (iOS shows text only). An emoji typed into the text works everywhere, also in the To-do list.
 
+### Heads-up (remind before)
+
+For a task with a due time, pick in **Heads-up** 15 min, 30 min, 1 h, 2 h or 24 h before the due time, or **at a time…** (e.g. 20:00 the day before). Then one notification comes, e.g. "Tomorrow at 14:30: Dentist", with Done and Skip. The due time stays as it is, and the usual reminders every N minutes start at it. Tick the task off at the heads-up and there are no reminders at the due time. A recurring task gets a heads-up before every date. The heads-up follows "quiet hours also for push". In `remindo.add` / `remindo.update`: `advance` (minutes) or `advance_at` (time) + `advance_days` (days before, default 1).
+
 ### Important
 
 Tick **❗ Important** in the task form, in a rule's reminder step, or pass `important: true` to `remindo.add`, for things that must not be missed (a water leak, medicine, the oven). The phone then rings loudly: Android plays it on the alarm stream, also when the phone is silenced; iPhone shows it as a critical alert, also in Do Not Disturb (allow critical alerts for the HA app once, in its notification settings). Push for an important task is also sent in the quiet hours; the spoken announcement still keeps them. On the card the task has a red **!**.
@@ -113,7 +117,7 @@ The card follows the language of the user's profile.
 *Settings → Devices & services → Remindo → **＋ Add rule***. Three steps:
 
 1. **When**: task text, entity, condition (*has state* / *above* / *below* / *is unavailable* / *calendar event*).
-2. **Condition**: value (list of the entity's states) and "for at least N min"; for a calendar: how many days before and at what time; for *is unavailable*: how long (at least 10 min, as entities are unavailable for a while after a restart).
+2. **Condition**: value (list of the entity's states) and "for at least N min"; for a calendar: **N days before, at a time** (one task with the day's events, all-day ones too) or **N minutes before the start** (a task for each event with a time: a heads-up N minutes before, reminders from the start, closed when the event ends; a moved or deleted event takes its task along); for *is unavailable*: how long (at least 10 min, as entities are unavailable for a while after a restart).
 3. **Reminders**: repeat interval, limit, channels, speakers, "close automatically when the condition ends", message when resolved, "keep on the list after done". Optional: **spoken text** (what the speaker says instead of the task text, e.g. "It's me, your dishwasher. Open me, please.") and extra notification data for this rule.
 
 **Values in the text, no templates needed.** In the rule text (and the message when resolved) you can write:
@@ -123,6 +127,8 @@ The card follows the language of the user's profile.
 | `{state}` | the current value with unit | "Humidity {state}, air the bathroom" → "Humidity 78 %, air the bathroom" |
 | `{name}` | the device name | "{name} open too long" → "Garage door open too long" |
 | `{event}` | (calendar) the event names | "Bin collection tomorrow: {event}" |
+| `{time}` | (calendar) the start time | "{event} at {time}" → "Dentist at 14:30" |
+| `{location}` | (calendar) the place | "{event}, {location}" |
 
 The value is refreshed at every reminder. If you know HA templates you can also use `{{ ... }}` (in rules, and in `remindo.add` called by an automation or an administrator; text typed by other users or coming from a calendar is never run as a template), e.g. "It's {{ states('sensor.outside_temperature') }}°C outside".
 
@@ -133,6 +139,7 @@ Examples:
 | Unload the dishwasher | `sensor.dishwasher_operation_state` has state `finished`; closes itself when the door opens |
 | Close the garage | `binary_sensor.garage` has state `on` for 10 min; every 10 min, at most 6 times |
 | Put the bins out | `calendar.waste`, 1 day before, 18:00 → "Put the bins out: Paper, Glass" (or put `{event}` in the text to place the event name yourself) |
+| Dentist and other appointments | `calendar.google`, N minutes before the start, 60 min → an hour before "Today at 14:30: Dentist". An event can have its own time: put e.g. `remindo: 2h` (or `30m`, `1d`) in its description in Google. Reminders set in Google are not available to HA. |
 | Air the bathroom | `sensor.bathroom_humidity` above 70 for 15 min |
 | Gate sensor is down | `binary_sensor.gate` is unavailable for 2 h → "{name} offline, check the battery"; closes itself when the sensor is back |
 
@@ -199,8 +206,8 @@ If a rule watches an entity that no longer exists (renamed or removed), or compa
 
 | Action | Fields |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `list` (e.g. `Aquarium`), `icon` (e.g. `mdi:package-variant`), `important` (loud alarm / critical alert, also in the quiet hours), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
-| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`. Only the fields you send change; `null` clears a field. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / date / date with time / empty = note), `interval` (min, 0 = once), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (keep after done), `notify_data` (extra data for the app notification), `list` (e.g. `Aquarium`), `icon` (e.g. `mdi:package-variant`), `important` (loud alarm / critical alert, also in the quiet hours), `advance` (a heads-up N minutes before the due time) or `advance_at` + `advance_days` (a heads-up at a time, N days before), `done_message` (sent when closed by `close_by_key`/rule). HA templates work in `summary`, `tts_message` and `done_message`. Returns `uid`. |
+| `remindo.update` | an open task: `uid`/`key` + any of `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`, `advance`, `advance_at`, `advance_days`. Only the fields you send change; `null` clears a field. |
 | `remindo.done`, `remindo.dismiss` | `uid` or `key`. On a recurring task both move it to the next due time; a second close within 30 s (another phone, the card) is ignored, so a date is never skipped by accident. |
 | `remindo.reopen` | `uid`: opens a done or skipped task again; a task with a due time reminds again right away |
 | `remindo.delete` | `uid` or `key`: removes the task for good, also a recurring one |

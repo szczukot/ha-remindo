@@ -17,7 +17,10 @@
     "src_rule": "door regel",
     "src_expired": "datum verstreken",
     "src_rule_removed": "regel verwijderd",
-    "nth": ", {count}e keer"
+    "nth": ", {count}e keer",
+    "advance_today": "Vandaag om {time}: {summary}",
+    "advance_tomorrow": "Morgen om {time}: {summary}",
+    "advance_date": "{date} om {time}: {summary}"
   },
   "units": {
     "hourly": {
@@ -87,5 +90,6 @@
     "op de laatste zondag"
   ],
   "last_day": "op de laatste dag",
-  "from_done": "vanaf het afvinken"
+  "from_done": "vanaf het afvinken",
+  "date_format": "%d-%m"
 }

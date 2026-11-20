@@ -17,7 +17,10 @@
     "src_rule": "da regola",
     "src_expired": "data passata",
     "src_rule_removed": "regola eliminata",
-    "nth": ", {count}ª volta"
+    "nth": ", {count}ª volta",
+    "advance_today": "Oggi alle {time}: {summary}",
+    "advance_tomorrow": "Domani alle {time}: {summary}",
+    "advance_date": "Il {date} alle {time}: {summary}"
   },
   "units": {
     "hourly": {
@@ -95,5 +98,6 @@
     "l'ultima domenica"
   ],
   "last_day": "l'ultimo giorno",
-  "from_done": "dal completamento"
+  "from_done": "dal completamento",
+  "date_format": "%d/%m"
 }

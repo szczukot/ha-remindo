@@ -192,6 +192,18 @@
         "important": {
           "name": "Ważne",
           "description": "Głośno na telefonie: Android odtwarza je jak alarm, także przy wyciszonym telefonie; iPhone jako alert krytyczny (zezwól na alerty krytyczne w aplikacji HA). Push przychodzi także w ciszy nocnej."
+        },
+        "advance": {
+          "name": "Zapowiedź wcześniej (min)",
+          "description": "Jedno powiadomienie tyle minut przed terminem (np. 60), z przyciskami Zrobione i Nie robię; zwykłe przypomnienia zaczynają się w terminie."
+        },
+        "advance_at": {
+          "name": "Zapowiedź o godzinie",
+          "description": "Albo zapowiedź o tej godzinie, advance_days dni przed terminem (np. 20:00 dzień wcześniej). Pomijane, gdy ustawiono advance."
+        },
+        "advance_days": {
+          "name": "Zapowiedź – ile dni przed",
+          "description": "Dla advance_at: 1 = dzień wcześniej (domyślnie), 0 = w dniu terminu."
         }
       }
     },
@@ -352,6 +364,18 @@
         "important": {
           "name": "Ważne",
           "description": "Głośno na telefonie: Android odtwarza je jak alarm, także przy wyciszonym telefonie; iPhone jako alert krytyczny (zezwól na alerty krytyczne w aplikacji HA). Push przychodzi także w ciszy nocnej."
+        },
+        "advance": {
+          "name": "Zapowiedź wcześniej (min)",
+          "description": "Jedno powiadomienie tyle minut przed terminem (np. 60), z przyciskami Zrobione i Nie robię; zwykłe przypomnienia zaczynają się w terminie."
+        },
+        "advance_at": {
+          "name": "Zapowiedź o godzinie",
+          "description": "Albo zapowiedź o tej godzinie, advance_days dni przed terminem (np. 20:00 dzień wcześniej). Pomijane, gdy ustawiono advance."
+        },
+        "advance_days": {
+          "name": "Zapowiedź – ile dni przed",
+          "description": "Dla advance_at: 1 = dzień wcześniej (domyślnie), 0 = w dniu terminu."
         }
       }
     },
@@ -415,6 +439,12 @@
         "alarm_stream": "Alarm (także w trybie cichym)",
         "alarm_stream_max": "Alarm na pełnej głośności"
       }
+    },
+    "calendar_timing": {
+      "options": {
+        "day": "N dni przed, o godzinie",
+        "start": "N minut przed początkiem każdego wydarzenia"
+      }
     }
   },
   "config_subentries": {
@@ -435,7 +465,7 @@
             "icon": "Ikona"
           },
           "data_description": {
-            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz).",
+            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz). Przy kalendarzu także {time} (godzina początku) i {location} (miejsce).",
             "icon": "Opcjonalnie. Pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
           }
         },
@@ -449,7 +479,7 @@
             "icon": "Ikona"
           },
           "data_description": {
-            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz).",
+            "summary": "Np. „Wypakuj zmywarkę”. Możesz wstawić {state} (aktualna wartość z jednostką) i {name} (nazwa urządzenia), np. „Wilgotność {state}, przewietrz łazienkę”. Przy kalendarzu nazwy wydarzeń dopiszą się na końcu (albo wstaw {event} tam, gdzie chcesz). Przy kalendarzu także {time} (godzina początku) i {location} (miejsce).",
             "icon": "Opcjonalnie. Pokazywana obok zadania na karcie i w powiadomieniu na Androidzie."
           }
         },
@@ -489,12 +519,17 @@
           "title": "Kalendarz",
           "description": "Kalendarz: {entity}",
           "data": {
+            "timing": "Kiedy przypominać",
             "days_before": "Ile dni przed wydarzeniem",
             "at_time": "O której godzinie",
+            "before_minutes": "Ile minut przed początkiem",
             "contains": "Tylko wydarzenia, których nazwa zawiera (opcjonalnie)"
           },
           "data_description": {
-            "days_before": "1 = dzień wcześniej, 0 = w dniu wydarzenia.",
+            "timing": "N dni przed: jedno zadanie z wydarzeniami danego dnia, o stałej godzinie (także całodniowe). N minut przed początkiem: osobne zadanie dla każdego wydarzenia z godziną; przypomina od początku wydarzenia i samo się zamyka, gdy się skończy.",
+            "days_before": "1 = dzień wcześniej, 0 = w dniu wydarzenia. Tylko dla „N dni przed”.",
+            "at_time": "Tylko dla „N dni przed”.",
+            "before_minutes": "Tylko dla „N minut przed początkiem”. Tyle przed wydarzeniem przyjdzie zapowiedź, a od jego początku zwykłe przypomnienia. Wydarzenie może mieć własny czas: wpisz w jego opisie np. remindo: 2h (albo 30m, 1d). 0 = bez zapowiedzi, przypomni na początku.",
             "contains": "Filtr po nazwie wydarzenia. Np. „Szkło” w kalendarzu wywozu śmieci → przypomni tylko o wywozie szkła, inne wydarzenia z tego kalendarza pominie. Wielkość liter nie ma znaczenia. Puste = wszystkie wydarzenia."
           }
         },

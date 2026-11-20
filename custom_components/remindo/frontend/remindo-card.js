@@ -96,6 +96,11 @@ const tomorrowDate = () => { const d = new Date(); d.setDate(d.getDate() + 1); r
 const IDLE_CLOSE_MS = 5 * 60 * 1000;
 // 30 → "30 min", 120 → "2 h", 1440 → "24 h"
 const span = (min) => (min >= 60 && min % 60 === 0 ? `${min / 60} h` : `${min} min`);
+// the heads-up of a task, for its row: "🔔 1 h before" / "🔔 the day before at 20:00"
+const ADVANCE_MIN = [15, 30, 60, 120, 1440];
+const advDay = (n) => (n === 0 ? t("adv_day0") : n === 1 ? t("adv_day1") : t("adv_dayn", { n }));
+const advLabel = (task) => (task.advance ? t("adv_before", { n: span(task.advance) })
+  : task.advance_at ? t("adv_meta_at", { d: advDay(Number(task.advance_days ?? 1)), t: clock(task.advance_at) }) : "");
 // an icon instead of the 🗑 emoji, which some systems (Windows) draw almost invisible
 const TRASH = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z"/></svg>`;
 
@@ -212,6 +217,7 @@ class RemindoCard extends HTMLElement {
     if (kind === "now") meta.push(t("reminding_since", { t: ago(task.last_reminded) }));
     if (task.interval && !closed && kind !== "notes") meta.push(t(kind === "planned" ? "then_every" : "every_min", { n: span(task.interval) }));
     if (!closed && task.repeat && task.repeat !== "none") meta.push(`🔁 ${repeatLabel(task)}`);
+    if (kind === "planned" && advLabel(task)) meta.push(`🔔 ${advLabel(task)}`);
     if (!closed && task.snoozes) meta.push(t("snoozed_n", { n: task.snoozes }));
     if (task.max_reminders && !closed) meta.push(t("max_n", { n: task.max_reminders, m: task.reminders || 0 }));
     if (task.remind_until && !closed) meta.push(t("until", { t: fmtTime(task.until_override || task.remind_until) }));
@@ -276,6 +282,9 @@ class RemindoCard extends HTMLElement {
     const due = edit ? task.next_reminder || task.start : null;
     const rec = edit && task.repeat && task.repeat !== "none";
     const lim = edit ? (task.remind_until ? "until" : task.max_reminders ? "count" : "") : "";
+    const adv = edit ? (task.advance ? String(task.advance) : task.advance_at ? "at" : "") : "";
+    const advMins = edit && task.advance && !ADVANCE_MIN.includes(task.advance) ? [...ADVANCE_MIN, task.advance].sort((a, b) => a - b) : ADVANCE_MIN;
+    const advDays = edit && task.advance_at ? Number(task.advance_days ?? 1) : 1;
     const keep = edit && task.keep_done != null ? task.keep_done : this._opts?.keep_done !== false;
     const when = edit && due ? "custom" : "now";
     const local = (iso) => (iso ? localIso(new Date(iso)).slice(0, 16) : "");
@@ -305,6 +314,12 @@ class RemindoCard extends HTMLElement {
         <span class="grp">${t("stop")} <select id="f-lim">${opt("", t("stop_never"), lim)}${opt("count", t("stop_count"), lim)}${opt("until", t("stop_until"), lim)}</select>
           <input id="f-lim-n" type="number" min="1" value="${(edit && task.max_reminders) || 3}" />
           <input id="f-lim-dt" type="datetime-local" min="${local(new Date())}" value="${edit ? local(task.remind_until) : ""}" data-was="${edit ? local(task.remind_until) : ""}" /></span>
+      </div>
+      <div class="frow" id="f-adv-row"><span class="chk">${t("advance")}</span>
+        <span class="grp"><select id="f-adv" data-was="${adv}">${opt("", t("adv_none"), adv)}${advMins.map((m) => opt(String(m), span(m), adv)).join("")}${opt("at", t("adv_at"), adv)}</select>
+          <select id="f-adv-d" data-was="${advDays}">${[0, 1, 2].map((n) => `<option value="${n}"${n === advDays ? " selected" : ""}>${advDay(n)}</option>`).join("")}</select>
+          <input id="f-adv-t" type="time" value="${edit && task.advance_at ? task.advance_at : "20:00"}" data-was="${edit && task.advance_at ? task.advance_at : ""}" /></span>
+        <span class="hint">${t("advance_hint")}</span>
       </div>
       <div class="frow">
         <label class="chk"><input type="checkbox" id="f-rep-on" ${rec ? "checked" : ""} /> ${t("repeat")}</label>
@@ -386,6 +401,12 @@ class RemindoCard extends HTMLElement {
     const monthOn = rep === "monthly" ? $("f-mon").value : "day";
     const fromDone = rep !== "none" && !days.length && monthOn === "day" && $("f-from").checked;
     const keep = $("f-keep").checked;
+    // the heads-up: minutes before, or a time N days before (only with a due time ahead)
+    const advOn = remind && when !== "now";
+    const advSel = advOn ? $("f-adv").value : "";
+    const advance = advSel && advSel !== "at" ? Number(advSel) : null;
+    const advanceAt = advSel === "at" ? $("f-adv-t").value || "20:00" : null;
+    const advanceDays = Number($("f-adv-d").value);
     const past = (input) => input.value && (!task || input.value !== input.dataset.was) && new Date(input.value) <= new Date();
     if ((remind && when === "custom" && past($("f-dt"))) || (lim === "until" && past($("f-lim-dt")))) return this._formError(t("pick_past"));
     // only what is being changed is checked: a task snoozed past its end must stay editable
@@ -404,6 +425,8 @@ class RemindoCard extends HTMLElement {
       if (days.length) data.repeat_days = days;
       if (monthOn !== "day") data.repeat_on = monthOn;
       if (fromDone) data.repeat_from_done = true;
+      if (advance) data.advance = advance;
+      if (advanceAt) { data.advance_at = advanceAt; data.advance_days = advanceDays; }
       this._formOpen = false; this._forceRender = true; this._render();
       return this._call("add", data);
     }
@@ -420,6 +443,12 @@ class RemindoCard extends HTMLElement {
     if (String(days) !== String(wasDays)) data.repeat_days = days.length ? days : null;
     if (monthOn !== (task.repeat_on || "day")) data.repeat_on = monthOn === "day" ? null : monthOn;
     if (fromDone !== !!task.repeat_from_done) data.repeat_from_done = fromDone;
+    if (advance !== (task.advance || null) || advanceAt !== (task.advance_at || null)
+        || (advanceAt && advanceDays !== Number(task.advance_days ?? 1))) {
+      data.advance = advance;
+      data.advance_at = advanceAt;
+      if (advanceAt) data.advance_days = advanceDays;
+    }
     if (lim === "count") {
       if (n !== task.max_reminders) data.max_reminders = n;
       if (task.remind_until) data.remind_until = null;
@@ -551,6 +580,9 @@ class RemindoCard extends HTMLElement {
     $("f-note-h").style.display = remind ? "none" : "";
     $("f-rem-h").style.display = remind ? "" : "none";
     for (const id of ["f-where", "f-where-h", "f-lim-row"]) $(id).style.display = remind ? "" : "none";
+    // a heads-up needs a due time in the future
+    $("f-adv-row").style.display = remind && $("f-when").value !== "now" ? "" : "none";
+    for (const id of ["f-adv-d", "f-adv-t"]) $(id).style.display = $("f-adv").value === "at" ? "" : "none";
     $("f-keep-row").style.display = $("f-rep-on").checked ? "none" : "";
     const sel = $("f-list-sel");
     if (sel) {

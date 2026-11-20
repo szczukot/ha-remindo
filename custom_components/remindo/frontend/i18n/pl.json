@@ -154,5 +154,14 @@
     "w ostatni piątek",
     "w ostatnią sobotę",
     "w ostatnią niedzielę"
-  ]
+  ],
+  "advance": "Zapowiedź",
+  "adv_none": "nie",
+  "adv_at": "o godzinie…",
+  "adv_day0": "w dniu terminu",
+  "adv_day1": "dzień wcześniej",
+  "adv_dayn": "{n} dni wcześniej",
+  "adv_before": "{n} wcześniej",
+  "adv_meta_at": "{d} o {t}",
+  "advance_hint": "jedno powiadomienie przed terminem; przypominanie zaczyna się w terminie"
 }

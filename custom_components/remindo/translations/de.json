@@ -192,6 +192,18 @@
         "important": {
           "name": "Wichtig",
           "description": "Laut auf dem Handy: Android spielt sie als Alarm ab, auch wenn das Handy stummgeschaltet ist; iPhone als kritische Warnung (kritische Warnungen in der HA-App erlauben). Push wird auch in der Ruhezeit gesendet."
+        },
+        "advance": {
+          "name": "Ankündigung vorher (Min.)",
+          "description": "Eine Benachrichtigung so viele Minuten vor dem Termin (z. B. 60), mit Erledigt und Überspringen; die üblichen Erinnerungen beginnen zum Termin."
+        },
+        "advance_at": {
+          "name": "Ankündigung um",
+          "description": "Oder eine Ankündigung um diese Uhrzeit, advance_days Tage vor dem Termin (z. B. 20:00 am Vortag). Wird ignoriert, wenn advance gesetzt ist."
+        },
+        "advance_days": {
+          "name": "Ankündigung Tage vorher",
+          "description": "Für advance_at: 1 = am Vortag (Standard), 0 = am Tag des Termins."
         }
       }
     },
@@ -352,6 +364,18 @@
         "important": {
           "name": "Wichtig",
           "description": "Laut auf dem Handy: Android spielt sie als Alarm ab, auch wenn das Handy stummgeschaltet ist; iPhone als kritische Warnung (kritische Warnungen in der HA-App erlauben). Push wird auch in der Ruhezeit gesendet."
+        },
+        "advance": {
+          "name": "Ankündigung vorher (Min.)",
+          "description": "Eine Benachrichtigung so viele Minuten vor dem Termin (z. B. 60), mit Erledigt und Überspringen; die üblichen Erinnerungen beginnen zum Termin."
+        },
+        "advance_at": {
+          "name": "Ankündigung um",
+          "description": "Oder eine Ankündigung um diese Uhrzeit, advance_days Tage vor dem Termin (z. B. 20:00 am Vortag). Wird ignoriert, wenn advance gesetzt ist."
+        },
+        "advance_days": {
+          "name": "Ankündigung Tage vorher",
+          "description": "Für advance_at: 1 = am Vortag (Standard), 0 = am Tag des Termins."
         }
       }
     },
@@ -415,6 +439,12 @@
         "alarm_stream": "Wecker (auch im Lautlos-Modus)",
         "alarm_stream_max": "Wecker in voller Lautstärke"
       }
+    },
+    "calendar_timing": {
+      "options": {
+        "day": "N Tage vorher, zu einer Uhrzeit",
+        "start": "N Minuten vor Beginn jedes Termins"
+      }
     }
   },
   "config_subentries": {
@@ -435,7 +465,7 @@
             "icon": "Symbol"
           },
           "data_description": {
-            "summary": "Z. B. \"Spülmaschine ausräumen\". Du kannst {state} (aktueller Wert mit Einheit) und {name} (Gerätename) einfügen, z. B. \"Luftfeuchtigkeit {state}, Bad lüften\". Bei Kalendern werden die Terminnamen angehängt (oder setze {event} dorthin, wo du sie haben willst).",
+            "summary": "Z. B. \"Spülmaschine ausräumen\". Du kannst {state} (aktueller Wert mit Einheit) und {name} (Gerätename) einfügen, z. B. \"Luftfeuchtigkeit {state}, Bad lüften\". Bei Kalendern werden die Terminnamen angehängt (oder setze {event} dorthin, wo du sie haben willst). Bei Kalendern auch {time} (Beginn) und {location} (Ort).",
             "icon": "Optional. Angezeigt neben der Aufgabe auf der Karte und in der Android-Benachrichtigung."
           }
         },
@@ -449,7 +479,7 @@
             "icon": "Symbol"
           },
           "data_description": {
-            "summary": "Z. B. \"Spülmaschine ausräumen\". Du kannst {state} (aktueller Wert mit Einheit) und {name} (Gerätename) einfügen, z. B. \"Luftfeuchtigkeit {state}, Bad lüften\". Bei Kalendern werden die Terminnamen angehängt (oder setze {event} dorthin, wo du sie haben willst).",
+            "summary": "Z. B. \"Spülmaschine ausräumen\". Du kannst {state} (aktueller Wert mit Einheit) und {name} (Gerätename) einfügen, z. B. \"Luftfeuchtigkeit {state}, Bad lüften\". Bei Kalendern werden die Terminnamen angehängt (oder setze {event} dorthin, wo du sie haben willst). Bei Kalendern auch {time} (Beginn) und {location} (Ort).",
             "icon": "Optional. Angezeigt neben der Aufgabe auf der Karte und in der Android-Benachrichtigung."
           }
         },
@@ -489,12 +519,17 @@
           "title": "Kalender",
           "description": "Kalender: {entity}",
           "data": {
+            "timing": "Wann erinnern",
             "days_before": "Tage vor dem Termin",
             "at_time": "Um",
+            "before_minutes": "Minuten vor Beginn",
             "contains": "Nur Termine, deren Name enthält (optional)"
           },
           "data_description": {
-            "days_before": "1 = am Vortag, 0 = am Tag selbst.",
+            "timing": "N Tage vorher: eine Aufgabe für die Termine des Tages, zu einer festen Uhrzeit (auch ganztägige). N Minuten vor Beginn: eine Aufgabe je Termin mit Uhrzeit; sie erinnert ab Beginn und schließt sich am Ende des Termins selbst.",
+            "days_before": "1 = am Vortag, 0 = am Tag selbst. Nur für „N Tage vorher“.",
+            "at_time": "Nur für „N Tage vorher“.",
+            "before_minutes": "Nur für „N Minuten vor Beginn“. So lange vorher kommt eine Ankündigung, ab Beginn die üblichen Erinnerungen. Ein Termin kann eine eigene Zeit haben: z. B. remindo: 2h (oder 30m, 1d) in die Beschreibung schreiben. 0 = keine Ankündigung, Erinnerung zu Beginn.",
             "contains": "Ein Filter auf den Terminnamen. Z. B. \"Glas\" in einem Müllabfuhr-Kalender → eine Erinnerung nur für die Glasabholung, andere Termine in diesem Kalender werden ignoriert. Groß-/Kleinschreibung spielt keine Rolle. Leer = alle Termine."
           }
         },

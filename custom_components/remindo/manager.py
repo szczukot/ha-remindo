@@ -99,6 +99,8 @@ KEEP_DISMISSED = 20
 
 # Reminders that were due while Home Assistant was down are sent this long after start.
 MISSED_DELAY = timedelta(seconds=30)
+# a heads-up whose time has passed (added late, Home Assistant was down) goes out after this
+ADVANCE_DELAY = MISSED_DELAY
 
 _DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -122,6 +124,14 @@ def engine_languages(hass: HomeAssistant, tts_entity: str) -> list[str] | None:
         return None
     languages = getattr(engine, "supported_languages", None) if engine else None
     return list(languages) if languages else None
+
+
+def _advance_fields(advance: Any, advance_at: Any, advance_days: Any) -> dict[str, Any]:
+    """The heads-up settings of a task: minutes before, or a time N days before (not both)."""
+    minutes = int(advance) if advance else None
+    at = None if minutes else (str(advance_at)[:5] if advance_at else None)
+    days = max(0, int(advance_days)) if advance_days not in (None, "") else 1
+    return {"advance": minutes, "advance_at": at, "advance_days": days}
 
 
 def _is_template(text: str | None) -> bool:
@@ -285,6 +295,10 @@ class Task:
     list_name: str | None = None  # a list ("Aquarium") for cards that show one list; None = general
     icon: str | None = None  # "mdi:package-variant": shown on the card and in the Android notification
     important: bool = False  # loud on the phone (alarm / critical), also in silent mode and quiet hours
+    advance: int | None = None  # heads-up this many minutes before the due time
+    advance_at: str | None = None  # or at this time ("20:00")…
+    advance_days: int = 1  # …this many days before the due date (0 = the same day)
+    advance_sent: str | None = None  # the due time (ISO) the heads-up was sent for
     status: str = STATUS_OPEN
     active: bool = False  # already reminded (shown under "Now")
     reminders: int = 0
@@ -330,6 +344,7 @@ class TaskManager:
         self.history: list[dict[str, Any]] = []
         self._timers: dict[str, CALLBACK_TYPE] = {}
         self._expiry_timers: dict[str, CALLBACK_TYPE] = {}
+        self._advance_timers: dict[str, CALLBACK_TYPE] = {}
         self._listeners: list[Callable[[], None]] = []
         self.rules = RuleEngine(self)
         self._speak_lock = asyncio.Lock()
@@ -397,10 +412,11 @@ class TaskManager:
         return lambda: self._listeners.remove(listener)
 
     async def async_unload(self) -> None:
-        for cancel in (*self._timers.values(), *self._expiry_timers.values()):
+        for cancel in (*self._timers.values(), *self._expiry_timers.values(), *self._advance_timers.values()):
             cancel()
         self._timers.clear()
         self._expiry_timers.clear()
+        self._advance_timers.clear()
         for speaking in list(self._speaking):
             speaking.cancel()
         self.rules.stop()
@@ -485,6 +501,9 @@ class TaskManager:
         list_name: str | None = None,
         icon: str | None = None,
         important: bool = False,
+        advance: int | None = None,
+        advance_at: str | None = None,
+        advance_days: int | None = None,
         templates: bool = False,
         restart: bool = False,
         source: str = "service",
@@ -509,6 +528,10 @@ class TaskManager:
             if expires is not None:
                 existing.expires = _iso(expires)
                 self._schedule_expiry(existing)
+            if start_dt and not existing.active and existing.start != _iso(start_dt):
+                # a calendar event that moved: the due time (and its heads-up) moves along
+                existing.start = existing.next_reminder = _iso(start_dt)
+                self._schedule(existing)
             if restart and existing.start and (not existing.active or not existing.next_reminder):
                 existing.next_reminder = _iso(dt_util.now())
                 existing.reminders = existing.snoozes = 0
@@ -548,6 +571,7 @@ class TaskManager:
             list_name=self.norm_list(list_name),
             icon=icon or None,
             important=bool(important),
+            **_advance_fields(advance, advance_at, advance_days),
         )
         self._fit_pattern(task, dt_util.now())
         self.tasks[task.uid] = task
@@ -621,6 +645,16 @@ class TaskManager:
             task.icon = changes["icon"] or None
         if "important" in changes:
             task.important = bool(changes["important"])
+        if changes.keys() & {"advance", "advance_at", "advance_days"}:
+            fields = _advance_fields(
+                changes.get("advance", task.advance),
+                changes.get("advance_at", task.advance_at),
+                changes.get("advance_days", task.advance_days),
+            )
+            if fields != {k: getattr(task, k) for k in fields}:
+                for name, value in fields.items():
+                    setattr(task, name, value)
+                task.advance_sent = None  # a new heads-up time: it may be sent (again)
         if changes.keys() & {"start", "repeat", "repeat_every", "repeat_days", "repeat_on"}:
             self._fit_pattern(task, now)
         if changes.keys() & {"start", "remind_until", "repeat"}:
@@ -789,7 +823,7 @@ class TaskManager:
     @callback
     def _cancel(self, uid: str) -> None:
         """Stop all timers of a task."""
-        for timers in (self._timers, self._expiry_timers):
+        for timers in (self._timers, self._expiry_timers, self._advance_timers):
             if cancel := timers.pop(uid, None):
                 cancel()
 
@@ -799,6 +833,7 @@ class TaskManager:
         uid = task.uid
         if cancel := self._timers.pop(uid, None):
             cancel()
+        self._schedule_advance(task)
         if task.status != STATUS_OPEN or (when := _dt(task.next_reminder)) is None:
             return
 
@@ -808,6 +843,68 @@ class TaskManager:
             self.hass.async_create_task(self._async_remind(uid))
 
         self._timers[uid] = async_track_point_in_time(self.hass, _fire_reminder, when)
+
+    @staticmethod
+    def advance_time(task: Task) -> datetime | None:
+        """When the heads-up for the current due time is sent, or None (none set, or it
+        would not come before the due time)."""
+        if (start := _dt(task.start)) is None:
+            return None
+        if task.advance:
+            when = start - timedelta(minutes=task.advance)
+        elif task.advance_at:
+            at = _parse_time(task.advance_at, "20:00:00")
+            when = datetime.combine(start.date() - timedelta(days=task.advance_days), at, start.tzinfo)
+        else:
+            return None
+        return when if when < start else None
+
+    @callback
+    def _schedule_advance(self, task: Task) -> None:
+        """(Re)arm the heads-up timer: once per due time, before the reminders start."""
+        uid = task.uid
+        if cancel := self._advance_timers.pop(uid, None):
+            cancel()
+        if task.status != STATUS_OPEN or task.active or task.advance_sent == task.start:
+            return
+        if (when := self.advance_time(task)) is None or _dt(task.start) <= dt_util.now():  # type: ignore[operator]
+            return
+
+        # its time has passed already (added late, or Home Assistant was down): send it now
+        self._arm_advance(uid, max(when, dt_util.now() + ADVANCE_DELAY))
+
+    @callback
+    def _arm_advance(self, uid: str, when: datetime) -> None:
+        @callback
+        def _fire_advance(_now: datetime) -> None:
+            self._advance_timers.pop(uid, None)
+            self.hass.async_create_task(self._async_advance(uid))
+
+        self._advance_timers[uid] = async_track_point_in_time(self.hass, _fire_advance, when)
+
+    async def _async_advance(self, uid: str) -> None:
+        task = self.tasks.get(uid)
+        if task is None or task.status != STATUS_OPEN or task.active or task.advance_sent == task.start:
+            return
+        now = dt_util.now()
+        start = _dt(task.start)
+        if start is None or start <= now:
+            return
+        if self.options.get(CONF_QUIET_PUSH) and not task.important and self.is_quiet(now):
+            later = self._quiet_end(now)
+            if later < start:
+                # quiet hours for push: the heads-up waits until they end
+                self._arm_advance(uid, later)
+                return
+            task.advance_sent = task.start  # the due time comes first: no heads-up for this date
+            self._save()
+            return
+        task.advance_sent = task.start
+        self._save()
+        try:
+            await self._send_advance(task, start)
+        except Exception:  # noqa: BLE001 - a broken notification must not stop the schedule
+            _LOGGER.exception("Remindo could not send the heads-up for %s", task.summary)
 
     @staticmethod
     def _stop_at(task: Task) -> datetime | None:
@@ -1088,6 +1185,43 @@ class TaskManager:
             self._speaking.add(speaking)
             speaking.add_done_callback(self._speaking.discard)
 
+    async def _send_advance(self, task: Task, start: datetime) -> None:
+        """The heads-up: one notification ("Tomorrow at 14:30: Dentist") with Done and Skip.
+        It has the task's tag, so the first reminder at the due time replaces it."""
+        title = texts.text(self.hass, "title")
+        body = texts.advance(self.hass, task.summary, dt_util.as_local(start), dt_util.now())
+        if task.description:
+            body = f"{body}\n{task.description}"
+        extra = {
+            **self._mapping(self.options.get(CONF_NOTIFY_DATA)),
+            **self._mapping(task.notify_data),
+        }
+        click = self.options.get(CONF_CLICK_URL) or DEFAULTS[CONF_CLICK_URL]
+        for target in self.phones_for(task):
+            if not self._is_mobile(target):
+                await self._notify_plain(target, title, body)
+                continue
+            await self._call(
+                "notify",
+                target.removeprefix("notify."),
+                {
+                    "title": title,
+                    "message": body,
+                    "data": {
+                        "group": "remindo",
+                        "clickAction": click,
+                        "url": click,
+                        **({"notification_icon": task.icon} if task.icon else {}),
+                        **extra,
+                        "tag": self._tag(task),
+                        "actions": [
+                            {"action": f"{ACTION_PREFIX}_{ACTION_DONE}_{task.uid}", "title": texts.text(self.hass, "done")},
+                            {"action": f"{ACTION_PREFIX}_{ACTION_DISMISS}_{task.uid}", "title": texts.text(self.hass, "dismiss")},
+                        ],
+                    },
+                },
+            )
+
     def _busy(self, speakers: list[str]) -> bool:
         return any((st := self.hass.states.get(e)) is not None and st.state in _BUSY for e in speakers)
 
@@ -1181,7 +1315,7 @@ class TaskManager:
             return None
 
     async def _clear_notifications(self, task: Task, *, force: bool = False) -> None:
-        if task.reminders == 0 and not force:
+        if task.reminders == 0 and not force and not (task.advance_sent and task.advance_sent == task.start):
             return
         for target in sorted(set(self.all_phones()) | set(task.phones or [])):
             if self._is_mobile(target):
@@ -1204,7 +1338,8 @@ class TaskManager:
         task = self.tasks.get(uid)
         if task is None:
             return
-        if task.status != STATUS_OPEN or not task.active:
+        heads_up = task.advance_sent is not None and task.advance_sent == task.start
+        if task.status != STATUS_OPEN or not (task.active or heads_up):
             # a stale notification (already handled on another phone, or yesterday's
             # occurrence of a recurring task): remove it, do not touch the task
             await self._clear_notifications(task, force=True)

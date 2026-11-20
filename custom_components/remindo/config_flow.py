@@ -45,10 +45,10 @@ from .const import (
     PHONE_TTS_STREAMS,
 )
 from .manager import engine_languages
-from .rules import MODES, UNAVAILABLE_MIN_MINUTES, rule_problem
+from .rules import CALENDAR_TIMINGS, MODES, UNAVAILABLE_MIN_MINUTES, rule_problem
 
 # shown literally in the form help texts
-_TOKENS = {"state": "{state}", "name": "{name}", "event": "{event}"}
+_TOKENS = {"state": "{state}", "name": "{name}", "event": "{event}", "time": "{time}", "location": "{location}"}
 
 _NOT_TARGETS = {"send_message", "persistent_notification", "notify"}
 
@@ -299,7 +299,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             if mode in ("above", "below"):
                 user_input["value"] = str(_num(user_input["value"]))
-            for key in ("for_minutes", "days_before"):
+            for key in ("for_minutes", "days_before", "before_minutes"):
                 if key in user_input:
                     user_input[key] = int(user_input[key])
             if mode == "unavailable":
@@ -338,10 +338,17 @@ class RuleSubentryFlow(ConfigSubentryFlow):
             schema = {vol.Required("for_minutes", default=self._data["for_minutes"]): wait}
         else:
             schema = {
+                vol.Required("timing", default=self._data.get("timing", "day")): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=CALENDAR_TIMINGS, translation_key="calendar_timing",
+                                                  mode=selector.SelectSelectorMode.LIST)
+                ),
                 vol.Required("days_before", default=self._data.get("days_before", 1)): selector.NumberSelector(
                     selector.NumberSelectorConfig(min=0, max=30, mode=selector.NumberSelectorMode.BOX)
                 ),
                 vol.Required("at_time", default=self._data.get("at_time", "18:00")): selector.TimeSelector(),
+                vol.Required("before_minutes", default=self._data.get("before_minutes", 60)): selector.NumberSelector(
+                    selector.NumberSelectorConfig(min=0, max=10080, unit_of_measurement="min", mode=selector.NumberSelectorMode.BOX)
+                ),
                 vol.Optional("contains"): selector.TextSelector(),
             }
         state = self.hass.states.get(entity)

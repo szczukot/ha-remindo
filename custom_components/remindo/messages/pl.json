@@ -17,7 +17,10 @@
     "src_rule": "z reguły",
     "src_expired": "termin minął",
     "src_rule_removed": "reguła usunięta",
-    "nth": ", {count}. raz"
+    "nth": ", {count}. raz",
+    "advance_today": "Dziś o {time}: {summary}",
+    "advance_tomorrow": "Jutro o {time}: {summary}",
+    "advance_date": "{date} o {time}: {summary}"
   },
   "units": {
     "hourly": {
@@ -82,5 +85,6 @@
     "ostatnia niedziela"
   ],
   "last_day": "ostatniego dnia",
-  "from_done": "od odhaczenia"
+  "from_done": "od odhaczenia",
+  "date_format": "%d.%m"
 }

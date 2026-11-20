@@ -17,7 +17,10 @@
     "src_rule": "durch Regel",
     "src_expired": "Termin vorbei",
     "src_rule_removed": "Regel gelöscht",
-    "nth": ", {count}. Mal"
+    "nth": ", {count}. Mal",
+    "advance_today": "Heute um {time}: {summary}",
+    "advance_tomorrow": "Morgen um {time}: {summary}",
+    "advance_date": "{date} um {time}: {summary}"
   },
   "units": {
     "hourly": {
@@ -87,5 +90,6 @@
     "am letzten Sonntag"
   ],
   "last_day": "am letzten Tag",
-  "from_done": "ab dem Abhaken"
+  "from_done": "ab dem Abhaken",
+  "date_format": "%d.%m."
 }

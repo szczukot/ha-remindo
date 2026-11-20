@@ -158,5 +158,14 @@
     "am letzten Freitag",
     "am letzten Samstag",
     "am letzten Sonntag"
-  ]
+  ],
+  "advance": "Vorher ankündigen",
+  "adv_none": "nein",
+  "adv_at": "um eine Uhrzeit…",
+  "adv_day0": "am selben Tag",
+  "adv_day1": "am Vortag",
+  "adv_dayn": "{n} Tage vorher",
+  "adv_before": "{n} vorher",
+  "adv_meta_at": "{d} um {t}",
+  "advance_hint": "eine Benachrichtigung vor dem Termin; die Erinnerungen beginnen zum Termin"
 }

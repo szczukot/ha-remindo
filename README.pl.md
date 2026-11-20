@@ -75,6 +75,10 @@ list: Akwarium     # opcjonalnie: pokazuj i dodawaj tylko tę listę
 
 Zadanie może mieć ikonę (ikony `mdi:` z Home Assistant): wybierzesz ją w formularzu zadania („Ikona:”), w pierwszym kroku reguły albo podasz `icon: mdi:package-variant` w `remindo.add`. Ikona stoi przed treścią zadania na karcie i zastępuje ikonę aplikacji w powiadomieniu na Androidzie (iOS pokazuje sam tekst). Emoji wpisane w treść działa wszędzie, także na liście To-do.
 
+### Zapowiedź (przypomnienie wcześniej)
+
+Przy zadaniu z terminem w polu **Zapowiedź** wybierz 15 min, 30 min, 1 h, 2 h albo 24 h przed terminem, albo **o godzinie…** (np. dzień wcześniej o 20:00). O tym czasie przychodzi jedno powiadomienie, np. „Jutro o 14:30: Dentysta”, z przyciskami Zrobione i Nie robię. Termin zadania się nie zmienia, a od niego zaczyna się zwykłe przypominanie co N minut. Jeśli odhaczysz zadanie już przy zapowiedzi, przypominania w terminie nie będzie. Zadanie cykliczne dostaje zapowiedź przed każdym terminem. Zapowiedź przestrzega „ciszy nocnej także dla push”. W `remindo.add` / `remindo.update`: `advance` (minuty) albo `advance_at` (godzina) + `advance_days` (ile dni przed, domyślnie 1).
+
 ### Ważne
 
 Zaznacz **❗ Ważne** w formularzu zadania, w kroku przypomnień reguły albo podaj `important: true` w `remindo.add`, dla rzeczy, których nie wolno przegapić (zalanie, leki, piekarnik). Telefon dzwoni wtedy głośno: Android odtwarza powiadomienie jak alarm, także przy wyciszonym telefonie; iPhone pokazuje je jako alert krytyczny, także w trybie „Nie przeszkadzać” (raz zezwól aplikacji HA na alerty krytyczne w jej ustawieniach powiadomień). Push ważnego zadania przychodzi także w ciszy nocnej; komunikat głosowy nadal jej przestrzega. Na karcie zadanie ma czerwony znak **!**.
@@ -113,7 +117,7 @@ Karta wyświetla się w języku profilu użytkownika.
 *Ustawienia → Urządzenia i usługi → Remindo → **＋ Dodaj regułę***. Trzy kroki:
 
 1. **Kiedy**: treść zadania, encja, warunek (*ma stan* / *powyżej* / *poniżej* / *jest niedostępne* / *wydarzenie w kalendarzu*).
-2. **Warunek**: wartość (lista stanów encji) i „przez co najmniej N min”; dla kalendarza: ile dni przed i o której; dla *jest niedostępne*: jak długo (co najmniej 10 min, bo po restarcie encje przez chwilę są niedostępne).
+2. **Warunek**: wartość (lista stanów encji) i „przez co najmniej N min”; dla kalendarza: **N dni przed, o godzinie** (jedno zadanie z wydarzeniami danego dnia, także całodniowymi) albo **N minut przed początkiem** (osobne zadanie dla każdego wydarzenia z godziną: zapowiedź N minut przed, przypominanie od początku, samo zamyka się po końcu wydarzenia; przesunięte albo usunięte wydarzenie zabiera swoje zadanie); dla *jest niedostępne*: jak długo (co najmniej 10 min, bo po restarcie encje przez chwilę są niedostępne).
 3. **Przypomnienia**: ponawianie, limit, kanały, głośniki, „zamknij samo, gdy warunek minie”, komunikat po załatwieniu, „zostaw na liście po wykonaniu”. Opcjonalnie: **tekst mówiony** (co powie głośnik zamiast treści zadania, np. „To ja, Twoja zmywarka. Otwórz mnie, proszę.”) i dodatkowe dane powiadomienia dla tej reguły.
 
 **Wartość w treści, bez szablonów.** W treści reguły (i w komunikacie po załatwieniu) możesz wpisać:
@@ -123,6 +127,8 @@ Karta wyświetla się w języku profilu użytkownika.
 | `{state}` | aktualną wartość z jednostką | „Wilgotność {state}, przewietrz łazienkę” → „Wilgotność 78 %, przewietrz łazienkę” |
 | `{name}` | nazwę urządzenia | „{name} otwarte za długo” → „Brama garażowa otwarte za długo” |
 | `{event}` | (kalendarz) nazwy wydarzeń | „Jutro wywóz: {event}” |
+| `{time}` | (kalendarz) godzina początku | „{event} o {time}” → „Dentysta o 14:30” |
+| `{location}` | (kalendarz) miejsce | „{event}, {location}” |
 
 Wartość odświeża się przy każdym przypomnieniu. Kto zna szablony HA, może też użyć `{{ ... }}` (w regułach oraz w `remindo.add` wywołanym z automatyzacji albo przez administratora; tekst wpisany przez innych użytkowników albo pochodzący z kalendarza nigdy nie jest wykonywany jako szablon), np. „Na dworze {{ states('sensor.temperatura_zewn') }}°C”.
 
@@ -133,6 +139,7 @@ Przykłady:
 | Wypakuj zmywarkę | `sensor.zmywarka_operation_state` ma stan `finished`; zamyka się samo po otwarciu |
 | Zamknij bramę garażową | `binary_sensor.brama` ma stan `on` przez 10 min; co 10 min, maks. 6 razy |
 | Wystaw śmietnik | `calendar.odpady`, 1 dzień przed, 18:00 → „Wystaw śmietnik: Papier, Szkło” (albo wstaw `{event}` w treść, żeby nazwa wydarzenia trafiła w konkretne miejsce) |
+| Dentysta i inne wizyty | `calendar.google`, N minut przed początkiem, 60 min → godzinę wcześniej „Dziś o 14:30: Dentysta”. Wydarzenie może mieć własny czas: wpisz w jego opisie w Google np. `remindo: 2h` (albo `30m`, `1d`). Przypomnień ustawionych w Google HA nie odczytuje. |
 | Przewietrz łazienkę | `sensor.wilgotnosc_lazienka` powyżej 70 przez 15 min |
 | Czujnik furtki nie działa | `binary_sensor.furtka` jest niedostępne przez 2 h → „{name} offline, sprawdź baterię”; zamyka się samo, gdy czujnik wróci |
 
@@ -199,8 +206,8 @@ Jeśli reguła obserwuje encję, której już nie ma (zmiana nazwy albo usunięc
 
 | Usługa | Pola |
 |---|---|
-| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `list` (np. `Akwarium`), `icon` (np. `mdi:package-variant`), `important` (głośny alarm / alert krytyczny, także w ciszy nocnej), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
-| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
+| `remindo.add` | `summary`, `description`, `start` (`now` / data / data z godziną / puste = notatka), `interval` (min, 0 = raz), `max_reminders`, `remind_until`, `key`, `repeat` (`none`/`hourly`/`daily`/`weekly`/`monthly`/`yearly`), `repeat_every`, `repeat_days` (`mon`…`sun`), `repeat_on` (`day`/`weekday`/`last_weekday`/`last_day`), `repeat_from_done`, `phones`, `speakers`, `tts_message`, `push`, `tts`, `keep_done` (zostaw po wykonaniu), `notify_data` (dodatkowe dane powiadomienia w aplikacji), `list` (np. `Akwarium`), `icon` (np. `mdi:package-variant`), `important` (głośny alarm / alert krytyczny, także w ciszy nocnej), `advance` (zapowiedź N minut przed terminem) albo `advance_at` + `advance_days` (zapowiedź o godzinie, N dni przed), `done_message` (komunikat po zamknięciu przez `close_by_key`/regułę). W `summary`, `tts_message` i `done_message` działają szablony HA. Zwraca `uid`. |
+| `remindo.update` | otwarte zadanie: `uid`/`key` + dowolne z: `summary`, `description`, `start`, `interval`, `repeat`, `repeat_every`, `repeat_days`, `repeat_on`, `repeat_from_done`, `phones`, `speakers`, `max_reminders`, `remind_until`, `keep_done`, `notify_data`, `list`, `icon`, `important`, `advance`, `advance_at`, `advance_days`. Zmieniają się tylko wysłane pola; `null` czyści pole. |
 | `remindo.done`, `remindo.dismiss` | `uid` albo `key`. Zadanie cykliczne obie przesuwają na następny termin; drugie zamknięcie w ciągu 30 s (inny telefon, karta) jest pomijane, więc termin nie przepada przypadkiem. |
 | `remindo.reopen` | `uid`: otwiera ponownie zadanie zrobione albo odrzucone; zadanie z terminem od razu znowu przypomina |
 | `remindo.delete` | `uid` albo `key`: usuwa zadanie na stałe, także cykliczne |
